@@ -1,0 +1,27 @@
+project:
+  type: website
+
+website:
+  title: ""Unequal Recreational Losses? Revealed Preference Evidence of Campsite Closures in Hawaiʻi"
+  search: true
+  
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+
+
+    tools:
+      - icon: youtube
+        href: https://www.youtube.com/@Prof.Iguana
+      - icon: github
+        menu:
+          - text: Source Code
+            href:  https://github.com/loweas/rec_res
+          - text: Report a Bug
+            href:  https://github.com/loweas/rec_res/issues
+
+format:
+  html:
+    theme: cosmo
+    toc: true

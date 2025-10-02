@@ -1,0 +1,362 @@
+---
+title: "Unequal Recreational Losses? Revealed Preference Evidence of Campsite Closures in Hawaiʻi"
+format:
+  html:
+    code-fold: true        # Enables dropdown for code
+    code-tools: true       # (Optional) Adds buttons like "Show Code"
+    code-summary: "Show code"  # (Optional) Custom label for dropdown
+    toc: true
+    toc-location: left
+    page-layout: full
+editor: visual
+---
+
+# 
+
+# Libraries
+
+```{r, message=FALSE}
+
+library(tigris)
+library(sf)
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(tidyr)
+```
+
+## Load Data
+
+```{r, message=FALSE}
+library(readr)
+average_welfare_loss_per_zip <- read_csv("~/Downloads/average_welfare_loss_per_zip.csv")
+
+zip_tract_032022 <- read_csv("~/Downloads/zip_tract_032022.csv")
+
+dishawaii=read_csv("/Users/ashleylowe/EJ/EJScreen_2024_Tract_StatePct_with_AS_CNMI_GU_VI.csv")
+
+blockIRA=read_sf("/Users/ashleylowe/EJ/EPA_IRA_Disadvantage_Hawaii.shp")
+
+
+head(average_welfare_loss_per_zip, n = 5)
+
+
+```
+
+## Disadvantage Communities
+
+```{r}
+
+dishawaii=subset(dishawaii, ST_ABBREV=="HI")
+
+ejscreen_data <- dishawaii %>%
+  rowwise() %>%
+  mutate(
+    env_burden = any(c_across(c(P_PM25,P_OZONE,P_DSLPM,P_RSEI_AIR,P_PTRAF,
+P_LDPNT,P_PNPL,P_PRMP,P_PTSDF,P_UST,P_PWDIS,P_NO2,P_DWATER,P_D2_PM25,P_D5_PM25,P_D2_OZONE,P_D5_OZONE,P_D2_DSLPM,P_D5_DSLPM,P_D2_RSEI_AIR,P_D5_RSEI_AIR,P_D2_PTRAF,P_D5_PTRAF,P_D2_LDPNT,P_D5_LDPNT,P_D2_PNPL,P_D5_PNPL,P_D2_PRMP,P_D5_PRMP,P_D2_PTSDF,P_D5_PTSDF,P_D2_UST,P_D5_UST,P_D2_PWDIS,P_D5_PWDIS,P_D2_NO2,P_D5_NO2,P_D2_DWATER,P_D5_DWATER)) >= 90, na.rm = TRUE),
+    soc_vulnerable = any(c_across(c(P_PEOPCOLORPCT,P_LOWINCPCT,P_UNEMPPCT,P_DISABILITYPCT,P_LINGISOPCT,P_LESSHSPCT,P_UNDER5PCT,P_OVER64PCT,P_LIFEEXPPCT)) >= 90, na.rm = TRUE),
+    DAC_flag = as.integer(env_burden & soc_vulnerable)
+  ) %>%
+  ungroup()
+
+
+```
+
+## Zip to Tract
+
+Better way to match the data is by using the [**HUD USPS ZIP Code Crosswalk Files**](https://www.huduser.gov/portal/datasets/usps_crosswalk.html). This will link the zip codes to census track. This especially useful to integrate datasets that report by ZIP (e.g. user addresses) with data reported by **census tract** (like CEJST).
+
+```{r}
+
+
+t=merge(zip_tract_032022,average_welfare_loss_per_zip, by.x = "ZIP", by.y = "zip")
+
+block_data <- blockIRA %>%
+    mutate(tract_geoid = substr(ID, 1, 11)) %>%
+    group_by(tract_geoid) %>%
+    summarise(
+        num_yes = sum(Disadvanta == "Yes", na.rm = TRUE),
+        num_no  = sum(Disadvanta == "No", na.rm = TRUE),
+        mixed_response = if_else(num_yes > 0 & num_no > 0, TRUE, FALSE),      CEJST = sum(CEJST == "Yes", na.rm = TRUE)
+    )
+
+block_data$CEJST <- ifelse(block_data$CEJST > 0, 1, 0)
+
+
+t=merge(t,block_data, by.x = "TRACT", by.y = "tract_geoid")
+
+t=merge(t,ejscreen_data, by.x = "TRACT", by.y = "ID")
+
+
+
+```
+
+```{r}
+library(tibble)
+
+zip_island <- tribble(
+    ~ZIP,     ~place,                                ~island,
+    
+    # Island of Hawaii
+    96704, "Captain Cook",                           "Hawaiʻi",
+    96710, "Hakalau",                                 "Hawaiʻi",
+    96719, "Hawi",                                    "Hawaiʻi",
+    96720, "Hilo (Main Office)",                      "Hawaiʻi",
+    96725, "Holualoa",                                "Hawaiʻi",
+    96726, "Honaunau",                                "Hawaiʻi",
+    96727, "Honokaa",                                 "Hawaiʻi",
+    96728, "Honomu",                                  "Hawaiʻi",
+    96737, "Ocean View",                              "Hawaiʻi",
+    96738, "Waikoloa",                                "Hawaiʻi",
+    96740, "Kailua-Kona",                             "Hawaiʻi",
+    96743, "Kamuela",                                 "Hawaiʻi",
+    96749, "Keaau",                                   "Hawaiʻi",
+    96750, "Kealakekua",                              "Hawaiʻi",
+    96755, "Kapaau",                                  "Hawaiʻi",
+    96760, "Kurtistown",                              "Hawaiʻi",
+    96764, "Laupahoehoe",                             "Hawaiʻi",
+    96771, "Mountain View",                           "Hawaiʻi",
+    96772, "Naalehu",                                 "Hawaiʻi",
+    96773, "Ninole",                                  "Hawaiʻi",
+    96774, "Ookala",                                  "Hawaiʻi",
+    96776, "Paauilo",                                 "Hawaiʻi",
+    96777, "Pahala",                                  "Hawaiʻi",
+    96778, "Pahoa",                                   "Hawaiʻi",
+    96780, "Papaaloa",                                "Hawaiʻi",
+    96781, "Papaikou",                                "Hawaiʻi",
+    96783, "Pepeekeo",                                "Hawaiʻi",
+    96785, "Volcano",                                 "Hawaiʻi",
+    
+    # Island of Maui
+    96708, "Haiku",                                   "Maui",
+    96713, "Hana",                                    "Maui",
+    96732, "Kahului",                                 "Maui",
+    96753, "Kihei",                                   "Maui",
+    96761, "Lahaina Main Office",                     "Maui",
+    96768, "Makawao",                                 "Maui",
+    96779, "Paia",                                    "Maui",
+    96790, "Kula",                                    "Maui",
+    96793, "Wailuku",                                 "Maui",
+    
+    # Island of Lanai
+    96763, "Lanai City",                              "Lānaʻi",
+    
+    # Island of Molokai
+    96729, "Hoolehua",                                "Molokaʻi",
+    96742, "Kalaupapa",                               "Molokaʻi",
+    96748, "Kaunakakai",                              "Molokaʻi",
+    96757, "Kualapuu",                                "Molokaʻi",
+    96770, "Maunaloa",                                "Molokaʻi",
+    
+    # Island of Oahu
+    96701, "Aiea",                                     "Oʻahu",
+    96706, "Ewa Beach",                                "Oʻahu",
+    96707, "Kapolei",                                  "Oʻahu",
+    96712, "Haleiwa",                                  "Oʻahu",
+    96717, "Hauula",                                   "Oʻahu",
+    96730, "Kaawa",                                    "Oʻahu",
+    96731, "Kahuku",                                   "Oʻahu",
+    96734, "Kailua",                                   "Oʻahu",
+    96744, "Kaneohe",                                  "Oʻahu",
+    96759, "Kunia",                                    "Oʻahu",
+    96762, "Laie",                                     "Oʻahu",
+    96782, "Pearl City",                               "Oʻahu",
+    96786, "Wahiawa",                                  "Oʻahu",
+    96789, "Mililani",                                 "Oʻahu",
+    96791, "Waialua",                                  "Oʻahu",
+    96792, "Waianae",                                  "Oʻahu",
+    96795, "Waimanalo",                                "Oʻahu",
+    96797, "Waipahu",                                  "Oʻahu",
+    96813, "Downtown Honolulu",                        "Oʻahu",
+    96814, "Kakaako",                                  "Oʻahu",
+    96815, "Waikiki",                                  "Oʻahu",
+    96816, "Waialae Kahala",                           "Oʻahu",
+    96817, "Kapalama",                                 "Oʻahu",
+    96818, "Main Office",                              "Oʻahu",
+    96819, "Sand Island",                              "Oʻahu",
+    96821, "Hawaii Kai",                               "Oʻahu",
+    96822, "Makiki",                                   "Oʻahu",
+    96825, "Hawaii Kai",                               "Oʻahu",
+    96826, "Makiki",                                   "Oʻahu",
+    96850, "Honolulu",                                 "Oʻahu",
+    96853, "Hickam Air Force Base",                    "Oʻahu",
+    96857, "Schofield Barracks",                       "Oʻahu",
+    96859, "Tripler Army Medical Center",              "Oʻahu",
+    96860, "Pearl Harbor",                             "Oʻahu",
+    96863, "Marine Corp Base Hawaii Kaneohe Bay",      "Oʻahu",
+    
+    # Island of Kauai
+    96703, "Anahola",                                  "Kauaʻi",
+    96705, "Eleele",                                   "Kauaʻi",
+    96714, "Hanalei",                                  "Kauaʻi",
+    96716, "Hanapepe",                                 "Kauaʻi",
+    96722, "Princeville",                              "Kauaʻi",
+    96741, "Kalaheo",                                  "Kauaʻi",
+    96746, "Kapaa",                                    "Kauaʻi",
+    96747, "Kaumakani",                                "Kauaʻi",
+    96751, "Kealia",                                   "Kauaʻi",
+    96752, "Kekaha",                                   "Kauaʻi",
+    96754, "Kilauea",                                  "Kauaʻi",
+    96756, "Koloa",                                    "Kauaʻi",
+    96765, "Lawai",                                    "Kauaʻi",
+    96766, "Lihue",                                    "Kauaʻi",
+    96769, "Makaweli",                                 "Kauaʻi",
+    96796, "Waimea",                                   "Kauaʻi"
+)
+zip_island$ZIP=as.character(zip_island$ZIP)
+
+t  <- t %>%
+    left_join(zip_island, by = "ZIP")
+
+```
+
+## Data Visual
+
+### CEJST
+
+Here we have the spread of observed **Justice40 coverage**, which reflects the proportion of ZIP codes or census tracts in our dataset that are identified as **disadvantaged communities** under the CEJST tool.
+
+These communities are eligible to receive **targeted federal investments** under the Justice40 Initiative.
+
+```{r}
+ggplot(t, aes(x = island, y = avg_welfare_loss_zip, fill = factor(CEJST))) +
+    geom_boxplot(position = "dodge", aes(group = interaction(island, CEJST))) +
+    scale_fill_manual(
+        name = "CEJST Disadvantaged",
+        values = c("0" = "gray70", "1" = "darkred"),
+        labels = c("0" = "Not Disadvantaged", "1" = "Disadvantaged")
+    ) +
+    theme_minimal() +
+    labs(
+        x = "Island",
+        y = "Average Welfare Loss per ZIP",
+        title = "Welfare Loss by Island and CEJST Designation"
+    )
+
+```
+
+### EJSceen
+
+EJScreen, developed by the U.S. Environmental Protection Agency (EPA), is a screening tool that provides percentile rankings for environmental and demographic indicators, such as air pollution, proximity to hazardous sites, poverty, and limited English proficiency, across census tracts in the U.S. It is primarily used for identifying areas with potential environmental justice concerns, but it does not designate any community as "disadvantaged."
+
+Instead, it enables comparisons across regions and supports risk assessments, permitting decisions, and community advocacy. In contrast, the Climate and Economic Justice Screening Tool (CEJST), developed by the White House Council on Environmental Quality (CEQ), is designed specifically to identify disadvantaged communities (DACs) eligible for benefits under the Justice40 Initiative, which aims to direct 40% of federal climate and infrastructure investments to these communities. CEJST is a binary approach labeling each census tract as either disadvantaged or not. While EJScreen is more detailed and flexible for analysis, CEJST provides a clear policy designation to guide funding and investment.
+
+We use the [**State Percentiles**]{.underline} here.
+
+The U.S. percentiles are computed based on the block groups nationwide. The state percentiles are calculated within each individual state. EJScreen focuses on the U.S. percentiles as a way to visualize all results in common units. The U.S. percentile uses the U.S. block groups as the basis of comparison. The state percentile was also calculated based on the block groups of a given state (or the District of Columbia or Puerto Rico). The national or state mean value was calculated as the average of the block groups with data for that indicator, within the respective geographic scope.
+
+#### Social Vulnerabilities
+
+Using EJScreen gives us flexibility where we can both examine the social factors and environmental factors. Here we will look at the social vulnerabilities of 90th percentiles within the state who are identified using :
+
+-   Percentile for Demographic Index
+
+-   Percentile for Supplemental Demographic Index
+
+-   Percentile for % people of color
+
+-   Percentile for % low income
+
+-   Percentile for % unemployed
+
+-   Percentile for % persons with disabilities
+
+-   Percentile for % limited English speaking
+
+-   Percentile for % less than high school education
+
+-   Percentile for % under age 5
+
+-   Percentile for % over age 64
+
+-   Percentile for Low Life Expectancy
+
+```{r}
+
+
+ggplot(t, aes(x = island, y = avg_welfare_loss_zip, fill = factor(soc_vulnerable))) +
+    geom_boxplot(position = "dodge", aes(group = interaction(island, soc_vulnerable))) +
+    scale_fill_manual(
+        name = "EJScreen Social Vulnerable",
+        values = c("FALSE" = "gray70", "TRUE" = "royalblue"),
+        labels = c("FALSE" = "Not Disadvantaged", "TRUE" = "Disadvantaged")
+    ) +
+    theme_minimal() +
+    labs(
+        x = "Island",
+        y = "Average Welfare Loss per ZIP",
+        title = "Welfare Loss by Island using EJScreen Social Indicators"
+    )
+```
+
+### Environmental Vulnerabilities
+
+Here we will look at the environmental hazard of 90th percentiles within the state who are identified using :
+
+-   Percentile for Particulate Matter 2.5 Supplemental Index
+
+-   Percentile for Ozone EJ Index
+
+-   Percentile for Ozone Supplemental Index
+
+-   Percentile for Diesel particulate matter EJ Index
+
+-   Percentile for Diesel particulate matter Supplemental Index
+
+-   Percentile for Toxic Releases to Air EJ Index
+
+-   Percentile for Toxic Releases to Air Supplemental Index
+
+-   Percentile for Traffic proximity EJ Index
+
+-   Percentile for Traffic proximity Supplemental Index
+
+-   Percentile for Lead paint EJ Index
+
+-   Percentile for Lead paint Supplemental Index
+
+-   Percentile for Superfund proximity EJ Index
+
+-   Percentile for Superfund proximity Supplemental Index
+
+-   Percentile for RMP Facility Proximity EJ Index
+
+-   Percentile for RMP Facility Proximity Supplemental Index
+
+-   Percentile for Hazardous waste proximity EJ Index
+
+-   Percentile for Hazardous waste proximity Supplemental Index
+
+-   Percentile for Underground storage tanks EJ Index
+
+-   Percentile for Underground storage tanks Supplemental Index
+
+-   Percentile for Wastewater discharge EJ Index
+
+-   Percentile for Wastewater discharge Supplemental Index
+
+-   Percentile for Nitrogen Dioxide (NO2) EJ Index
+
+-   Percentile for Nitrogen Dioxide (NO2) Supplemental Index
+
+-   Percentile for Drinking Water Non-Compliance EJ Index
+
+-   Percentile for Drinking Water Non-Compliance Supplemental Index
+
+```{r}
+
+ggplot(t, aes(x = island, y = avg_welfare_loss_zip, fill = factor(env_burden))) +
+    geom_boxplot(position = "dodge", aes(group = interaction(island, env_burden))) +
+    scale_fill_manual(
+        name = "EJScreen Environmental",
+        values = c("FALSE" = "gray70", "TRUE" = "forestgreen"),
+        labels = c("FALSE" = "Not Disadvantaged", "TRUE" = "Disadvantaged")
+    ) +
+    theme_minimal() +
+    labs(
+        x = "Island",
+        y = "Average Welfare Loss per ZIP",
+        title = "Welfare Loss by Island using EJScreen 90th Environmental Hazards"
+    )
+
+```
