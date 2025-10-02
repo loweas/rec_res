@@ -13,7 +13,9 @@ editor: visual
 
 # 
 
-# Libraries
+# Data
+
+## Libraries
 
 ```{r, message=FALSE}
 
@@ -53,7 +55,7 @@ ejscreen_data <- dishawaii %>%
   rowwise() %>%
   mutate(
     env_burden = any(c_across(c(P_PM25,P_OZONE,P_DSLPM,P_RSEI_AIR,P_PTRAF,
-P_LDPNT,P_PNPL,P_PRMP,P_PTSDF,P_UST,P_PWDIS,P_NO2,P_DWATER,P_D2_PM25,P_D5_PM25,P_D2_OZONE,P_D5_OZONE,P_D2_DSLPM,P_D5_DSLPM,P_D2_RSEI_AIR,P_D5_RSEI_AIR,P_D2_PTRAF,P_D5_PTRAF,P_D2_LDPNT,P_D5_LDPNT,P_D2_PNPL,P_D5_PNPL,P_D2_PRMP,P_D5_PRMP,P_D2_PTSDF,P_D5_PTSDF,P_D2_UST,P_D5_UST,P_D2_PWDIS,P_D5_PWDIS,P_D2_NO2,P_D5_NO2,P_D2_DWATER,P_D5_DWATER)) >= 90, na.rm = TRUE),
+P_LDPNT,P_PNPL,P_PRMP,P_PTSDF,P_UST,P_PWDIS,P_NO2,P_DWATER,P_D2_PM25,P_D2_OZONE,P_D2_DSLPM,P_D2_RSEI_AIR,P_D2_PTRAF,P_D2_LDPNT,P_D2_PNPL,P_D2_PRMP,P_D2_PTSDF,P_D2_UST,P_D2_PWDIS,P_D2_NO2,P_D2_DWATER)) >= 90, na.rm = TRUE),
     soc_vulnerable = any(c_across(c(P_PEOPCOLORPCT,P_LOWINCPCT,P_UNEMPPCT,P_DISABILITYPCT,P_LINGISOPCT,P_LESSHSPCT,P_UNDER5PCT,P_OVER64PCT,P_LIFEEXPPCT)) >= 90, na.rm = TRUE),
     DAC_flag = as.integer(env_burden & soc_vulnerable)
   ) %>%
@@ -210,7 +212,7 @@ t  <- t %>%
 
 ```
 
-## Data Visual
+# Data Visual
 
 ### CEJST
 
@@ -293,55 +295,57 @@ ggplot(t, aes(x = island, y = avg_welfare_loss_zip, fill = factor(soc_vulnerable
 
 Here we will look at the environmental hazard of 90th percentiles within the state who are identified using :
 
--   Percentile for Particulate Matter 2.5 Supplemental Index
+-   -Percentile for Particulate Matter 2.5
+
+-    Percentile for Ozone
+
+-   Percentile for Diesel particulate matter
+
+-   Percentile for Toxic Releases to Air
+
+-   Percentile for Traffic proximity
+
+-   Percentile for Lead paint
+
+-   Percentile for Superfund proximity
+
+-   Percentile for RMP facility proximity
+
+-   Percentile for Hazardous waste proximity
+
+-   Percentile for Underground storage tanks
+
+-   Percentile for Wastewater discharge
+
+-   Percentile for Nitrogen Dioxide (NO2)
+
+-   Percentile for Drinking Water Non-Compliance
+
+-   Percentile for Particulate Matter 2.5
 
 -   Percentile for Ozone EJ Index
 
--   Percentile for Ozone Supplemental Index
-
 -   Percentile for Diesel particulate matter EJ Index
-
--   Percentile for Diesel particulate matter Supplemental Index
 
 -   Percentile for Toxic Releases to Air EJ Index
 
--   Percentile for Toxic Releases to Air Supplemental Index
-
 -   Percentile for Traffic proximity EJ Index
-
--   Percentile for Traffic proximity Supplemental Index
 
 -   Percentile for Lead paint EJ Index
 
--   Percentile for Lead paint Supplemental Index
-
 -   Percentile for Superfund proximity EJ Index
-
--   Percentile for Superfund proximity Supplemental Index
 
 -   Percentile for RMP Facility Proximity EJ Index
 
--   Percentile for RMP Facility Proximity Supplemental Index
-
 -   Percentile for Hazardous waste proximity EJ Index
-
--   Percentile for Hazardous waste proximity Supplemental Index
 
 -   Percentile for Underground storage tanks EJ Index
 
--   Percentile for Underground storage tanks Supplemental Index
-
 -   Percentile for Wastewater discharge EJ Index
-
--   Percentile for Wastewater discharge Supplemental Index
 
 -   Percentile for Nitrogen Dioxide (NO2) EJ Index
 
--   Percentile for Nitrogen Dioxide (NO2) Supplemental Index
-
 -   Percentile for Drinking Water Non-Compliance EJ Index
-
--   Percentile for Drinking Water Non-Compliance Supplemental Index
 
 ```{r}
 

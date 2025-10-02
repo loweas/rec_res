@@ -2,7 +2,7 @@ project:
   type: website
 
 website:
-  title: ""Unequal Recreational Losses? Revealed Preference Evidence of Campsite Closures in Hawaiʻi"
+  title: "Unequal Recreational Losses? Revealed Preference Evidence of Campsite Closures in Hawaiʻi"
   search: true
   
   navbar:
