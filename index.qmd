@@ -31,7 +31,26 @@ library(tidyr)
 
 ```{r, message=FALSE}
 library(readr)
-average_welfare_loss_per_zip <- read_csv("~/Downloads/average_welfare_loss_per_zip.csv")
+welfare_2019_zip<- read_csv("~/Downloads/welfare_2019_zip (1).csv")
+welfare_2018_zip <- read_csv("~/Downloads/welfare_2018_zip (1).csv")
+#welfare_2018_zip$site=NULL
+#welfare_2018_zip$id=NULL
+welfare_2020_zip <- read_csv("~/Downloads/welfare_2020_zip (1).csv")
+welfare_2021_zip <- read_csv("~/Downloads/welfare_2021_zip (1).csv")
+welfare_2022_zip <- read_csv("~/Downloads/welfare_2022_zip (1).csv")
+welfare_2023_zip <- read_csv("~/Downloads/welfare_2023_zip (1).csv")
+#average_welfare_loss_per_zip <- read_csv("~/Downloads/average_welfare_loss_per_zip.csv")
+welfare_2018_zip=welfare_2018_zip %>% group_by(zip) %>% summarise(mean_value=mean(mean_value))
+
+
+welfare_2018_zip$Year=2018
+welfare_2019_zip$Year=2019
+welfare_2020_zip$Year=2020
+welfare_2021_zip$Year=2021
+welfare_2022_zip$Year=2022
+welfare_2023_zip$Year=2023
+
+average_welfare_loss_per_zip =rbind(welfare_2018_zip,welfare_2019_zip,welfare_2020_zip,welfare_2021_zip,welfare_2022_zip,welfare_2023_zip)
 
 zip_tract_032022 <- read_csv("~/Downloads/zip_tract_032022.csv")
 
@@ -40,7 +59,6 @@ dishawaii=read_csv("/Users/ashleylowe/EJ/EJScreen_2024_Tract_StatePct_with_AS_CN
 blockIRA=read_sf("/Users/ashleylowe/EJ/EPA_IRA_Disadvantage_Hawaii.shp")
 
 
-head(average_welfare_loss_per_zip, n = 5)
 
 
 ```
@@ -49,7 +67,7 @@ head(average_welfare_loss_per_zip, n = 5)
 
 ```{r}
 
-dishawaii=subset(dishawaii, ST_ABBREV=="HI")
+dishawaii=subset(dishawaii,ST_ABBREV=="HI")
 
 ejscreen_data <- dishawaii %>%
   rowwise() %>%
@@ -143,13 +161,13 @@ zip_island <- tribble(
     # Island of Lanai
     96763, "Lanai City",                              "Lānaʻi",
     
-    # Island of Molokai
+    # Island of Molokais
     96729, "Hoolehua",                                "Molokaʻi",
     96742, "Kalaupapa",                               "Molokaʻi",
     96748, "Kaunakakai",                              "Molokaʻi",
     96757, "Kualapuu",                                "Molokaʻi",
     96770, "Maunaloa",                                "Molokaʻi",
-    
+    s
     # Island of Oahu
     96701, "Aiea",                                     "Oʻahu",
     96706, "Ewa Beach",                                "Oʻahu",
@@ -221,7 +239,7 @@ Here we have the spread of observed **Justice40 coverage**, which reflects the p
 These communities are eligible to receive **targeted federal investments** under the Justice40 Initiative.
 
 ```{r}
-ggplot(t, aes(x = island, y = avg_welfare_loss_zip, fill = factor(CEJST))) +
+ggplot(t, aes(x = island, y = mean_value, fill = factor(CEJST))) +
     geom_boxplot(position = "dodge", aes(group = interaction(island, CEJST))) +
     scale_fill_manual(
         name = "CEJST Disadvantaged",
@@ -235,6 +253,21 @@ ggplot(t, aes(x = island, y = avg_welfare_loss_zip, fill = factor(CEJST))) +
         title = "Welfare Loss by Island and CEJST Designation"
     )
 
+```
+
+```{r}
+ggplot(t, aes(x = as.factor(Year), y = mean_value, fill = as.factor(DAC_flag))) +
+    geom_boxplot(outlier.size = 0.5, alpha = 0.8) +
+    scale_fill_manual(values = c("0" = "white", "1" = "grey"), 
+                      labels = c("Non-DAC", "DAC"), name = "Community Status") +
+    theme_light() +
+    labs(title = "Welfare Distribution",
+         subtitle = "Disadvantaged (orange) Non-Disadvantaged (teal) over time",
+         x = "Year",
+         y = "Welfare Value") +
+    coord_cartesian(ylim = c(-1000, 200)) +
+    # This line sets everything to Times New Roman
+    theme(text = element_text(family = "Times New Roman"))
 ```
 
 ### EJSceen
@@ -276,19 +309,37 @@ Using EJScreen gives us flexibility where we can both examine the social factors
 ```{r}
 
 
-ggplot(t, aes(x = island, y = avg_welfare_loss_zip, fill = factor(soc_vulnerable))) +
-    geom_boxplot(position = "dodge", aes(group = interaction(island, soc_vulnerable))) +
+ggplot(t, aes(x = island, y = mean_value, fill = factor(soc_vulnerable))) +
+    geom_boxplot(position = "dodge", aes(group = interaction(island, soc_vulnerable)),
+                 ) +
     scale_fill_manual(
         name = "EJScreen Social Vulnerable",
-        values = c("FALSE" = "gray70", "TRUE" = "royalblue"),
+        values = c("FALSE" = "white", "TRUE" = "grey70"),
         labels = c("FALSE" = "Not Disadvantaged", "TRUE" = "Disadvantaged")
     ) +
-    theme_minimal() +
+    theme_minimal(base_family = "Times New Roman") +  # Apply Times New Roman font
     labs(
         x = "Island",
         y = "Average Welfare Loss per ZIP",
         title = "Welfare Loss by Island using EJScreen Social Indicators"
     )
+```
+
+### Overtime
+
+```{r}
+ggplot(t, aes(x = as.factor(Year), y = mean_value, fill = as.factor(soc_vulnerable))) +
+    geom_boxplot(outlier.size = 0.5, alpha = 0.8) +
+    scale_fill_manual(values = c("0" = "white", "1" = "grey"), 
+                      labels = c("Non-DAC", "DAC"), name = "Community Status") +
+    theme_light() +
+    labs(title = "Welfare Distribution",
+         subtitle = "Disadvantaged (orange) Non-Disadvantaged (teal) over time",
+         x = "Year",
+         y = "Welfare Value") +
+    coord_cartesian(ylim = c(-1000, 200)) +
+    # This line sets everything to Times New Roman
+    theme(text = element_text(family = "Times New Roman"))
 ```
 
 ### Environmental Vulnerabilities
@@ -297,7 +348,7 @@ Here we will look at the environmental hazard of 90th percentiles within the sta
 
 -   -Percentile for Particulate Matter 2.5
 
--    Percentile for Ozone
+-   Percentile for Ozone
 
 -   Percentile for Diesel particulate matter
 
@@ -349,18 +400,107 @@ Here we will look at the environmental hazard of 90th percentiles within the sta
 
 ```{r}
 
-ggplot(t, aes(x = island, y = avg_welfare_loss_zip, fill = factor(env_burden))) +
+ggplot(t, aes(x = island, y = mean_value, fill = factor(env_burden))) +
     geom_boxplot(position = "dodge", aes(group = interaction(island, env_burden))) +
     scale_fill_manual(
         name = "EJScreen Environmental",
-        values = c("FALSE" = "gray70", "TRUE" = "forestgreen"),
+        values = c("FALSE" = "white", "TRUE" = "grey70"),
         labels = c("FALSE" = "Not Disadvantaged", "TRUE" = "Disadvantaged")
     ) +
     theme_minimal() +
+    theme_minimal(base_family = "Times New Roman")  +
     labs(
         x = "Island",
         y = "Average Welfare Loss per ZIP",
-        title = "Welfare Loss by Island using EJScreen 90th Environmental Hazards"
+        title = "Welfare Loss by Island using EJScreen 90th Environmental Burdens"
     )
+
+```
+
+### Overtime
+
+```{r}
+
+ggplot(t, aes(x = as.factor(Year), y = mean_value, fill = as.factor(env_burden))) +
+    geom_boxplot(outlier.size = 0.5, alpha = 0.8) +
+    scale_fill_manual(values = c("0" = "white", "1" = "grey"), 
+                      labels = c("Non-DAC", "DAC"), name = "Community Status") +
+    theme_light() +
+    labs(title = "Welfare Distribution",
+         subtitle = "Disadvantaged (orange) Non-Disadvantaged (teal) over time",
+         x = "Year",
+         y = "Welfare Value") +
+    coord_cartesian(ylim = c(-1000, 200)) +
+    # This line sets everything to Times New Roman
+    theme(text = element_text(family = "Times New Roman"))
+
+```
+
+## Table
+
+```{r}
+library(officer)
+library(flextable)
+library(dplyr)
+library(sf)
+
+summary_table <- t %>%
+    st_drop_geometry() %>%
+    group_by(env_burden, island) %>%
+    summarise(
+        variance = var(mean_value), 
+        median = median(mean_value), 
+        mean = mean(mean_value),
+        .groups = "drop"
+    ) %>%
+    mutate(
+        env_burden = ifelse(env_burden, "Disadvantaged", "Not Disadvantaged")
+    )
+
+summary_table1 <- t %>%
+    st_drop_geometry() %>%
+    group_by(soc_vulnerable, island) %>%
+    summarise(
+        variance = var(mean_value), 
+        median = median(mean_value), 
+        mean = mean(mean_value),
+        .groups = "drop"
+    ) %>%
+    mutate(
+        soc_vulnerable = ifelse(soc_vulnerable, "Disadvantaged", "Not Disadvantaged")
+    )
+
+
+
+
+professional_table <- summary_table %>%
+    flextable() %>%
+    set_header_labels(
+        Indicator = "Indicator",
+        island = "Island",
+        variance = "Variance",
+        median = "Median ($)",
+        mean = "Mean ($)"
+    ) %>%
+    colformat_double(j = "variance", digits = 0) %>%
+    colformat_double(j = c("median", "mean"), digits = 2) %>%
+    merge_v(j = "Indicator") %>%
+    theme_booktabs() %>%
+    bold(part = "header") %>%
+    align(j = c("variance", "median", "mean"), align = "center", part = "all") %>%
+    bg(part = "header", bg = "white") %>%
+    color(part = "header", color = "black") %>%
+    bg(i = seq(2, nrow(summary_table), by = 2), bg = "#F2F2F2", part = "body") %>%
+    autofit() %>%
+    border_outer(border = fp_border(color = "black", width = 2)) %>%
+    border_inner_h(border = fp_border(color = "gray", width = 1)) %>%
+    border_inner_v(border = fp_border(color = "gray", width = 1)) %>%
+    font(fontname = "Times New Roman", part = "all") %>%  # Add Times New Roman
+    fontsize(size = 12, part = "all")  # Standard 12pt font
+
+# View
+professional_table
+
+save_as_docx(professional_table, path = "/Users/ashleylowe/welfare_table.docx")
 
 ```
