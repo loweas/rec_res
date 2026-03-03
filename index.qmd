@@ -504,3 +504,115 @@ professional_table
 save_as_docx(professional_table, path = "/Users/ashleylowe/welfare_table.docx")
 
 ```
+
+# Rum Comparison
+
+This would be the estimate for a closer of each park.
+
+If MDCEV is the mean for **per person** and RUM mean is **per trip**, then to compare them by looking at the **Total Annual Welfare Loss** for each park:
+
+$Total\ MDCEV\ Loss = (MDCEV\ MeanPerson) \times (Total\ Number\ of\ People)$
+
+$Total\ RUM\ Loss = (RUM\ Mean Trip) \times (Total\ Number\ of\ Trips)$
+
+```{r}
+
+combined_welfare=read_csv("rum_combined_totalWF.csv")
+
+
+# Prepare the data into a long format for the two models
+plot_data_long <- combined_welfare %>%
+  select(year, parkname, rum_annual_total, mdcev_annual_total) %>%
+  pivot_longer(cols = c(rum_annual_total, mdcev_annual_total), 
+               names_to = "Model", 
+               values_to = "Annual_Loss") %>%
+  mutate(Model = ifelse(Model == "rum_annual_total", "RUM", "MDCEV"),
+         # Convert to absolute values (positive dollars) for easier reading
+         Annual_Loss_Abs = abs(Annual_Loss))
+
+ggplot(plot_data_long, aes(x = as.factor(year), y = Annual_Loss_Abs, fill = Model)) +
+  geom_boxplot(alpha = 0.7, outlier.shape = 21, outlier.fill = "white") +
+  scale_y_log10(labels = scales::dollar_format()) +
+  labs(title = "Distribution of Annual Welfare Losses Across Parks",
+       subtitle = "Comparing RUM vs MDCEV Park-Level Estimates (2018-2023)",
+       x = "Year", 
+       y = "Annual Welfare Loss per Park (Log Scale)") +
+  theme_minimal() +
+  scale_fill_manual(values = c("MDCEV" = "#2c3e50", "RUM" = "#e74c3c"))
+
+```
+
+# Calculating Cumulative Value
+
+This explains why your Total Annual Loss numbers differ.
+
+-   **RUM** Total Surplus grows linearly per trip and is a diaginol.
+
+-   **MDCEV** Total Surplus grows like a "plateau" (it levels off as more and more trips).
+
+This explains the difference in the value of the two
+
+We can think of the two as RUM gets us an idea of charging for a trip while the MDCEV gives us the total value to think about its
+
+```{r}
+
+
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+#"Staple" and "Satiating" parks for 2023
+satiation_ranking <- combined_welfare %>%
+  filter(year == 2023) %>%
+  mutate(satiation_index = abs(mdcev_mean_per_person / rum_mean_per_trip)) %>%
+  arrange(satiation_index)
+
+#two extremes
+staple_park <- satiation_ranking %>% slice_max(satiation_index, n = 1)
+satiating_park <- satiation_ranking %>% slice_min(satiation_index, n = 1)
+
+# Function to generate cumulative data
+generate_cum_data <- function(park_row, label, max_trips = 30) {
+  trip_seq <- 1:max_trips
+  val_per_trip <- abs(park_row$rum_mean_per_trip)
+  val_total_person <- abs(park_row$mdcev_mean_per_person)
+  
+  # RUM: Linear growth
+  rum_cum <- trip_seq * val_per_trip
+  
+  # MDCEV: Logarithmic growth constrained to the 'Total Annual' result
+  # We assume the MDCEV total is reached at roughly the 'average' frequency
+  mdcev_cum <- val_total_person * (log10(trip_seq + 1) / log10(max_trips + 1))
+  
+  data.frame(
+    Trip = rep(trip_seq, 2),
+    Surplus = c(rum_cum, mdcev_cum),
+    Model = rep(c("RUM (Trip-Based)", "MDCEV (Person-Based)"), each = max_trips),
+    Park_Type = label,
+    Park_Name = park_row$parkname
+  )
+}
+
+# Combine data for both parks
+plot_data_combined <- rbind(
+  generate_cum_data(staple_park, "Staple Park (Low Satiation)"),
+  generate_cum_data(satiating_park, "Satiating Park (High Satiation)")
+)
+
+# Create the Comparison Plot
+ggplot(plot_data_combined, aes(x = Trip, y = Surplus, fill = Model, color = Model)) +
+  geom_area(alpha = 0.3, position = "identity") +
+  geom_line(size = 1) +
+  facet_wrap(~Park_Type + Park_Name, scales = "free_y") +
+  scale_y_continuous(labels = scales::dollar) +
+  scale_fill_manual(values = c("MDCEV (Person-Based)" = "#2c3e50", "RUM (Trip-Based)" = "#e74c3c")) +
+  scale_color_manual(values = c("MDCEV (Person-Based)" = "#2c3e50", "RUM (Trip-Based)" = "#e74c3c")) +
+  labs(
+    title = "Satiation Comparison: How Model Choice Diverges with Frequency",
+    subtitle = "The 'Red Gap' represents surplus RUM creates that MDCEV assumes is lost to satiation.",
+    x = "Number of Trips per Year",
+    y = "Cumulative Consumer Surplus ($)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom", strip.text = element_text(face="bold"))
+```

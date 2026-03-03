@@ -1,0 +1,1114 @@
+[1] 0.8270602
+[1] 0.5139126
+[1] 0.8766447
+[1] 0.5447231
+[1] 0.8488741
+[1] 0.5274672
+[1] 0.802867
+[1] 0.4988796
+[1] 0.840469
+[1] 0.5222445
+[1] 0.8526783
+[1] 0.5298311
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+   4.605  120.078  579.509  458.082  678.901 1129.161 
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+   4.614  126.503  583.723  462.862  681.516 1084.563 
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+   4.609  103.739  518.297  412.739  641.826 1074.556 
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+   4.601   97.767  497.457  396.950  621.920 1041.604 
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+   4.607   99.921  499.110  398.745  620.341 1035.012 
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+   4.048  102.567  495.768  399.767  612.067 1027.917 
+                              parkname  VisitCount    price
+1                         Ainapo Cabin 0.022463768 615.7042
+2                              Hipalau 0.019565217 582.1874
+3                           Kaluahaulu 0.010869565 582.1766
+4                      Kamananui Trail 0.010869565 264.0074
+5                        Kaunala Trail 0.006521739 323.9243
+6                             Kawaikoi 0.050000000 607.5947
+7  Keanakolu Ranger & Bunkhouse Cabins 0.107246377 611.1058
+8                       Kuaokala Trail 0.133333333 337.4896
+9                    Kulanaahane Trail 0.003623188 263.7080
+10                      Kuliouou Trail 0.018115942 283.4380
+11                             Lonomea 0.036956522 576.0980
+12                        Manana Trail 0.013043478 271.5001
+13              Peacock Flats Campsite 0.398550725 355.4743
+14                          Sugi Grove 0.051449275 594.1538
+15              Waialae Cabin Campsite 0.005797101 552.3754
+16                            Waikoali 0.027536232 596.4843
+17                             Waikolu 0.005072464 491.1154
+18                       Waimano Trail 0.007971014 280.3434
+19                    Waimanu Campsite 0.318840580 582.2087
+20                            Wiliwili 0.021739130 569.0734
+21             Wiliwilinui Ridge Trail 0.007971014 279.5536
+# A tibble: 1 × 1
+  total_visits
+         <dbl>
+1          550
+function (formula = NULL, data, weights = NULL, model = c("alpha", 
+    "gamma", "hybrid", "hybrid0", "kt_ee"), n_classes = 1, fixed_scale1 = 0, 
+    single_scale = 0, trunc_data = 0, psi_ascs = NULL, gamma_ascs = 1, 
+    seed = "123", max_iterations = 2000, jacobian_analytical_grad = 1, 
+    initial.parameters = "random", hessian = TRUE, algorithm = c("MLE", 
+        "Bayes"), flat_priors = NULL, print_iterations = TRUE, 
+    prior_psi_sd = 10, prior_gamma_sd = 10, prior_phi_sd = 10, 
+    prior_alpha_shape = 1, prior_scale_sd = 1, prior_delta_sd = 10, 
+    gamma_nonrandom = 0, alpha_nonrandom = 0, std_errors = "deltamethod", 
+    n_draws = 50, keep_loglik = 0, random_parameters = "fixed", 
+    show_stan_warnings = TRUE, n_iterations = 200, n_chains = 4, 
+    n_cores = 4, max_tree_depth = 10, adapt_delta = 0.8, lkj_shape_prior = 4, 
+    ...) 
+NULL
+Chain 1: Initial log joint probability = -27147.7
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1: Error evaluating model log probability: Non-finite gradient.
+
+Chain 1: Error evaluating model log probability: Non-finite gradient.
+Error evaluating model log probability: Non-finite function evaluation.
+
+Chain 1:       19      -5045.03      0.162315         60.15           1           1       32   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:       39      -4966.51      0.439276       60.2996      0.3735           1       54   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:       59      -4950.45     0.0342308       10.7815      0.7923      0.7923       76   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:       79      -4947.46    0.00822638       8.11759      0.2157      0.2157      101   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:       99      -4947.16      0.102818       3.67835           1           1      124   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      119      -4936.98     0.0995293        58.767           1           1      152   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      139      -4888.93      0.305974       100.122      0.2083      0.7303      176   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      159      -4860.07     0.0894097       12.8851           1           1      198   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      179      -4858.44    0.00263493       6.38934      0.7019      0.7019      220   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      199      -4858.25     0.0115445       2.23736           1           1      243   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      219      -4858.19    0.00114019       2.25263      0.2415      0.2415      265   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      239      -4858.18    0.00179528      0.399789      0.5227      0.5227      287   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      259      -4858.17    0.00145116      0.168286           1           1      307   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      264      -4858.17   0.000764985      0.101587           1           1      313   
+Chain 1: Optimization terminated normally: 
+Chain 1:   Convergence detected: relative gradient magnitude is below tolerance
+Model run using rmdcev for R, version 1.2.6 
+Estimation method                : MLE
+Model type                       : gamma specification
+Number of classes                : 1
+Number of individuals            : 1380
+Number of non-numeraire alts     : 21
+Estimated parameters             : 43
+LL                               : -4858.17
+AIC                              : 9802.35
+BIC                              : 10027.23
+Standard errors calculated using : 100 MVN draws
+Exit of MLE                      : successful convergence
+Time taken (hh:mm:ss)            : 00:00:1.83
+
+Average consumption of non-numeraire alternatives:
+                       Ainapo Cabin                             Hipalau 
+                               0.02                                0.02 
+                         Kaluahaulu                     Kamananui Trail 
+                               0.01                                0.01 
+                      Kaunala Trail                            Kawaikoi 
+                               0.01                                0.05 
+Keanakolu Ranger & Bunkhouse Cabins                      Kuaokala Trail 
+                               0.11                                0.13 
+                  Kulanaahane Trail                      Kuliouou Trail 
+                               0.00                                0.02 
+                            Lonomea                        Manana Trail 
+                               0.04                                0.01 
+             Peacock Flats Campsite                          Sugi Grove 
+                               0.40                                0.05 
+             Waialae Cabin Campsite                            Waikoali 
+                               0.01                                0.03 
+                            Waikolu                       Waimano Trail 
+                               0.01                                0.01 
+                   Waimanu Campsite                            Wiliwili 
+                               0.32                                0.02 
+            Wiliwilinui Ridge Trail 
+                               0.01 
+
+Parameter estimates --------------------------------  
+                                          Estimate Std.err z.stat
+psi_Hipalau                                 -0.127   0.149  -0.85
+psi_Kaluahaulu                              -0.401   0.154  -2.61
+psi_Kamananui Trail                         -2.537   0.181 -14.01
+psi_Kaunala Trail                           -1.989   0.207  -9.59
+psi_Kawaikoi                                 0.590   0.134   4.42
+psi_Keanakolu Ranger & Bunkhouse Cabins      0.902   0.117   7.71
+psi_Kuaokala Trail                          -0.192   0.130  -1.48
+psi_Kulanaahane Trail                       -3.339   0.334  -9.99
+psi_Kuliouou Trail                          -2.180   0.154 -14.11
+psi_Lonomea                                  0.112   0.137   0.82
+psi_Manana Trail                            -2.197   0.167 -13.12
+psi_Peacock Flats Campsite                   0.547   0.132   4.14
+psi_Sugi Grove                               0.508   0.132   3.85
+psi_Waialae Cabin Campsite                  -0.933   0.218  -4.27
+psi_Waikoali                                 0.087   0.128   0.68
+psi_Waikolu                                 -0.756   0.247  -3.06
+psi_Waimano Trail                           -2.310   0.179 -12.88
+psi_Waimanu Campsite                         1.278   0.117  10.89
+psi_Wiliwili                                -0.080   0.148  -0.54
+psi_Wiliwilinui Ridge Trail                 -2.727   0.192 -14.20
+gamma_Ainapo Cabin                           2.227   0.513   4.34
+gamma_Hipalau                                2.113   0.488   4.33
+gamma_Kaluahaulu                             2.153   0.710   3.03
+gamma_Kamananui Trail                        2.071   0.662   3.13
+gamma_Kaunala Trail                          2.151   0.872   2.47
+gamma_Kawaikoi                               2.076   0.327   6.36
+gamma_Keanakolu Ranger & Bunkhouse Cabins    1.974   0.201   9.82
+gamma_Kuaokala Trail                         2.337   0.268   8.73
+gamma_Kulanaahane Trail                      4.370   3.698   1.18
+gamma_Kuliouou Trail                         2.033   0.524   3.88
+gamma_Lonomea                                2.365   0.473   4.99
+gamma_Manana Trail                           2.246   0.718   3.13
+gamma_Peacock Flats Campsite                 2.224   0.141  15.77
+gamma_Sugi Grove                             2.040   0.320   6.38
+gamma_Waialae Cabin Campsite                 2.077   0.871   2.38
+gamma_Waikoali                               2.364   0.602   3.93
+gamma_Waikolu                                2.521   1.328   1.90
+gamma_Waimano Trail                          2.260   0.895   2.52
+gamma_Waimanu Campsite                       2.119   0.168  12.61
+gamma_Wiliwili                               1.987   0.460   4.32
+gamma_Wiliwilinui Ridge Trail                2.509   1.327   1.89
+alpha_num                                    0.763   0.013  59.91
+scale                                        0.503   0.014  34.96
+Note: All non-numeraire alpha's fixed to 0. 
+Note: Estimation accounts for truncated form of data. 
+
+# A tibble: 22 × 5
+   policy       mean std.dev `ci_lo2.5%` `ci_hi97.5%`
+   <chr>       <dbl>   <dbl>       <dbl>        <dbl>
+ 1 policy1   -0.995   0.172      -1.32       -0.734  
+ 2 policy10  -0.280   0.0580     -0.417      -0.210  
+ 3 policy11  -2.79    0.431      -3.59       -2.16   
+ 4 policy12  -0.140   0.0370     -0.216      -0.0903 
+ 5 policy13 -15.0     0.685     -16.3       -14.0    
+ 6 policy14  -2.22    0.304      -2.70       -1.69   
+ 7 policy15  -0.570   0.248      -1.16       -0.290  
+ 8 policy16  -1.14    0.184      -1.55       -0.855  
+ 9 policy17  -0.590   0.294      -1.23       -0.242  
+10 policy18  -0.255   0.0721     -0.386      -0.152  
+11 policy19 -31.8     2.24      -36.2       -27.8    
+12 policy2   -1.85    0.348      -2.40       -1.32   
+13 policy20  -1.84    0.460      -2.94       -1.24   
+14 policy21  -0.0644  0.0200     -0.0991     -0.0327 
+15 policy22 -72.5     2.73      -76.4       -67.4    
+16 policy3   -1.31    0.402      -2.26       -0.733  
+17 policy4   -0.0962  0.0227     -0.140      -0.0591 
+18 policy5   -0.138   0.0387     -0.218      -0.0865 
+19 policy6   -2.84    0.454      -3.75       -2.21   
+20 policy7   -4.47    0.362      -5.35       -4.00   
+21 policy8   -4.09    0.277      -4.60       -3.61   
+22 policy9   -0.0351  0.0187     -0.0755     -0.00803
+                              parkname  VisitCount    price
+1                         Ainapo Cabin 0.035608309 599.9651
+2                              Hipalau 0.011869436 583.0836
+3                           Kaluahaulu 0.010385757 583.0728
+4                      Kamananui Trail 0.002967359 278.2628
+5                        Kaunala Trail 0.006676558 337.4979
+6                             Kawaikoi 0.051186944 608.7660
+7  Keanakolu Ranger & Bunkhouse Cabins 0.123145401 596.2601
+8                       Kuaokala Trail 0.106083086 352.1809
+9                    Kulanaahane Trail 0.005934718 277.9610
+10                      Kuliouou Trail 0.014094955 298.8161
+11                             Lonomea 0.033382789 576.9785
+12                        Manana Trail 0.010385757 285.4311
+13              Peacock Flats Campsite 0.415430267 370.2970
+14                          Sugi Grove 0.046735905 595.1681
+15              Waialae Cabin Campsite 0.007418398 552.8670
+16                            Waikoali 0.021513353 597.5172
+17                             Waikolu 0.004451039 498.4304
+18                       Waimano Trail 0.002967359 294.6829
+19                    Waimanu Campsite 0.322700297 568.1238
+20                            Wiliwili 0.017804154 569.9355
+21             Wiliwilinui Ridge Trail 0.002225519 294.7963
+# A tibble: 1 × 1
+  total_visits
+         <dbl>
+1          560
+function (formula = NULL, data, weights = NULL, model = c("alpha", 
+    "gamma", "hybrid", "hybrid0", "kt_ee"), n_classes = 1, fixed_scale1 = 0, 
+    single_scale = 0, trunc_data = 0, psi_ascs = NULL, gamma_ascs = 1, 
+    seed = "123", max_iterations = 2000, jacobian_analytical_grad = 1, 
+    initial.parameters = "random", hessian = TRUE, algorithm = c("MLE", 
+        "Bayes"), flat_priors = NULL, print_iterations = TRUE, 
+    prior_psi_sd = 10, prior_gamma_sd = 10, prior_phi_sd = 10, 
+    prior_alpha_shape = 1, prior_scale_sd = 1, prior_delta_sd = 10, 
+    gamma_nonrandom = 0, alpha_nonrandom = 0, std_errors = "deltamethod", 
+    n_draws = 50, keep_loglik = 0, random_parameters = "fixed", 
+    show_stan_warnings = TRUE, n_iterations = 200, n_chains = 4, 
+    n_cores = 4, max_tree_depth = 10, adapt_delta = 0.8, lkj_shape_prior = 4, 
+    ...) 
+NULL
+Chain 1: Initial log joint probability = -26026.5
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1: Error evaluating model log probability: Non-finite gradient.
+
+Chain 1: Error evaluating model log probability: Non-finite function evaluation.
+Error evaluating model log probability: Non-finite function evaluation.
+
+Chain 1:       19      -4670.16      0.519906       248.591      0.2916           1       31   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:       39      -4536.29      0.162955       71.7713      0.3087           1       52   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:       59      -4517.66      0.171541       49.3309        0.28        0.28       75   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:       79      -4442.48      0.226628       71.8611      0.8372      0.8372      100   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:       99      -4393.45      0.184505       34.5947           1           1      120   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      119      -4389.19     0.0828171       9.23882           1           1      144   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      139      -4388.66     0.0118538       2.39504           1           1      165   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      159      -4388.58    0.00431261       1.15154           1           1      186   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      179      -4388.57   0.000295839      0.532544      0.3257      0.3257      208   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      199      -4388.57   0.000359667      0.110556       0.872       0.872      228   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      205      -4388.57   0.000153091     0.0977653      0.5105      0.5105      235   
+Chain 1: Optimization terminated normally: 
+Chain 1:   Convergence detected: relative gradient magnitude is below tolerance
+Model run using rmdcev for R, version 1.2.6 
+Estimation method                : MLE
+Model type                       : gamma specification
+Number of classes                : 1
+Number of individuals            : 1348
+Number of non-numeraire alts     : 21
+Estimated parameters             : 43
+LL                               : -4388.57
+AIC                              : 8863.13
+BIC                              : 9087.01
+Standard errors calculated using : 100 MVN draws
+Exit of MLE                      : successful convergence
+Time taken (hh:mm:ss)            : 00:00:1.52
+
+Average consumption of non-numeraire alternatives:
+                       Ainapo Cabin                             Hipalau 
+                               0.04                                0.01 
+                         Kaluahaulu                     Kamananui Trail 
+                               0.01                                0.00 
+                      Kaunala Trail                            Kawaikoi 
+                               0.01                                0.05 
+Keanakolu Ranger & Bunkhouse Cabins                      Kuaokala Trail 
+                               0.12                                0.11 
+                  Kulanaahane Trail                      Kuliouou Trail 
+                               0.01                                0.01 
+                            Lonomea                        Manana Trail 
+                               0.03                                0.01 
+             Peacock Flats Campsite                          Sugi Grove 
+                               0.42                                0.05 
+             Waialae Cabin Campsite                            Waikoali 
+                               0.01                                0.02 
+                            Waikolu                       Waimano Trail 
+                               0.00                                0.00 
+                   Waimanu Campsite                            Wiliwili 
+                               0.32                                0.02 
+            Wiliwilinui Ridge Trail 
+                               0.00 
+
+Parameter estimates --------------------------------  
+                                          Estimate Std.err z.stat
+psi_Hipalau                                 -0.666   0.149  -4.45
+psi_Kaluahaulu                              -0.727   0.144  -5.06
+psi_Kamananui Trail                         -3.320   0.229 -14.47
+psi_Kaunala Trail                           -2.186   0.169 -12.95
+psi_Kawaikoi                                 0.247   0.108   2.29
+psi_Keanakolu Ranger & Bunkhouse Cabins      0.679   0.087   7.84
+psi_Kuaokala Trail                          -0.574   0.102  -5.64
+psi_Kulanaahane Trail                       -3.093   0.199 -15.51
+psi_Kuliouou Trail                          -2.553   0.136 -18.75
+psi_Lonomea                                 -0.204   0.102  -2.00
+psi_Manana Trail                            -2.503   0.157 -15.96
+psi_Peacock Flats Campsite                   0.178   0.098   1.83
+psi_Sugi Grove                               0.078   0.109   0.72
+psi_Waialae Cabin Campsite                  -1.198   0.172  -6.95
+psi_Waikoali                                -0.266   0.131  -2.02
+psi_Waikolu                                 -0.930   0.202  -4.60
+psi_Waimano Trail                           -2.964   0.224 -13.23
+psi_Waimanu Campsite                         1.024   0.085  12.02
+psi_Wiliwili                                -0.491   0.124  -3.97
+psi_Wiliwilinui Ridge Trail                 -3.476   0.261 -13.33
+gamma_Ainapo Cabin                           2.379   0.464   5.12
+gamma_Hipalau                                2.289   0.763   3.00
+gamma_Kaluahaulu                             2.615   1.021   2.56
+gamma_Kamananui Trail                        2.647   1.933   1.37
+gamma_Kaunala Trail                          2.475   1.028   2.41
+gamma_Kawaikoi                               2.267   0.349   6.51
+gamma_Keanakolu Ranger & Bunkhouse Cabins    2.329   0.277   8.42
+gamma_Kuaokala Trail                         2.492   0.339   7.35
+gamma_Kulanaahane Trail                      2.993   1.425   2.10
+gamma_Kuliouou Trail                         2.236   0.590   3.79
+gamma_Lonomea                                2.395   0.442   5.42
+gamma_Manana Trail                           2.520   0.900   2.80
+gamma_Peacock Flats Campsite                 2.597   0.175  14.83
+gamma_Sugi Grove                             2.557   0.434   5.89
+gamma_Waialae Cabin Campsite                 3.253   1.446   2.25
+gamma_Waikoali                               2.583   0.573   4.51
+gamma_Waikolu                                2.328   0.914   2.55
+gamma_Waimano Trail                          2.477   1.527   1.62
+gamma_Waimanu Campsite                       2.299   0.167  13.78
+gamma_Wiliwili                               2.577   0.770   3.35
+gamma_Wiliwilinui Ridge Trail                2.832   2.012   1.41
+alpha_num                                    0.733   0.011  67.49
+scale                                        0.456   0.015  30.67
+Note: All non-numeraire alpha's fixed to 0. 
+Note: Estimation accounts for truncated form of data. 
+
+# A tibble: 22 × 5
+   policy        mean std.dev `ci_lo2.5%` `ci_hi97.5%`
+   <chr>        <dbl>   <dbl>       <dbl>        <dbl>
+ 1 policy1   -1.66    0.336       -2.35       -1.16   
+ 2 policy10  -0.284   0.0595      -0.385      -0.205  
+ 3 policy11  -1.80    0.293       -2.36       -1.31   
+ 4 policy12  -0.0871  0.0243      -0.132      -0.0517 
+ 5 policy13 -14.7     0.917      -16.6       -13.5    
+ 6 policy14  -2.06    0.340       -2.63       -1.48   
+ 7 policy15  -1.23    0.502       -2.42       -0.656  
+ 8 policy16  -0.765   0.141       -1.04       -0.581  
+ 9 policy17  -0.402   0.124       -0.644      -0.227  
+10 policy18  -0.0313  0.0126      -0.0576     -0.0132 
+11 policy19 -26.1     1.53       -28.6       -23.5    
+12 policy2   -1.27    0.281       -1.86       -0.807  
+13 policy20  -1.75    0.433       -2.52       -1.07   
+14 policy21  -0.00977 0.00495     -0.0193     -0.00306
+15 policy22 -64.2     2.69       -69.2       -60.3    
+16 policy3   -1.09    0.272       -1.61       -0.685  
+17 policy4   -0.0323  0.0205      -0.0814     -0.00853
+18 policy5   -0.135   0.0541      -0.232      -0.0687 
+19 policy6   -2.32    0.308       -2.80       -1.69   
+20 policy7   -5.61    0.396       -6.47       -4.96   
+21 policy8   -2.83    0.362       -3.56       -2.24   
+22 policy9   -0.0504  0.0192      -0.0891     -0.0205 
+                              parkname  VisitCount    price
+1                         Ainapo Cabin 0.013904983 706.3510
+2                              Hipalau 0.030127462 458.0692
+3                           Kaluahaulu 0.030127462 458.0631
+4                      Kamananui Trail 0.004634994 248.1184
+5                        Kaunala Trail 0.009269988 307.7273
+6                             Kawaikoi 0.106604867 485.0177
+7  Keanakolu Ranger & Bunkhouse Cabins 0.023174971 707.8605
+8                       Kuaokala Trail 0.128621089 322.5180
+9                    Kulanaahane Trail 0.006952491 247.8098
+10                      Kuliouou Trail 0.020857474 270.4721
+11                             Lonomea 0.095017381 453.1062
+12                  Maakua Ridge Trail 0.008111240 299.1574
+13                        Manana Trail 0.018539977 254.8665
+14              Peacock Flats Campsite 0.387022016 341.0324
+15                          Sugi Grove 0.126303592 471.2608
+16              Waialae Cabin Campsite 0.013904983 428.3239
+17                            Waikoali 0.088064890 473.6581
+18                             Waikolu 0.016222480 491.2589
+19                       Waimano Trail 0.005793743 264.6016
+20                    Waimanu Campsite 0.083429896 677.4456
+21                            Wiliwili 0.030127462 447.3693
+22             Wiliwilinui Ridge Trail 0.004634994 266.1621
+# A tibble: 1 × 1
+  total_visits
+         <dbl>
+1          334
+function (formula = NULL, data, weights = NULL, model = c("alpha", 
+    "gamma", "hybrid", "hybrid0", "kt_ee"), n_classes = 1, fixed_scale1 = 0, 
+    single_scale = 0, trunc_data = 0, psi_ascs = NULL, gamma_ascs = 1, 
+    seed = "123", max_iterations = 2000, jacobian_analytical_grad = 1, 
+    initial.parameters = "random", hessian = TRUE, algorithm = c("MLE", 
+        "Bayes"), flat_priors = NULL, print_iterations = TRUE, 
+    prior_psi_sd = 10, prior_gamma_sd = 10, prior_phi_sd = 10, 
+    prior_alpha_shape = 1, prior_scale_sd = 1, prior_delta_sd = 10, 
+    gamma_nonrandom = 0, alpha_nonrandom = 0, std_errors = "deltamethod", 
+    n_draws = 50, keep_loglik = 0, random_parameters = "fixed", 
+    show_stan_warnings = TRUE, n_iterations = 200, n_chains = 4, 
+    n_cores = 4, max_tree_depth = 10, adapt_delta = 0.8, lkj_shape_prior = 4, 
+    ...) 
+NULL
+Chain 1: Initial log joint probability = -21122
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1: Error evaluating model log probability: Non-finite gradient.
+
+Chain 1: Error evaluating model log probability: Non-finite function evaluation.
+
+Chain 1:       19      -3353.88      0.482031       49.7998           1           1       29   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:       39      -3290.27      0.259991       50.8535      0.5373      0.5373       53   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:       59      -3268.61     0.0400579       15.2414           1           1       77   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:       79      -3252.75      0.389021       31.4823      0.9945      0.9945      101   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:       99      -3243.01     0.0583367       4.82119           1           1      122   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      119      -3242.43     0.0086339         2.769           1           1      143   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      139      -3242.32     0.0215734       1.33526           1           1      165   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      159       -3242.3    0.00490483      0.797142           1           1      186   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      179       -3242.3   0.000251164      0.220954      0.2793      0.2793      208   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      194       -3242.3   0.000461982     0.0457785      0.6036      0.6036      225   
+Chain 1: Optimization terminated normally: 
+Chain 1:   Convergence detected: relative gradient magnitude is below tolerance
+Model run using rmdcev for R, version 1.2.6 
+Estimation method                : MLE
+Model type                       : gamma specification
+Number of classes                : 1
+Number of individuals            : 863
+Number of non-numeraire alts     : 22
+Estimated parameters             : 45
+LL                               : -3242.3
+AIC                              : 6574.59
+BIC                              : 6788.81
+Standard errors calculated using : 100 MVN draws
+Exit of MLE                      : successful convergence
+Time taken (hh:mm:ss)            : 00:00:1
+
+Average consumption of non-numeraire alternatives:
+                       Ainapo Cabin                             Hipalau 
+                               0.01                                0.03 
+                         Kaluahaulu                     Kamananui Trail 
+                               0.03                                0.00 
+                      Kaunala Trail                            Kawaikoi 
+                               0.01                                0.11 
+Keanakolu Ranger & Bunkhouse Cabins                      Kuaokala Trail 
+                               0.02                                0.13 
+                  Kulanaahane Trail                      Kuliouou Trail 
+                               0.01                                0.02 
+                            Lonomea                  Maakua Ridge Trail 
+                               0.10                                0.01 
+                       Manana Trail              Peacock Flats Campsite 
+                               0.02                                0.39 
+                         Sugi Grove              Waialae Cabin Campsite 
+                               0.13                                0.01 
+                           Waikoali                             Waikolu 
+                               0.09                                0.02 
+                      Waimano Trail                    Waimanu Campsite 
+                               0.01                                0.08 
+                           Wiliwili             Wiliwilinui Ridge Trail 
+                               0.03                                0.00 
+
+Parameter estimates --------------------------------  
+                                          Estimate Std.err z.stat
+psi_Hipalau                                  0.029   0.186   0.16
+psi_Kaluahaulu                               0.032   0.187   0.17
+psi_Kamananui Trail                         -2.774   0.330  -8.42
+psi_Kaunala Trail                           -1.582   0.249  -6.34
+psi_Kawaikoi                                 0.874   0.170   5.14
+psi_Keanakolu Ranger & Bunkhouse Cabins      0.312   0.189   1.66
+psi_Kuaokala Trail                           0.011   0.182   0.06
+psi_Kulanaahane Trail                       -2.515   0.283  -8.88
+psi_Kuliouou Trail                          -1.812   0.211  -8.59
+psi_Lonomea                                  0.507   0.176   2.89
+psi_Maakua Ridge Trail                      -1.713   0.276  -6.20
+psi_Manana Trail                            -1.730   0.185  -9.36
+psi_Peacock Flats Campsite                   0.677   0.182   3.73
+psi_Sugi Grove                               0.831   0.170   4.88
+psi_Waialae Cabin Campsite                  -0.579   0.212  -2.74
+psi_Waikoali                                 0.659   0.167   3.94
+psi_Waikolu                                  0.191   0.194   0.99
+psi_Waimano Trail                           -2.222   0.264  -8.40
+psi_Waimanu Campsite                         0.751   0.163   4.61
+psi_Wiliwili                                -0.003   0.186  -0.01
+psi_Wiliwilinui Ridge Trail                 -2.604   0.297  -8.75
+gamma_Ainapo Cabin                           2.613   1.062   2.46
+gamma_Hipalau                                2.150   0.480   4.48
+gamma_Kaluahaulu                             2.245   0.570   3.94
+gamma_Kamananui Trail                        2.990   2.640   1.13
+gamma_Kaunala Trail                          2.415   1.225   1.97
+gamma_Kawaikoi                               2.244   0.279   8.05
+gamma_Keanakolu Ranger & Bunkhouse Cabins    2.115   0.625   3.38
+gamma_Kuaokala Trail                         2.381   0.263   9.05
+gamma_Kulanaahane Trail                      2.845   1.459   1.95
+gamma_Kuliouou Trail                         2.190   0.577   3.80
+gamma_Lonomea                                2.422   0.369   6.56
+gamma_Maakua Ridge Trail                     2.594   1.498   1.73
+gamma_Manana Trail                           2.276   0.744   3.06
+gamma_Peacock Flats Campsite                 2.423   0.197  12.32
+gamma_Sugi Grove                             2.302   0.265   8.70
+gamma_Waialae Cabin Campsite                 2.344   0.831   2.82
+gamma_Waikoali                               2.343   0.376   6.23
+gamma_Waikolu                                2.234   0.702   3.18
+gamma_Waimano Trail                          2.575   1.384   1.86
+gamma_Waimanu Campsite                       2.245   0.300   7.48
+gamma_Wiliwili                               2.197   0.543   4.05
+gamma_Wiliwilinui Ridge Trail                2.722   2.033   1.34
+alpha_num                                    0.770   0.017  45.69
+scale                                        0.467   0.017  28.10
+Note: All non-numeraire alpha's fixed to 0. 
+Note: Estimation accounts for truncated form of data. 
+
+# A tibble: 23 × 5
+   policy       mean std.dev `ci_lo2.5%` `ci_hi97.5%`
+   <chr>       <dbl>   <dbl>       <dbl>        <dbl>
+ 1 policy1   -0.669   0.224      -1.07       -0.303  
+ 2 policy10  -0.189   0.0451     -0.290      -0.120  
+ 3 policy11  -6.65    0.798      -7.97       -5.53   
+ 4 policy12  -0.136   0.0567     -0.253      -0.0536 
+ 5 policy13  -0.170   0.0443     -0.247      -0.0995 
+ 6 policy14 -13.7     1.08      -15.8       -12.1    
+ 7 policy15  -6.48    0.614      -7.52       -5.57   
+ 8 policy16  -0.759   0.233      -1.22       -0.480  
+ 9 policy17  -3.36    0.434      -4.22       -2.63   
+10 policy18  -1.75    0.454      -2.74       -1.17   
+11 policy19  -0.0658  0.0329     -0.138      -0.0215 
+12 policy2   -1.74    0.351      -2.35       -1.20   
+13 policy20  -6.06    0.560      -7.12       -5.13   
+14 policy21  -2.52    0.424      -3.27       -1.77   
+15 policy22  -0.0602  0.0283     -0.112      -0.0221 
+16 policy23 -56.7     2.46      -60.6       -51.9    
+17 policy3   -2.86    0.670      -4.27       -1.99   
+18 policy4   -0.0294  0.0135     -0.0545     -0.00951
+19 policy5   -0.223   0.0956     -0.436      -0.111  
+20 policy6   -4.91    0.448      -5.78       -4.09   
+21 policy7   -0.805   0.186      -1.11       -0.525  
+22 policy8   -3.37    0.345      -4.17       -2.88   
+23 policy9   -0.0803  0.0329     -0.146      -0.0343 
+                              parkname  VisitCount    price
+1                         Ainapo Cabin 0.014058680 671.1955
+2                              Hipalau 0.017114914 501.1643
+3                           Kaluahaulu 0.022004890 501.1550
+4                      Kamananui Trail 0.008557457 191.2961
+5                        Kaunala Trail 0.020171149 249.7713
+6                             Kawaikoi 0.075794621 527.3579
+7  Keanakolu Ranger & Bunkhouse Cabins 0.013447433 673.8144
+8                       Kuaokala Trail 0.209046455 265.6317
+9                    Kulanaahane Trail 0.010391198 190.9909
+10                      Kuliouou Trail 0.047066015 210.3156
+11                             Lonomea 0.048288509 495.4123
+12                  Maakua Ridge Trail 0.012224939 237.7738
+13                        Manana Trail 0.033007335 199.1835
+14              Peacock Flats Campsite 0.473716381 284.0214
+15                          Sugi Grove 0.062347188 513.6569
+16              Waialae Cabin Campsite 0.010391198 470.8956
+17                            Waikoali 0.053178484 516.0304
+18                             Waikolu 0.004889976 488.1569
+19                       Waimano Trail 0.017114914 206.7156
+20                    Waimanu Campsite 0.154034230 643.0547
+21                            Wiliwili 0.025061125 488.7729
+22             Wiliwilinui Ridge Trail 0.007946210 206.5226
+# A tibble: 1 × 1
+  total_visits
+         <dbl>
+1          775
+function (formula = NULL, data, weights = NULL, model = c("alpha", 
+    "gamma", "hybrid", "hybrid0", "kt_ee"), n_classes = 1, fixed_scale1 = 0, 
+    single_scale = 0, trunc_data = 0, psi_ascs = NULL, gamma_ascs = 1, 
+    seed = "123", max_iterations = 2000, jacobian_analytical_grad = 1, 
+    initial.parameters = "random", hessian = TRUE, algorithm = c("MLE", 
+        "Bayes"), flat_priors = NULL, print_iterations = TRUE, 
+    prior_psi_sd = 10, prior_gamma_sd = 10, prior_phi_sd = 10, 
+    prior_alpha_shape = 1, prior_scale_sd = 1, prior_delta_sd = 10, 
+    gamma_nonrandom = 0, alpha_nonrandom = 0, std_errors = "deltamethod", 
+    n_draws = 50, keep_loglik = 0, random_parameters = "fixed", 
+    show_stan_warnings = TRUE, n_iterations = 200, n_chains = 4, 
+    n_cores = 4, max_tree_depth = 10, adapt_delta = 0.8, lkj_shape_prior = 4, 
+    ...) 
+NULL
+Chain 1: Initial log joint probability = -41975.7
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1: Error evaluating model log probability: Non-finite gradient.
+
+Chain 1: Error evaluating model log probability: Non-finite gradient.
+Error evaluating model log probability: Non-finite function evaluation.
+Error evaluating model log probability: Non-finite function evaluation.
+
+Chain 1:       19      -6550.76      0.406942       83.0068           1           1       33   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:       39      -6441.06       0.36498       144.982           1           1       55   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:       59      -6374.13      0.150057       34.5178       0.333           1       81   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:       79      -6352.55      0.155192       68.2878      0.1954      0.1954      107   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:       99      -6331.47      0.173527       30.3085           1           1      129   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      119      -6327.74     0.0275365       5.28569           1           1      154   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      139      -6327.52     0.0116764       4.08814           1           1      176   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      159      -6327.46    0.00481819       2.30194           1           1      200   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      179      -6327.44     0.0031531       1.13937      0.2913           1      224   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      199      -6327.44   0.000430966       0.19597           1           1      244   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      205      -6327.44   0.000237639      0.256723       0.832       0.832      251   
+Chain 1: Optimization terminated normally: 
+Chain 1:   Convergence detected: relative gradient magnitude is below tolerance
+Model run using rmdcev for R, version 1.2.6 
+Estimation method                : MLE
+Model type                       : gamma specification
+Number of classes                : 1
+Number of individuals            : 1636
+Number of non-numeraire alts     : 22
+Estimated parameters             : 45
+LL                               : -6327.44
+AIC                              : 12744.88
+BIC                              : 12987.88
+Standard errors calculated using : 100 MVN draws
+Exit of MLE                      : successful convergence
+Time taken (hh:mm:ss)            : 00:00:2.1
+
+Average consumption of non-numeraire alternatives:
+                       Ainapo Cabin                             Hipalau 
+                               0.01                                0.02 
+                         Kaluahaulu                     Kamananui Trail 
+                               0.02                                0.01 
+                      Kaunala Trail                            Kawaikoi 
+                               0.02                                0.08 
+Keanakolu Ranger & Bunkhouse Cabins                      Kuaokala Trail 
+                               0.01                                0.21 
+                  Kulanaahane Trail                      Kuliouou Trail 
+                               0.01                                0.05 
+                            Lonomea                  Maakua Ridge Trail 
+                               0.05                                0.01 
+                       Manana Trail              Peacock Flats Campsite 
+                               0.03                                0.47 
+                         Sugi Grove              Waialae Cabin Campsite 
+                               0.06                                0.01 
+                           Waikoali                             Waikolu 
+                               0.05                                0.00 
+                      Waimano Trail                    Waimanu Campsite 
+                               0.02                                0.15 
+                           Wiliwili             Wiliwilinui Ridge Trail 
+                               0.03                                0.01 
+
+Parameter estimates --------------------------------  
+                                          Estimate Std.err z.stat
+psi_Hipalau                                 -0.222   0.159  -1.40
+psi_Kaluahaulu                              -0.088   0.150  -0.59
+psi_Kamananui Trail                         -2.389   0.196 -12.22
+psi_Kaunala Trail                           -1.161   0.146  -7.98
+psi_Kawaikoi                                 0.711   0.144   4.95
+psi_Keanakolu Ranger & Bunkhouse Cabins      0.132   0.157   0.84
+psi_Kuaokala Trail                           0.294   0.130   2.27
+psi_Kulanaahane Trail                       -2.324   0.180 -12.88
+psi_Kuliouou Trail                          -1.413   0.140 -10.06
+psi_Lonomea                                  0.271   0.155   1.75
+psi_Maakua Ridge Trail                      -1.602   0.172  -9.31
+psi_Manana Trail                            -1.430   0.148  -9.64
+psi_Peacock Flats Campsite                   0.891   0.126   7.06
+psi_Sugi Grove                               0.583   0.138   4.23
+psi_Waialae Cabin Campsite                  -0.784   0.190  -4.12
+psi_Waikoali                                 0.495   0.143   3.46
+psi_Waikolu                                 -0.493   0.248  -1.99
+psi_Waimano Trail                           -1.699   0.168 -10.12
+psi_Waimanu Campsite                         1.214   0.128   9.50
+psi_Wiliwili                                -0.027   0.147  -0.19
+psi_Wiliwilinui Ridge Trail                 -2.353   0.172 -13.68
+gamma_Ainapo Cabin                           2.405   0.675   3.56
+gamma_Hipalau                                2.144   0.470   4.56
+gamma_Kaluahaulu                             2.050   0.460   4.46
+gamma_Kamananui Trail                        2.119   0.772   2.74
+gamma_Kaunala Trail                          2.093   0.505   4.15
+gamma_Kawaikoi                               2.329   0.244   9.56
+gamma_Keanakolu Ranger & Bunkhouse Cabins    2.035   0.483   4.21
+gamma_Kuaokala Trail                         2.316   0.178  13.00
+gamma_Kulanaahane Trail                      2.295   0.727   3.16
+gamma_Kuliouou Trail                         2.141   0.320   6.68
+gamma_Lonomea                                2.191   0.311   7.05
+gamma_Maakua Ridge Trail                     2.219   0.663   3.35
+gamma_Manana Trail                           2.169   0.425   5.10
+gamma_Peacock Flats Campsite                 2.254   0.123  18.37
+gamma_Sugi Grove                             2.015   0.245   8.22
+gamma_Waialae Cabin Campsite                 2.340   0.745   3.14
+gamma_Waikoali                               2.196   0.311   7.07
+gamma_Waikolu                                2.545   1.084   2.35
+gamma_Waimano Trail                          2.293   0.494   4.64
+gamma_Waimanu Campsite                       2.122   0.191  11.11
+gamma_Wiliwili                               2.211   0.429   5.16
+gamma_Wiliwilinui Ridge Trail                2.033   0.707   2.88
+alpha_num                                    0.764   0.012  61.56
+scale                                        0.497   0.013  39.70
+Note: All non-numeraire alpha's fixed to 0. 
+Note: Estimation accounts for truncated form of data. 
+
+# A tibble: 23 × 5
+   policy       mean std.dev `ci_lo2.5%` `ci_hi97.5%`
+   <chr>       <dbl>   <dbl>       <dbl>        <dbl>
+ 1 policy1   -1.20    0.255       -1.71       -0.794 
+ 2 policy10  -0.792   0.121       -1.01       -0.609 
+ 3 policy11  -2.01    0.276       -2.69       -1.68  
+ 4 policy12  -0.217   0.0538      -0.307      -0.136 
+ 5 policy13  -0.377   0.0553      -0.484      -0.300 
+ 6 policy14 -20.4     0.864      -22.1       -18.9   
+ 7 policy15  -2.73    0.339       -3.41       -2.15  
+ 8 policy16  -0.544   0.134       -0.783      -0.312 
+ 9 policy17  -2.22    0.251       -2.68       -1.83  
+10 policy18  -0.380   0.166       -0.816      -0.209 
+11 policy19  -0.210   0.0330      -0.279      -0.150 
+12 policy2   -1.13    0.235       -1.55       -0.770 
+13 policy20 -12.7     1.02       -14.6       -11.0   
+14 policy21  -1.72    0.334       -2.47       -1.27  
+15 policy22  -0.194   0.0587      -0.312      -0.105 
+16 policy23 -61.4     2.26       -66.6       -58.5   
+17 policy3   -1.53    0.318       -2.23       -1.04  
+18 policy4   -0.205   0.0731      -0.365      -0.0978
+19 policy5   -0.481   0.0848      -0.623      -0.359 
+20 policy6   -3.63    0.335       -4.40       -3.18  
+21 policy7   -0.752   0.140       -1.03       -0.532 
+22 policy8   -7.80    0.544       -8.77       -6.91  
+23 policy9   -0.0837  0.0243      -0.134      -0.0478
+                              parkname  VisitCount    price
+1                         Ainapo Cabin 0.028611305 674.2659
+2                              Hipalau 0.021632938 491.8888
+3                           Kaluahaulu 0.019539428 491.8801
+4                      Kamananui Trail 0.005582694 199.3299
+5                        Kaunala Trail 0.017445918 257.4012
+6                             Kawaikoi 0.103977669 518.4963
+7  Keanakolu Ranger & Bunkhouse Cabins 0.030006978 677.8584
+8                       Kuaokala Trail 0.173761340 273.5774
+9                    Kulanaahane Trail 0.006978367 199.0207
+10                      Kuliouou Trail 0.039078856 219.3722
+11                             Lonomea 0.076064201 486.2232
+12                  Maakua Ridge Trail 0.014654571 247.5289
+13                        Manana Trail 0.035589672 206.5870
+14              Peacock Flats Campsite 0.495464061 292.1970
+15                          Sugi Grove 0.069783671 504.6512
+16              Waialae Cabin Campsite 0.014654571 461.5389
+17                            Waikoali 0.057222610 507.0553
+18                             Waikolu 0.004884857 507.2187
+19                       Waimano Trail 0.011863224 214.5156
+20                    Waimanu Campsite 0.069085834 646.6320
+21                            Wiliwili 0.030006978 479.6818
+22             Wiliwilinui Ridge Trail 0.010467551 215.4698
+# A tibble: 1 × 1
+  total_visits
+         <dbl>
+1          710
+function (formula = NULL, data, weights = NULL, model = c("alpha", 
+    "gamma", "hybrid", "hybrid0", "kt_ee"), n_classes = 1, fixed_scale1 = 0, 
+    single_scale = 0, trunc_data = 0, psi_ascs = NULL, gamma_ascs = 1, 
+    seed = "123", max_iterations = 2000, jacobian_analytical_grad = 1, 
+    initial.parameters = "random", hessian = TRUE, algorithm = c("MLE", 
+        "Bayes"), flat_priors = NULL, print_iterations = TRUE, 
+    prior_psi_sd = 10, prior_gamma_sd = 10, prior_phi_sd = 10, 
+    prior_alpha_shape = 1, prior_scale_sd = 1, prior_delta_sd = 10, 
+    gamma_nonrandom = 0, alpha_nonrandom = 0, std_errors = "deltamethod", 
+    n_draws = 50, keep_loglik = 0, random_parameters = "fixed", 
+    show_stan_warnings = TRUE, n_iterations = 200, n_chains = 4, 
+    n_cores = 4, max_tree_depth = 10, adapt_delta = 0.8, lkj_shape_prior = 4, 
+    ...) 
+NULL
+Chain 1: Initial log joint probability = -36459.2
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1: Error evaluating model log probability: Non-finite gradient.
+
+Chain 1: Error evaluating model log probability: Non-finite function evaluation.
+Error evaluating model log probability: Non-finite function evaluation.
+
+Chain 1:       19      -5863.83      0.292754       120.443      0.9698      0.9698       30   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:       39      -5763.74      0.836374        70.806           1           1       51   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:       59      -5707.71       0.35852       48.0653           1           1       75   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:       79      -5645.42      0.198858       50.4075      0.3129           1      101   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:       99      -5638.76    0.00845885       6.23932      0.5891     0.05891      125   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      119      -5638.49    0.00813156       1.87405           1           1      146   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      139      -5638.48    0.00232245       1.34189      0.8129      0.8129      166   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      155      -5638.48   0.000439033      0.127296           1           1      183   
+Chain 1: Optimization terminated normally: 
+Chain 1:   Convergence detected: relative gradient magnitude is below tolerance
+Model run using rmdcev for R, version 1.2.6 
+Estimation method                : MLE
+Model type                       : gamma specification
+Number of classes                : 1
+Number of individuals            : 1433
+Number of non-numeraire alts     : 22
+Estimated parameters             : 45
+LL                               : -5638.48
+AIC                              : 11366.95
+BIC                              : 11603.99
+Standard errors calculated using : 100 MVN draws
+Exit of MLE                      : successful convergence
+Time taken (hh:mm:ss)            : 00:00:1.44
+
+Average consumption of non-numeraire alternatives:
+                       Ainapo Cabin                             Hipalau 
+                               0.03                                0.02 
+                         Kaluahaulu                     Kamananui Trail 
+                               0.02                                0.01 
+                      Kaunala Trail                            Kawaikoi 
+                               0.02                                0.10 
+Keanakolu Ranger & Bunkhouse Cabins                      Kuaokala Trail 
+                               0.03                                0.17 
+                  Kulanaahane Trail                      Kuliouou Trail 
+                               0.01                                0.04 
+                            Lonomea                  Maakua Ridge Trail 
+                               0.08                                0.01 
+                       Manana Trail              Peacock Flats Campsite 
+                               0.04                                0.50 
+                         Sugi Grove              Waialae Cabin Campsite 
+                               0.07                                0.01 
+                           Waikoali                             Waikolu 
+                               0.06                                0.00 
+                      Waimano Trail                    Waimanu Campsite 
+                               0.01                                0.07 
+                           Wiliwili             Wiliwilinui Ridge Trail 
+                               0.03                                0.01 
+
+Parameter estimates --------------------------------  
+                                          Estimate Std.err z.stat
+psi_Hipalau                                 -0.214   0.146  -1.46
+psi_Kaluahaulu                              -0.257   0.139  -1.86
+psi_Kamananui Trail                         -2.729   0.193 -14.17
+psi_Kaunala Trail                           -1.496   0.135 -11.09
+psi_Kawaikoi                                 0.812   0.116   6.99
+psi_Keanakolu Ranger & Bunkhouse Cabins      0.205   0.135   1.51
+psi_Kuaokala Trail                           0.035   0.117   0.30
+psi_Kulanaahane Trail                       -2.639   0.194 -13.57
+psi_Kuliouou Trail                          -1.754   0.134 -13.10
+psi_Lonomea                                  0.359   0.121   2.96
+psi_Maakua Ridge Trail                      -1.592   0.156 -10.22
+psi_Manana Trail                            -1.551   0.118 -13.15
+psi_Peacock Flats Campsite                   0.719   0.111   6.48
+psi_Sugi Grove                               0.522   0.115   4.55
+psi_Waialae Cabin Campsite                  -0.684   0.155  -4.42
+psi_Waikoali                                 0.417   0.118   3.53
+psi_Waikolu                                 -0.447   0.210  -2.13
+psi_Waimano Trail                           -2.116   0.158 -13.38
+psi_Waimanu Campsite                         0.433   0.110   3.95
+psi_Wiliwili                                -0.055   0.147  -0.37
+psi_Wiliwilinui Ridge Trail                 -2.438   0.155 -15.68
+gamma_Ainapo Cabin                           2.233   0.449   4.98
+gamma_Hipalau                                2.123   0.532   3.99
+gamma_Kaluahaulu                             2.053   0.469   4.38
+gamma_Kamananui Trail                        2.200   0.954   2.30
+gamma_Kaunala Trail                          2.488   0.674   3.69
+gamma_Kawaikoi                               2.106   0.233   9.04
+gamma_Keanakolu Ranger & Bunkhouse Cabins    2.020   0.442   4.57
+gamma_Kuaokala Trail                         2.295   0.237   9.69
+gamma_Kulanaahane Trail                      2.182   0.935   2.33
+gamma_Kuliouou Trail                         2.227   0.366   6.08
+gamma_Lonomea                                2.177   0.317   6.87
+gamma_Maakua Ridge Trail                     2.084   0.554   3.76
+gamma_Manana Trail                           2.098   0.373   5.63
+gamma_Peacock Flats Campsite                 2.320   0.148  15.64
+gamma_Sugi Grove                             2.144   0.277   7.74
+gamma_Waialae Cabin Campsite                 2.188   0.535   4.09
+gamma_Waikoali                               2.167   0.346   6.26
+gamma_Waikolu                                2.189   0.838   2.61
+gamma_Waimano Trail                          2.320   0.710   3.27
+gamma_Waimanu Campsite                       2.031   0.262   7.74
+gamma_Wiliwili                               2.042   0.380   5.37
+gamma_Wiliwilinui Ridge Trail                2.175   0.707   3.08
+alpha_num                                    0.753   0.011  69.87
+scale                                        0.499   0.013  39.28
+Note: All non-numeraire alpha's fixed to 0. 
+Note: Estimation accounts for truncated form of data. 
+
+# A tibble: 23 × 5
+   policy       mean std.dev `ci_lo2.5%` `ci_hi97.5%`
+   <chr>       <dbl>   <dbl>       <dbl>        <dbl>
+ 1 policy1   -1.74    0.258      -2.20        -1.34  
+ 2 policy10  -0.564   0.0882     -0.752       -0.423 
+ 3 policy11  -5.29    0.593      -6.22        -4.26  
+ 4 policy12  -0.336   0.0655     -0.467       -0.205 
+ 5 policy13  -0.521   0.0732     -0.648       -0.378 
+ 6 policy14 -21.9     0.954     -23.9        -20.4   
+ 7 policy15  -3.08    0.316      -3.70        -2.64  
+ 8 policy16  -1.02    0.212      -1.48        -0.676 
+ 9 policy17  -2.96    0.406      -3.55        -2.28  
+10 policy18  -0.525   0.194      -0.940       -0.279 
+11 policy19  -0.153   0.0361     -0.220       -0.0918
+12 policy2   -1.84    0.387      -2.52        -1.24  
+13 policy20  -4.58    0.499      -5.65        -3.78  
+14 policy21  -3.18    0.390      -3.86        -2.41  
+15 policy22  -0.119   0.0344     -0.179       -0.0647
+16 policy23 -62.5     2.52      -66.3        -58.4   
+17 policy3   -1.47    0.255      -1.93        -1.03  
+18 policy4   -0.0423  0.0151     -0.0765      -0.0222
+19 policy5   -0.451   0.110      -0.639       -0.259 
+20 policy6   -5.43    0.447      -6.16        -4.73  
+21 policy7   -1.26    0.232      -1.76        -0.972 
+22 policy8   -5.83    0.540      -6.96        -5.02  
+23 policy9   -0.0735  0.0216     -0.116       -0.0442
+                              parkname  VisitCount    price
+1                         Ainapo Cabin 0.039045553 650.4161
+2                              Hipalau 0.020245842 479.5003
+3                           Kaluahaulu 0.012292119 479.4916
+4                      Kamananui Trail 0.004338395 204.3494
+5                        Kaunala Trail 0.019522777 264.5091
+6                             Kawaikoi 0.108459870 505.8818
+7  Keanakolu Ranger & Bunkhouse Cabins 0.032537961 651.6354
+8                       Kuaokala Trail 0.167751265 278.6859
+9                    Kulanaahane Trail 0.007953724 204.0406
+10                      Kuliouou Trail 0.028922632 223.5504
+11                             Lonomea 0.071583514 473.8588
+12                        Manana Trail 0.041214751 211.9442
+13              Peacock Flats Campsite 0.483007954 297.2642
+14                          Sugi Grove 0.073752711 492.2546
+15              Waialae Cabin Campsite 0.011569053 449.5085
+16                            Waikoali 0.058568330 494.6551
+17                             Waikolu 0.010845987 504.0268
+18                       Waimano Trail 0.013738250 220.2178
+19                    Waimanu Campsite 0.073752711 622.1563
+20                            Wiliwili 0.017353579 467.3452
+21             Wiliwilinui Ridge Trail 0.009399855 219.8177
+# A tibble: 1 × 1
+  total_visits
+         <dbl>
+1          668
+function (formula = NULL, data, weights = NULL, model = c("alpha", 
+    "gamma", "hybrid", "hybrid0", "kt_ee"), n_classes = 1, fixed_scale1 = 0, 
+    single_scale = 0, trunc_data = 0, psi_ascs = NULL, gamma_ascs = 1, 
+    seed = "123", max_iterations = 2000, jacobian_analytical_grad = 1, 
+    initial.parameters = "random", hessian = TRUE, algorithm = c("MLE", 
+        "Bayes"), flat_priors = NULL, print_iterations = TRUE, 
+    prior_psi_sd = 10, prior_gamma_sd = 10, prior_phi_sd = 10, 
+    prior_alpha_shape = 1, prior_scale_sd = 1, prior_delta_sd = 10, 
+    gamma_nonrandom = 0, alpha_nonrandom = 0, std_errors = "deltamethod", 
+    n_draws = 50, keep_loglik = 0, random_parameters = "fixed", 
+    show_stan_warnings = TRUE, n_iterations = 200, n_chains = 4, 
+    n_cores = 4, max_tree_depth = 10, adapt_delta = 0.8, lkj_shape_prior = 4, 
+    ...) 
+NULL
+Chain 1: Initial log joint probability = -27621.6
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1: Error evaluating model log probability: Non-finite gradient.
+
+Chain 1: Error evaluating model log probability: Non-finite gradient.
+Error evaluating model log probability: Non-finite function evaluation.
+
+Chain 1:       19      -5425.28      0.545492       296.247           1           1       34   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:       39      -5297.99      0.192621        125.59      0.1512      0.3179       59   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:       59      -5204.09      0.244117       76.3321           1           1       82   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:       79      -5173.33     0.0838466       11.2835      0.8344      0.8344      105   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:       99      -5172.44     0.0135474       3.83389           1           1      127   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      119       -5172.4    0.00473644      0.957495           1           1      150   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      139      -5172.39     0.0011804      0.372438           1           1      173   
+Chain 1:     Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+Chain 1:      147      -5172.39   0.000695119      0.127153      0.3966           1      182   
+Chain 1: Optimization terminated normally: 
+Chain 1:   Convergence detected: relative gradient magnitude is below tolerance
+Model run using rmdcev for R, version 1.2.6 
+Estimation method                : MLE
+Model type                       : gamma specification
+Number of classes                : 1
+Number of individuals            : 1383
+Number of non-numeraire alts     : 21
+Estimated parameters             : 43
+LL                               : -5172.39
+AIC                              : 10430.78
+BIC                              : 10655.75
+Standard errors calculated using : 100 MVN draws
+Exit of MLE                      : successful convergence
+Time taken (hh:mm:ss)            : 00:00:1.31
+
+Average consumption of non-numeraire alternatives:
+                       Ainapo Cabin                             Hipalau 
+                               0.04                                0.02 
+                         Kaluahaulu                     Kamananui Trail 
+                               0.01                                0.00 
+                      Kaunala Trail                            Kawaikoi 
+                               0.02                                0.11 
+Keanakolu Ranger & Bunkhouse Cabins                      Kuaokala Trail 
+                               0.03                                0.17 
+                  Kulanaahane Trail                      Kuliouou Trail 
+                               0.01                                0.03 
+                            Lonomea                        Manana Trail 
+                               0.07                                0.04 
+             Peacock Flats Campsite                          Sugi Grove 
+                               0.48                                0.07 
+             Waialae Cabin Campsite                            Waikoali 
+                               0.01                                0.06 
+                            Waikolu                       Waimano Trail 
+                               0.01                                0.01 
+                   Waimanu Campsite                            Wiliwili 
+                               0.07                                0.02 
+            Wiliwilinui Ridge Trail 
+                               0.01 
+
+Parameter estimates --------------------------------  
+                                          Estimate Std.err z.stat
+psi_Hipalau                                 -0.523   0.137  -3.82
+psi_Kaluahaulu                              -0.739   0.167  -4.42
+psi_Kamananui Trail                         -2.998   0.233 -12.84
+psi_Kaunala Trail                           -1.489   0.141 -10.58
+psi_Kawaikoi                                 0.626   0.101   6.21
+psi_Keanakolu Ranger & Bunkhouse Cabins     -0.067   0.104  -0.64
+psi_Kuaokala Trail                          -0.125   0.108  -1.16
+psi_Kulanaahane Trail                       -2.843   0.179 -15.92
+psi_Kuliouou Trail                          -2.041   0.127 -16.12
+psi_Lonomea                                  0.058   0.109   0.53
+psi_Manana Trail                            -1.637   0.135 -12.16
+psi_Peacock Flats Campsite                   0.591   0.102   5.82
+psi_Sugi Grove                               0.304   0.109   2.80
+psi_Waialae Cabin Campsite                  -0.999   0.190  -5.26
+psi_Waikoali                                 0.143   0.110   1.30
+psi_Waikolu                                 -0.342   0.176  -1.94
+psi_Waimano Trail                           -2.114   0.169 -12.53
+psi_Waimanu Campsite                         0.224   0.098   2.29
+psi_Wiliwili                                -0.620   0.128  -4.86
+psi_Wiliwilinui Ridge Trail                 -2.601   0.154 -16.90
+gamma_Ainapo Cabin                           2.319   0.444   5.22
+gamma_Hipalau                                2.064   0.526   3.93
+gamma_Kaluahaulu                             2.092   0.659   3.17
+gamma_Kamananui Trail                        2.472   1.331   1.86
+gamma_Kaunala Trail                          2.130   0.589   3.61
+gamma_Kawaikoi                               2.071   0.241   8.60
+gamma_Keanakolu Ranger & Bunkhouse Cabins    2.126   0.431   4.93
+gamma_Kuaokala Trail                         2.285   0.216  10.59
+gamma_Kulanaahane Trail                      2.471   1.031   2.40
+gamma_Kuliouou Trail                         2.076   0.404   5.14
+gamma_Lonomea                                2.124   0.256   8.29
+gamma_Manana Trail                           2.193   0.412   5.32
+gamma_Peacock Flats Campsite                 2.247   0.155  14.48
+gamma_Sugi Grove                             2.106   0.268   7.85
+gamma_Waialae Cabin Campsite                 2.145   0.642   3.34
+gamma_Waikoali                               2.289   0.376   6.09
+gamma_Waikolu                                2.057   0.687   3.00
+gamma_Waimano Trail                          2.256   0.628   3.59
+gamma_Waimanu Campsite                       2.121   0.262   8.11
+gamma_Wiliwili                               2.098   0.556   3.77
+gamma_Wiliwilinui Ridge Trail                2.156   0.690   3.12
+alpha_num                                    0.746   0.010  71.98
+scale                                        0.501   0.015  33.65
+Note: All non-numeraire alpha's fixed to 0. 
+Note: Estimation accounts for truncated form of data. 
+
+# A tibble: 22 × 5
+   policy       mean std.dev `ci_lo2.5%` `ci_hi97.5%`
+   <chr>       <dbl>   <dbl>       <dbl>        <dbl>
+ 1 policy1   -2.98   0.482       -4.19        -2.25  
+ 2 policy10  -0.305  0.0463      -0.403       -0.240 
+ 3 policy11  -4.69   0.410       -5.40        -4.12  
+ 4 policy12  -0.566  0.0858      -0.731       -0.424 
+ 5 policy13 -20.6    1.11       -22.4        -17.9   
+ 6 policy14  -3.39   0.396       -4.25        -2.85  
+ 7 policy15  -0.699  0.130       -0.960       -0.481 
+ 8 policy16  -2.96   0.365       -3.56        -2.41  
+ 9 policy17  -1.34   0.366       -2.08        -0.830 
+10 policy18  -0.393  0.0720      -0.527       -0.268 
+11 policy19  -4.15   0.464       -5.05        -3.39  
+12 policy2   -1.37   0.232       -1.82        -1.04  
+13 policy20  -1.21   0.299       -1.81        -0.808 
+14 policy21  -0.0849 0.0226      -0.132       -0.0535
+15 policy22 -59.2    1.99       -62.5        -54.5   
+16 policy3   -1.06   0.365       -1.99        -0.675 
+17 policy4   -0.0298 0.00998     -0.0476      -0.0163
+18 policy5   -0.518  0.129       -0.818       -0.328 
+19 policy6   -5.43   0.601       -6.42        -4.44  
+20 policy7   -1.32   0.250       -1.74        -0.944 
+21 policy8   -5.99   0.416       -6.82        -5.30  
+22 policy9   -0.0800 0.0297      -0.143       -0.0340
