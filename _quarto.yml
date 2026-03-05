@@ -9,7 +9,10 @@ website:
     left:
       - href: index.qmd
         text: Home
-
+      - href: rum.qmd
+        text: Random Utility
+      - href: ej.qmd
+        text: Environ.Justice
 
     tools:
       - icon: youtube

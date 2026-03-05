@@ -1,0 +1,2876 @@
+---
+title: "rum"
+
+format:
+  html:
+    code-fold: false        # Enables dropdown for code
+    code-tools: true       # (Optional) Adds buttons like "Show Code"
+    code-summary: "Show code"  # (Optional) Custom label for dropdown
+    toc: true
+    toc-location: left
+    page-layout: full
+editor: visual
+---
+
+# Rum
+
+This script will run a RUM model on our data assuming a stay at home option and compare it to our result of the MDCEV
+
+## Function
+
+This function calculate the rum welfare manual and is used for each year to get a comparison to the MDCEV.
+
+```{r}
+
+calc_rum_welfare_manual <- function(target_park) {
+  
+  beta_price <- coef(rum_mle)["price"]
+  
+  # 1. Baseline Logsum
+  ls_base <- df_math %>%
+    group_by(trip_id) %>%
+    summarise(ls_base = log(sum(exp(V))), .groups = "drop")
+  
+  # 2. Policy Logsum (Removing the park one by one and then use the consumer surplus using closed form based on the marginal utility of income
+  ls_policy <- df_math %>%
+    filter(park_name != target_park) %>%
+    group_by(trip_id) %>%
+    summarise(ls_policy = log(sum(exp(V))), .groups = "drop")
+  
+  # 3. Calculate CV for EVERY individual trip
+  comparison <- left_join(ls_base, ls_policy, by = "trip_id") %>%
+    mutate(cv = (ls_policy - ls_base) / -beta_price) # this is trying to compare to the MDCEV where we close and re-estimate
+  
+  # 4. Calculate Statistics across all trips
+  # We use the standard error of the mean for the CIs
+  res <- comparison %>%
+    summarise(
+      mean_cv_rum = mean(cv, na.rm = TRUE),
+      std_dev_rum = sd(cv, na.rm = TRUE),
+      n = n(),
+      # Standard Error = SD / sqrt(n)
+      se_rum = std_dev_rum / sqrt(n),
+      # 95% CI calculation (Mean +/- 1.96 * SE) I do this to compare the the same CI in the MDCEV
+      ci_lo_2.5_rum = mean_cv_rum - (1.96 * se_rum),
+      ci_hi_97.5_rum = mean_cv_rum + (1.96 * se_rum)
+    )
+  
+  return(res)
+}
+
+```
+
+### 2018
+
+Need to run the same data for the MDCEV which gives us final_data_2018. So going to clip the code from the file R script high cost.
+
+The first code will produce final_data_yyyy by year and then should be able to run all the rest of the data
+
+```{r}
+
+
+library(dplyr)
+library(tidyr)
+ library(haven)
+library(readr)
+
+# Load datasets
+reservation_data <- read_dta("reservation_data_merged_id_complete.dta")
+intra_island_distance <- read.csv("intra_island_distance2.csv")
+
+# Add year
+reservation_data$year <- as.numeric(format(as.Date(reservation_data$CheckinDate, "%Y-%m-%d"), "%Y"))
+
+reservation_data <- reservation_data %>%
+  mutate(zip = ifelse(zip == 96812, 96813, zip))
+
+# Group and compute yearly averages
+avg_days_per_year <- reservation_data %>%
+  group_by(year, id) %>%
+  summarize(avg_days_visited = mean(days_visited, na.rm = TRUE)) %>%
+  ungroup()
+
+avg_days_2018 <- avg_days_per_year %>% filter(year == 2018)
+avg_days_2019 <- avg_days_per_year %>% filter(year == 2019)
+avg_days_2020 <- avg_days_per_year %>% filter(year == 2020)
+avg_days_2021 <- avg_days_per_year %>% filter(year == 2021)
+avg_days_2022 <- avg_days_per_year %>% filter(year == 2022)
+avg_days_2023 <- avg_days_per_year %>% filter(year == 2023)
+
+
+# Function to process data for a single year
+process_year <- function(year_input) {
+  data_year <- reservation_data %>% filter(year == year_input)
+  
+  unique_visits <- data_year %>%
+    filter(!is.na(CheckinDate)) %>%
+    distinct(id, parkname, CheckinDate) %>%
+    group_by(id, parkname) %>%
+    summarize(VisitCount = n(), .groups = "drop")
+  
+  all_combinations <- expand.grid(
+    id = unique(data_year$id),
+    parkname = unique(data_year$parkname),
+    stringsAsFactors = FALSE
+  )
+  
+  visit_data <- all_combinations %>%
+    left_join(unique_visits, by = c("id", "parkname")) %>%
+    mutate(VisitCount = ifelse(is.na(VisitCount), 0, VisitCount))
+  
+  person_info <- data_year %>%
+    select(id, Permittee, zip, Zip, NoOfGuests, days_visited, year) %>%
+    distinct()
+  
+  long_resdata_count <- left_join(visit_data, person_info, by = "id")
+  
+  long_resdata_count <- long_resdata_count %>%
+    mutate(island_park = case_when(
+      parkname == "Ainapo Cabin" ~ "Hawaii",
+      parkname == "Hipalau" ~ "Kauai",
+      parkname == "Kaluahaulu" ~ "Kauai",
+      parkname == "Kamananui Trail" ~ "Oahu",
+      parkname == "Kaunala Trail" ~ "Oahu",
+      parkname == "Kawaikoi" ~ "Kauai",
+      parkname == "Keanakolu Ranger & Bunkhouse Cabins" ~ "Hawaii",
+      parkname == "Kuaokala Trail" ~ "Oahu",
+      parkname == "Kulanaahane Trail" ~ "Oahu",
+      parkname == "Kuliouou Trail" ~ "Oahu",
+      parkname == "Lonomea" ~ "Kauai",
+      parkname == "Maakua Ridge Trail" ~ "Oahu",
+      parkname == "Manana Trail" ~ "Oahu",
+      parkname == "Peacock Flats Campsite" ~ "Oahu",
+      parkname == "Sugi Grove" ~ "Kauai",
+      parkname == "Waialae Cabin Campsite" ~ "Kauai",
+      parkname == "Waikoali" ~ "Kauai",
+      parkname == "Waikolu" ~ "Molokai",
+      parkname == "Waimano Trail" ~ "Oahu",
+      parkname == "Waimanu Campsite" ~ "Hawaii",
+      parkname == "Wiliwili" ~ "Kauai",
+      parkname == "Wiliwilinui Ridge Trail" ~ "Oahu",
+      TRUE ~ NA_character_
+    ))
+  
+  long_resdata_count <- long_resdata_count[order(long_resdata_count$id, long_resdata_count$parkname), ]
+  long_resdata_count$parkname_numeric <- as.integer(factor(long_resdata_count$parkname, levels = unique(long_resdata_count$parkname)))
+  
+  long_resdata_count <- long_resdata_count %>%
+    distinct(id, parkname, .keep_all = TRUE)
+  
+  final_data <- long_resdata_count %>%
+    left_join(
+      intra_island_distance %>%
+        select(zip, parkname, income, residents_distance_meters, residents_duration, island_live),
+      by = c("zip", "parkname")
+    )
+  
+  final_data <- final_data %>%
+    group_by(id) %>%
+    mutate(visited_another_island = ifelse(any(island_park != island_live & VisitCount > 0), 1, 0)) %>%
+    ungroup()
+  
+  final_data$travel_distance_km <- (final_data$residents_distance_meters / 1000) * 2
+  
+  
+  return(final_data)
+}
+
+# Run the function for each year
+final_data_2018 <- process_year(2018)
+final_data_2019 <- process_year(2019)
+final_data_2020 <- process_year(2020)
+final_data_2021 <- process_year(2021)
+final_data_2022 <- process_year(2022)
+final_data_2023 <- process_year(2023)
+
+# Add correct avg_days_visited for each year by joining on id
+
+final_data_2018 <- final_data_2018 %>%
+  left_join(avg_days_2018 %>% select(id, avg_days_visited), by = "id") %>%
+  mutate(days_visited = avg_days_visited)
+
+final_data_2019 <- final_data_2019 %>%
+  left_join(avg_days_2019 %>% select(id, avg_days_visited), by = "id") %>%
+  mutate(days_visited = avg_days_visited)
+
+final_data_2020 <- final_data_2020 %>%
+  left_join(avg_days_2020 %>% select(id, avg_days_visited), by = "id") %>%
+  mutate(days_visited = avg_days_visited)
+
+final_data_2021 <- final_data_2021 %>%
+  left_join(avg_days_2021 %>% select(id, avg_days_visited), by = "id") %>%
+  mutate(days_visited = avg_days_visited)
+
+final_data_2022 <- final_data_2022 %>%
+  left_join(avg_days_2022 %>% select(id, avg_days_visited), by = "id") %>%
+  mutate(days_visited = avg_days_visited)
+
+final_data_2023 <- final_data_2023 %>%
+  left_join(avg_days_2023 %>% select(id, avg_days_visited), by = "id") %>%
+  mutate(days_visited = avg_days_visited)
+
+## Travel cost per year calculations ##
+
+
+##Adjusted for inflation
+gas_prices <- data.frame(
+  year = c(2018, 2019, 2020, 2021, 2022, 2023),
+  gas_price = c(4.68, 4.49, 4.09, 4.75, 5.81, 5.09)
+)
+
+mean_gas_price <- (4.68+4.49+4.09+4.75+5.81+5.09)/6
+
+
+# Inputs based on AAA Brochure 2018
+fuel_efficiency_mpg <- 25
+gas_price_hawaii_2018 <- 4.68  # in USD/gallon
+maintenance_per_mile <- 0.0858*1.2816  # in USD/mile 2025 price
+annual_miles <- 15000
+annual_ownership_cost <- 6202*1.2816  # USD 2025 price
+
+# Calculate total cost per mile
+cost_per_mile <- (
+  (1 / fuel_efficiency_mpg * gas_price_hawaii_2018 * annual_miles) +  # fuel cost
+    (maintenance_per_mile * annual_miles) +                             # maintenance
+    annual_ownership_cost                                               # ownership
+) / annual_miles  # divide by miles to get per-mile cost
+
+#https://exchange.aaa.com/wp-content/uploads/2018/09/18-0090_2018-Your-Driving-Costs-Brochure_FNL-Lo-5-2.pdf
+
+# Show result
+cost_per_mile
+
+miles_to_km <- 1.60934
+
+cost_per_km <- cost_per_mile / miles_to_km
+cost_per_km
+
+final_data_2018$price <- (final_data_2018$travel_distance_km * cost_per_km) / 3 +
+  ((final_data_2018$income * 0.75) / 2080 * final_data_2018$travel_distance_km / 50)
+
+
+# Inputs based on AAA Brochure 2019
+fuel_efficiency_mpg <- 25
+gas_price_hawaii_2019 <- 4.49  # in USD/gallon
+maintenance_per_mile <- 0.0960*1.262  # in USD/mile 2025 price
+annual_miles <- 15000
+annual_ownership_cost <- 6845*1.262  # USD 2025 price
+
+# Calculate total cost per mile
+cost_per_mile <- (
+  (1 / fuel_efficiency_mpg * gas_price_hawaii_2019 * annual_miles) +  # fuel cost
+    (maintenance_per_mile * annual_miles) +                             # maintenance
+    annual_ownership_cost                                               # ownership
+) / annual_miles  # divide by miles to get per-mile cost
+
+#https://exchange.aaa.com/wp-content/uploads/2019/09/AAA-Your-Driving-Costs-2019.pdf
+
+# Show result
+cost_per_mile
+
+miles_to_km <- 1.60934
+
+cost_per_km <- cost_per_mile / miles_to_km
+cost_per_km
+
+final_data_2019$price <- (final_data_2019$travel_distance_km * cost_per_km) / 3 +
+  ((final_data_2019$income * 0.75) / 2080 * final_data_2019$travel_distance_km / 50)
+
+# Inputs based on AAA Brochure 2020
+fuel_efficiency_mpg <- 25
+gas_price_hawaii_2020 <- 4.09  # in USD/gallon
+maintenance_per_mile <- 0.1011*1.2314  # in USD/mile 2025 price
+annual_miles <- 15000
+annual_ownership_cost <- 6831*1.2314  # USD 2025 price
+
+# Calculate total cost per mile
+cost_per_mile <- (
+  (1 / fuel_efficiency_mpg * gas_price_hawaii_2020 * annual_miles) +  # fuel cost
+    (maintenance_per_mile * annual_miles) +                             # maintenance
+    annual_ownership_cost                                               # ownership
+) / annual_miles  # divide by miles to get per-mile cost
+
+#https://newsroom.aaa.com/wp-content/uploads/2020/12/2020-Your-Driving-Costs-Brochure-Interactive-FINAL-12-9-20.pdf
+
+# Show result
+cost_per_mile
+
+miles_to_km <- 1.60934
+
+cost_per_km <- cost_per_mile / miles_to_km
+cost_per_km
+
+final_data_2020$price <- (final_data_2020$travel_distance_km * cost_per_km) / 3 +
+  ((final_data_2020$income * 0.75) / 2080 * final_data_2020$travel_distance_km / 50)
+
+# Inputs based on AAA Brochure 2021
+fuel_efficiency_mpg <- 25
+gas_price_hawaii_2021 <- 4.75  # in USD/gallon
+maintenance_per_mile <- 0.1043*1.12144  # in USD/mile 2025 price
+annual_miles <- 15000
+annual_ownership_cost <- 6633*1.12144  # USD 2025 price
+
+# Calculate total cost per mile
+cost_per_mile <- (
+  (1 / fuel_efficiency_mpg * gas_price_hawaii_2021 * annual_miles) +  # fuel cost
+    (maintenance_per_mile * annual_miles) +                             # maintenance
+    annual_ownership_cost                                               # ownership
+) / annual_miles  # divide by miles to get per-mile cost
+
+#https://newsroom.aaa.com/wp-content/uploads/2021/08/2021-YDC-Brochure-Live.pdf
+
+# Show result
+cost_per_mile
+
+miles_to_km <- 1.60934
+
+cost_per_km <- cost_per_mile / miles_to_km
+cost_per_km
+
+final_data_2021$price <- (final_data_2021$travel_distance_km * cost_per_km) / 3 +
+  ((final_data_2021$income * 0.75) / 2080 * final_data_2021$travel_distance_km / 50)
+
+# Inputs based on AAA Brochure 2022
+fuel_efficiency_mpg <- 25
+gas_price_hawaii_2022 <- 5.81  # in USD/gallon
+maintenance_per_mile <- 0.1064*1.113  # in USD/mile 2025 price
+annual_miles <- 15000
+annual_ownership_cost <- 6599*1.113  # USD 2025 price
+
+# Calculate total cost per mile
+cost_per_mile <- (
+  (1 / fuel_efficiency_mpg * gas_price_hawaii_2022 * annual_miles) +  # fuel cost
+    (maintenance_per_mile * annual_miles) +                             # maintenance
+    annual_ownership_cost                                               # ownership
+) / annual_miles  # divide by miles to get per-mile cost
+
+# Show result
+cost_per_mile
+
+miles_to_km <- 1.60934
+
+cost_per_km <- cost_per_mile / miles_to_km
+cost_per_km
+
+final_data_2022$price <- (final_data_2022$travel_distance_km * cost_per_km) / 3 +
+  ((final_data_2022$income * 0.75) / 2080 * final_data_2022$travel_distance_km / 50)
+
+#https://newsroom.aaa.com/wp-content/uploads/2022/08/2022-YDC-Costs-Break-Out-by-Category.pdf
+
+# Inputs based on AAA Brochure 2023
+fuel_efficiency_mpg <- 25
+gas_price_hawaii_2023 <- 5.09  # in USD/gallon
+maintenance_per_mile <- 0.1085*1.0618  # in USD/mile 2025 price
+annual_miles <- 15000
+annual_ownership_cost <- 7542*1.0618  # USD 2025 price
+
+# Calculate total cost per mile
+cost_per_mile <- (
+  (1 / fuel_efficiency_mpg * gas_price_hawaii_2023 * annual_miles) +  # fuel cost
+    (maintenance_per_mile * annual_miles) +                             # maintenance
+    annual_ownership_cost                                               # ownership
+) / annual_miles  # divide by miles to get per-mile cost
+
+# Show result
+cost_per_mile
+
+miles_to_km <- 1.60934
+
+cost_per_km <- cost_per_mile / miles_to_km
+cost_per_km
+
+final_data_2023$price <- (final_data_2023$travel_distance_km * cost_per_km) / 3 +
+  ((final_data_2023$income * 0.75) / 2080 * final_data_2023$travel_distance_km / 50)
+
+#https://newsroom.aaa.com/wp-content/uploads/2023/08/YDC-Brochure_2023-FINAL-8.30.23-.pdf
+
+
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(parkname == "Ainapo Cabin", (30*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Hipalau", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kaluahaulu", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kamananui Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kaunala Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kawaikoi", (20*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Keanakolu Ranger & Bunkhouse Cabins", (60*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kuaokala Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kulanaahane Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kuliouou Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Lonomea", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Maakua Ridge Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Manana Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Peacock Flats Campsite", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Sugi Grove", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waialae Cabin Campsite", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waikoali", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waikolu", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waimano Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waimanu Campsite", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Wiliwili", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Wiliwilinui Ridge Trail", (12*days_visited)/3, 0))
+
+
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(parkname == "Ainapo Cabin", (30*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Hipalau", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kaluahaulu", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kamananui Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kaunala Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kawaikoi", (20*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Keanakolu Ranger & Bunkhouse Cabins", (60*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kuaokala Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kulanaahane Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kuliouou Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Lonomea", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Maakua Ridge Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Manana Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Peacock Flats Campsite", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Sugi Grove", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waialae Cabin Campsite", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waikoali", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waikolu", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waimano Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waimanu Campsite", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Wiliwili", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Wiliwilinui Ridge Trail", (12*days_visited)/3, 0))
+
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(parkname == "Ainapo Cabin", (30*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Hipalau", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kaluahaulu", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kamananui Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kaunala Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kawaikoi", (20*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Keanakolu Ranger & Bunkhouse Cabins", (60*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kuaokala Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kulanaahane Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kuliouou Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Lonomea", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Maakua Ridge Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Manana Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Peacock Flats Campsite", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Sugi Grove", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waialae Cabin Campsite", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waikoali", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waikolu", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waimano Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waimanu Campsite", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Wiliwili", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Wiliwilinui Ridge Trail", (12*days_visited)/3, 0))
+
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(parkname == "Ainapo Cabin", (30*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Hipalau", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kaluahaulu", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kamananui Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kaunala Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kawaikoi", (20*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Keanakolu Ranger & Bunkhouse Cabins", (60*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kuaokala Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kulanaahane Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kuliouou Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Lonomea", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Maakua Ridge Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Manana Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Peacock Flats Campsite", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Sugi Grove", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waialae Cabin Campsite", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waikoali", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waikolu", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waimano Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waimanu Campsite", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Wiliwili", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Wiliwilinui Ridge Trail", (12*days_visited)/3, 0))
+
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(parkname == "Ainapo Cabin", (30*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Hipalau", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kaluahaulu", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kamananui Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kaunala Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kawaikoi", (20*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Keanakolu Ranger & Bunkhouse Cabins", (60*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kuaokala Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kulanaahane Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kuliouou Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Lonomea", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Maakua Ridge Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Manana Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Peacock Flats Campsite", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Sugi Grove", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waialae Cabin Campsite", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waikoali", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waikolu", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waimano Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waimanu Campsite", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Wiliwili", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Wiliwilinui Ridge Trail", (12*days_visited)/3, 0))
+
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(parkname == "Ainapo Cabin", (30*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Hipalau", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kaluahaulu", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kamananui Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kaunala Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kawaikoi", (20*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Keanakolu Ranger & Bunkhouse Cabins", (60*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kuaokala Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kulanaahane Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Kuliouou Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Lonomea", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Maakua Ridge Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Manana Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Peacock Flats Campsite", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Sugi Grove", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waialae Cabin Campsite", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waikoali", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waikolu", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waimano Trail", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Waimanu Campsite", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Wiliwili", (12*days_visited)/3, 0),
+         price = price + ifelse(parkname == "Wiliwilinui Ridge Trail", (12*days_visited)/3, 0))
+
+#########Value of travel time in air#########
+
+### BIG ISLAND ###
+##Insert value of spare time of travelling with flight to BI if live in Oahu (90 minutes before flight + 50 minutes flight time)
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Oahu",
+                                (((income * 0.75) / 2080) * 2.33) * 2, 0))
+
+##Insert value of spare time of travelling with flight to BI if live in Kauai (90 minutes before flight + 55 minutes flight time)
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Kauai",
+                                (((income * 0.75) / 2080) * 2.42) * 2, 0))
+
+##Insert value of spare time of travelling with flight to BI if live in Molokai (90 minutes before flight + 1.5 hour flight time one way)
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Molokai",
+                                (((income * 0.75) / 2080) * 3.5) * 2, 0))
+
+### OAHU ###
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Hawaii",
+                                (((income * 0.75) / 2080) * 2.33) * 2, 0))
+
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Kauai",
+                                (((income * 0.75) / 2080) * 2.17) * 2, 0))
+
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Molokai",
+                                (((income * 0.75) / 2080) * 2.17) * 2, 0))
+
+### KAUAI ###
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Hawaii",
+                                (((income * 0.75) / 2080) * 2.42) * 2, 0))
+
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Oahu",
+                                (((income * 0.75) / 2080) * 2.17) * 2, 0))
+
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Molokai",
+                                (((income * 0.75) / 2080) * 3.5) * 2, 0))
+
+### MOLOKAI ###
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Hawaii",
+                                (((income * 0.75) / 2080) * 3.5) * 2, 0))
+
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Oahu",
+                                (((income * 0.75) / 2080) * 2.17) * 2, 0))
+
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Kauai",
+                                (((income * 0.75) / 2080) * 3.5) * 2, 0))
+
+### MAUI ###
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Maui",
+                                (((income * 0.75) / 2080) * 2) * 2, 0))
+
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Maui",
+                                (((income * 0.75) / 2080) * 2.17) * 2, 0))
+
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Maui",
+                                (((income * 0.75) / 2080) * 2.33) * 2, 0))
+
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Maui",
+                                (((income * 0.75) / 2080) * 2.17) * 2, 0))
+
+### LANAI ###
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Lanai",
+                                (((income * 0.75) / 2080) * 2) * 2, 0))
+
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Lanai",
+                                (((income * 0.75) / 2080) * 2.17) * 2, 0))
+
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Lanai",
+                                (((income * 0.75) / 2080) * 4.34) * 2, 0))
+
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Lanai",
+                                (((income * 0.75) / 2080) * 4.34) * 2, 0))
+
+
+#########Value of travel time in air#########
+
+### BIG ISLAND ###
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Oahu", (((income * 0.75) / 2080) * 2.33) * 2, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Kauai", (((income * 0.75) / 2080) * 2.42) * 2, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Molokai", (((income * 0.75) / 2080) * 3.5) * 2, 0))
+
+### OAHU ###
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Hawaii", (((income * 0.75) / 2080) * 2.33) * 2, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Kauai", (((income * 0.75) / 2080) * 2.17) * 2, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Molokai", (((income * 0.75) / 2080) * 2.17) * 2, 0))
+
+### KAUAI ###
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Hawaii", (((income * 0.75) / 2080) * 2.42) * 2, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Oahu", (((income * 0.75) / 2080) * 2.17) * 2, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Molokai", (((income * 0.75) / 2080) * 3.5) * 2, 0))
+
+### MOLOKAI ###
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Hawaii", (((income * 0.75) / 2080) * 3.5) * 2, 0),
+         price = price + ifelse(island_park == "Molokai" & island_live == "Oahu", (((income * 0.75) / 2080) * 2.17) * 2, 0),
+         price = price + ifelse(island_park == "Molokai" & island_live == "Kauai", (((income * 0.75) / 2080) * 3.5) * 2, 0))
+
+### MAUI ###
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Maui", (((income * 0.75) / 2080) * 2) * 2, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Maui", (((income * 0.75) / 2080) * 2.17) * 2, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Maui", (((income * 0.75) / 2080) * 2.33) * 2, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Maui", (((income * 0.75) / 2080) * 2.17) * 2, 0))
+
+### LANAI ###
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Lanai", (((income * 0.75) / 2080) * 2) * 2, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Lanai", (((income * 0.75) / 2080) * 2.17) * 2, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Lanai", (((income * 0.75) / 2080) * 4.34) * 2, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Lanai", (((income * 0.75) / 2080) * 4.34) * 2, 0))
+
+#########Value of travel time in air#########
+
+### BIG ISLAND ###
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Oahu", (((income * 0.75) / 2080) * 2.33) * 2, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Kauai", (((income * 0.75) / 2080) * 2.42) * 2, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Molokai", (((income * 0.75) / 2080) * 3.5) * 2, 0))
+
+### OAHU ###
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Hawaii", (((income * 0.75) / 2080) * 2.33) * 2, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Kauai", (((income * 0.75) / 2080) * 2.17) * 2, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Molokai", (((income * 0.75) / 2080) * 2.17) * 2, 0))
+
+### KAUAI ###
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Hawaii", (((income * 0.75) / 2080) * 2.42) * 2, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Oahu", (((income * 0.75) / 2080) * 2.17) * 2, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Molokai", (((income * 0.75) / 2080) * 3.5) * 2, 0))
+
+### MOLOKAI ###
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Hawaii", (((income * 0.75) / 2080) * 3.5) * 2, 0),
+         price = price + ifelse(island_park == "Molokai" & island_live == "Oahu", (((income * 0.75) / 2080) * 2.17) * 2, 0),
+         price = price + ifelse(island_park == "Molokai" & island_live == "Kauai", (((income * 0.75) / 2080) * 3.5) * 2, 0))
+
+### MAUI ###
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Maui", (((income * 0.75) / 2080) * 2) * 2, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Maui", (((income * 0.75) / 2080) * 2.17) * 2, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Maui", (((income * 0.75) / 2080) * 2.33) * 2, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Maui", (((income * 0.75) / 2080) * 2.17) * 2, 0))
+
+### LANAI ###
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Lanai", (((income * 0.75) / 2080) * 2) * 2, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Lanai", (((income * 0.75) / 2080) * 2.17) * 2, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Lanai", (((income * 0.75) / 2080) * 4.34) * 2, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Lanai", (((income * 0.75) / 2080) * 4.34) * 2, 0))
+
+##
+
+### BIG ISLAND ###
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Oahu", (((income * 0.75) / 2080) * 2.33) * 2, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Kauai", (((income * 0.75) / 2080) * 2.42) * 2, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Molokai", (((income * 0.75) / 2080) * 3.5) * 2, 0))
+
+### OAHU ###
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Hawaii", (((income * 0.75) / 2080) * 2.33) * 2, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Kauai", (((income * 0.75) / 2080) * 2.17) * 2, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Molokai", (((income * 0.75) / 2080) * 2.17) * 2, 0))
+
+### KAUAI ###
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Hawaii", (((income * 0.75) / 2080) * 2.42) * 2, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Oahu", (((income * 0.75) / 2080) * 2.17) * 2, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Molokai", (((income * 0.75) / 2080) * 3.5) * 2, 0))
+
+### MOLOKAI ###
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Hawaii", (((income * 0.75) / 2080) * 3.5) * 2, 0),
+         price = price + ifelse(island_park == "Molokai" & island_live == "Oahu", (((income * 0.75) / 2080) * 2.17) * 2, 0),
+         price = price + ifelse(island_park == "Molokai" & island_live == "Kauai", (((income * 0.75) / 2080) * 3.5) * 2, 0))
+
+### MAUI ###
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Maui", (((income * 0.75) / 2080) * 2) * 2, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Maui", (((income * 0.75) / 2080) * 2.17) * 2, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Maui", (((income * 0.75) / 2080) * 2.33) * 2, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Maui", (((income * 0.75) / 2080) * 2.17) * 2, 0))
+
+### LANAI ###
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Lanai", (((income * 0.75) / 2080) * 2) * 2, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Lanai", (((income * 0.75) / 2080) * 2.17) * 2, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Lanai", (((income * 0.75) / 2080) * 4.34) * 2, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Lanai", (((income * 0.75) / 2080) * 4.34) * 2, 0))
+
+##
+
+### BIG ISLAND ###
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Oahu", (((income * 0.75) / 2080) * 2.33) * 2, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Kauai", (((income * 0.75) / 2080) * 2.42) * 2, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Molokai", (((income * 0.75) / 2080) * 3.5) * 2, 0))
+
+### OAHU ###
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Hawaii", (((income * 0.75) / 2080) * 2.33) * 2, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Kauai", (((income * 0.75) / 2080) * 2.17) * 2, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Molokai", (((income * 0.75) / 2080) * 2.17) * 2, 0))
+
+### KAUAI ###
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Hawaii", (((income * 0.75) / 2080) * 2.42) * 2, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Oahu", (((income * 0.75) / 2080) * 2.17) * 2, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Molokai", (((income * 0.75) / 2080) * 3.5) * 2, 0))
+
+### MOLOKAI ###
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Hawaii", (((income * 0.75) / 2080) * 3.5) * 2, 0),
+         price = price + ifelse(island_park == "Molokai" & island_live == "Oahu", (((income * 0.75) / 2080) * 2.17) * 2, 0),
+         price = price + ifelse(island_park == "Molokai" & island_live == "Kauai", (((income * 0.75) / 2080) * 3.5) * 2, 0))
+
+### MAUI ###
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Maui", (((income * 0.75) / 2080) * 2) * 2, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Maui", (((income * 0.75) / 2080) * 2.17) * 2, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Maui", (((income * 0.75) / 2080) * 2.33) * 2, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Maui", (((income * 0.75) / 2080) * 2.17) * 2, 0))
+
+### LANAI ###
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Lanai", (((income * 0.75) / 2080) * 2) * 2, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Lanai", (((income * 0.75) / 2080) * 2.17) * 2, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Lanai", (((income * 0.75) / 2080) * 4.34) * 2, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Lanai", (((income * 0.75) / 2080) * 4.34) * 2, 0))
+
+##
+
+### BIG ISLAND ###
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Oahu", (((income * 0.75) / 2080) * 2.33) * 2, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Kauai", (((income * 0.75) / 2080) * 2.42) * 2, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Molokai", (((income * 0.75) / 2080) * 3.5) * 2, 0))
+
+### OAHU ###
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Hawaii", (((income * 0.75) / 2080) * 2.33) * 2, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Kauai", (((income * 0.75) / 2080) * 2.17) * 2, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Molokai", (((income * 0.75) / 2080) * 2.17) * 2, 0))
+
+### KAUAI ###
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Hawaii", (((income * 0.75) / 2080) * 2.42) * 2, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Oahu", (((income * 0.75) / 2080) * 2.17) * 2, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Molokai", (((income * 0.75) / 2080) * 3.5) * 2, 0))
+
+### MOLOKAI ###
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Hawaii", (((income * 0.75) / 2080) * 3.5) * 2, 0),
+         price = price + ifelse(island_park == "Molokai" & island_live == "Oahu", (((income * 0.75) / 2080) * 2.17) * 2, 0),
+         price = price + ifelse(island_park == "Molokai" & island_live == "Kauai", (((income * 0.75) / 2080) * 3.5) * 2, 0))
+
+### MAUI ###
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Maui", (((income * 0.75) / 2080) * 2) * 2, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Maui", (((income * 0.75) / 2080) * 2.17) * 2, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Maui", (((income * 0.75) / 2080) * 2.33) * 2, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Maui", (((income * 0.75) / 2080) * 2.17) * 2, 0))
+
+### LANAI ###
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Lanai", (((income * 0.75) / 2080) * 2) * 2, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Lanai", (((income * 0.75) / 2080) * 2.17) * 2, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Lanai", (((income * 0.75) / 2080) * 4.34) * 2, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Lanai", (((income * 0.75) / 2080) * 4.34) * 2, 0))
+
+
+
+## Flight costs 2018
+#########Flight cost - 2018 #########
+
+## BIG ISLAND ##
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Oahu", 354.0447586, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Kauai", 368.0753954, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Molokai", 308.7662656, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Maui", 273.2598837, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Lanai", 354.0447586 + 137.8000852, 0))  # via Oahu
+
+## OAHU ##
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Hawaii", 354.0447586, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Kauai", 269.4129138, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Molokai", 112.5000815, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Maui", 291.0965957, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Lanai", 137.8000852, 0))
+
+## KAUAI ##
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Hawaii", 368.0753954, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Oahu", 269.4129138, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Molokai", 317.7951903, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Maui", 359.4733617, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Lanai", 336.1283623, 0))
+
+## MOLOKAI ##
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Hawaii", 308.7662656, 0),
+         price = price + ifelse(island_park == "Molokai" & island_live == "Oahu", 112.5000815, 0),
+         price = price + ifelse(island_park == "Molokai" & island_live == "Kauai", 317.7951903, 0),
+         price = price + ifelse(island_park == "Molokai" & island_live == "Maui", 118.8094464, 0),
+         price = price + ifelse(island_park == "Molokai" & island_live == "Lanai", 137.8000852 + 112.5000815, 0))  # via Oahu
+
+## Flight costs 2019
+## BIG ISLAND ##
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Oahu", 348.630216, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Kauai", 362.446277, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Molokai", 304.044185, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Maui", 269.080816, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Lanai", 348.630216 + 135.692656, 0))  # via Oahu
+
+## OAHU ##
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Hawaii", 348.630216, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Kauai", 265.292679, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Molokai", 110.779575, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Maui", 286.644744, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Lanai", 135.692656, 0))
+
+## KAUAI ##
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Hawaii", 362.446277, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Oahu", 265.292679, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Molokai", 312.935027, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Maui", 353.975798, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Lanai", 330.987822, 0))
+
+## MOLOKAI ##
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Hawaii", 304.044185, 0),
+         price = price + ifelse(island_park == "Molokai" & island_live == "Oahu", 110.779575, 0),
+         price = price + ifelse(island_park == "Molokai" & island_live == "Kauai", 312.935027, 0),
+         price = price + ifelse(island_park == "Molokai" & island_live == "Maui", 118.809446, 0),
+         price = price + ifelse(island_park == "Molokai" & island_live == "Lanai", 135.692656 + 110.779575, 0))  # via Oahu
+
+
+## Flight costs 2020
+## BIG ISLAND ##
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Oahu", 340.176901, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Kauai", 353.657960, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Molokai", 296.671957, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Maui", 262.556352, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Lanai", 340.176901 + 132.402485, 0))  # via Oahu
+
+## OAHU ##
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Hawaii", 340.176901, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Kauai", 258.860067, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Molokai", 108.093477, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Maui", 279.694404, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Lanai", 132.402485, 0))
+
+## KAUAI ##
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Hawaii", 353.657960, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Oahu", 258.860067, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Molokai", 305.347220, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Maui", 345.392866, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Lanai", 322.962286, 0))
+
+## MOLOKAI ##
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Hawaii", 296.671957, 0),
+         price = price + ifelse(island_park == "Molokai" & island_live == "Oahu", 108.093477, 0),
+         price = price + ifelse(island_park == "Molokai" & island_live == "Kauai", 305.347220, 0),
+         price = price + ifelse(island_park == "Molokai" & island_live == "Maui", 108.093477 + 279.6944039, 0), # via Oahu
+         price = price + ifelse(island_park == "Molokai" & island_live == "Lanai", 132.402485 + 108.093477, 0))  # via Oahu
+
+##Flight costs 2021
+## Flight costs 2021
+## BIG ISLAND ##
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Oahu", 309.800214, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Kauai", 322.077459, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Molokai", 296.6719565, 0), #Use value for 2020
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Maui", 239.110927, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Lanai", 309.800214 + 132.4024851, 0))  # via Oahu #Use value for 2020 for Oahu to Lanai
+
+## OAHU ##
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Hawaii", 309.800214, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Kauai", 235.744708, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Molokai", 126.263151, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Maui", 254.718607, 0), 
+         price = price + ifelse(island_park == "Oahu" & island_live == "Lanai", 132.4024851, 0)) #Use value for 2020
+
+## KAUAI ##
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Hawaii", 322.077459, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Oahu", 235.744708, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Molokai", 389.441668, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Maui", 314.550411, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Lanai", 235.744708 + 132.4024851, 0))  # via Oahu #Use value for 2020 for Oahu to Lanai
+
+## MOLOKAI ##
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Hawaii", 296.6719565, 0), #Use value for 2020
+         price = price + ifelse(island_park == "Molokai" & island_live == "Oahu", 120.699975, 0),
+         price = price + ifelse(island_park == "Molokai" & island_live == "Kauai", 389.441668, 0),
+         price = price + ifelse(island_park == "Molokai" & island_live == "Maui", 120.699975 + 254.718607, 0), # via Oahu
+         price = price + ifelse(island_park == "Molokai" & island_live == "Lanai", 126.263151 + 120.699975, 0))  # via Oahu
+
+##Flight cost 2022
+## Flight costs 2022
+
+## BIG ISLAND ##
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Oahu", 307.468646, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Kauai", 319.6534918, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Molokai", 296.6719565, 0), #Use value for 2020
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Maui", 237.311369, 0),
+         price = price + ifelse(island_park == "Hawaii" & island_live == "Lanai", 307.468646 + 132.4024851, 0))  # via Oahu
+
+## OAHU ##
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Hawaii", 307.468646, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Kauai", 233.970485, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Molokai", 169.716317, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Maui", 252.801585, 0),
+         price = price + ifelse(island_park == "Oahu" & island_live == "Lanai", 132.4024851, 0))  #Use value for 2020
+
+## KAUAI ##
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Hawaii", 319.6534918, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Oahu", 233.970485, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Molokai", 589.133955, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Maui", 312.1830927, 0),
+         price = price + ifelse(island_park == "Kauai" & island_live == "Lanai", 233.970485 + 132.4024851, 0))  # via Oahu #Use value for 2020
+
+## MOLOKAI ##
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Hawaii", 296.6719565, 0), #Use value for 2020
+         price = price + ifelse(island_park == "Molokai" & island_live == "Oahu", 169.716317, 0),
+         price = price + ifelse(island_park == "Molokai" & island_live == "Kauai", 275.9878642, 0),
+         price = price + ifelse(island_park == "Molokai" & island_live == "Maui", 169.716317 + 252.8015848, 0),  # via Oahu
+         price = price + ifelse(island_park == "Molokai" & island_live == "Lanai", 169.716317 + 132.4024851, 0))  # via Oahu
+
+##Flight cost 2023
+## HAWAII ##
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Oahu", 293.324536, 0)) %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Kauai", 304.948857, 0)) %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Molokai", 296.6719565, 0)) %>% #Use value for 2020
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Maui", 226.39462, 0)) %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Lanai", 132.4024851 + 293.324536, 0))
+
+## OAHU ##
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Hawaii", 293.324536, 0)) %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Kauai", 223.207422, 0)) %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Molokai", 169.464607, 0)) %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Maui", 241.172258, 0)) %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Lanai", 132.4024851, 0)) #Use value for 2020
+
+## KAUAI ##
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Hawaii", 304.948857, 0)) %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Oahu", 223.207422, 0)) %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Molokai", 500.736032, 0)) %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Maui", 297.822109, 0)) %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Lanai", 223.207422 + 132.4024851, 0))
+
+## MOLOKAI ##
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Hawaii", 296.6719565, 0)) %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Oahu", 169.464607, 0)) %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Kauai", 263.291927, 0)) %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Maui", 241.172258 + 169.464607, 0)) %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Lanai", 132.4024851 + 169.464607, 0))
+
+
+
+#########Car rental cost#########
+
+### BIG ISLAND ###
+
+#On average a rental car in The Big Island costs $430 per week ($61 per day).
+
+##Insert car rental cost in BI
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Oahu", (61 * days_visited)/3.78, 0))
+
+##Insert car rental cost in BI
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Kauai", (61 * days_visited)/3.78, 0))
+
+##Insert car rental cost in BI
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Molokai", (61 * days_visited)/3.78, 0))
+
+### OAHU ###
+
+#On average a rental car in Oahu is $48/day
+
+##Insert car rental cost in Oahu
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Hawaii", (48 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Oahu
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Kauai", (48 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Oahu
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Molokai", (48 * days_visited)/3.78, 0))
+
+### Kauai ###
+
+#On average a rental car in Kauai is $62/day
+
+##Insert car rental cost in Kauai
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Hawaii", (63 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Oahu", (63 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Molokai", (63 * days_visited)/3.78, 0))
+
+### Molokai ###
+
+#On average a rental car in Molokai is $107/day
+
+##Insert car rental cost in Kauai
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Hawaii", (107 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Oahu", (107 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Kauai", (107 * days_visited)/3.78, 0))
+
+#########Parking fees#########
+
+### Oahu ###
+
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Oahu", (22 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Oahu", (22 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Oahu", (22 * days_visited)/3.78, 0))
+
+### Kauai ###
+
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Kauai", (24 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Kauai", (24 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Kauai", (24 * days_visited)/3.78, 0))
+
+### Big Island ###
+
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Hawaii", (24 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Hawaii", (24 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2018 <- final_data_2018 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Hawaii", (24 * days_visited)/3.78, 0))
+
+### BIG ISLAND ###
+
+#On average a rental car in The Big Island costs $430 per week ($61 per day).
+
+##Insert car rental cost in BI
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Oahu", (61 * days_visited)/3.78, 0))
+
+##Insert car rental cost in BI
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Kauai", (61 * days_visited)/3.78, 0))
+
+##Insert car rental cost in BI
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Molokai", (61 * days_visited)/3.78, 0))
+
+### OAHU ###
+
+#On average a rental car in Oahu is $48/day
+
+##Insert car rental cost in Oahu
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Hawaii", (48 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Oahu
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Kauai", (48 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Oahu
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Molokai", (48 * days_visited)/3.78, 0))
+
+### Kauai ###
+
+#On average a rental car in Kauai is $62/day
+
+##Insert car rental cost in Kauai
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Hawaii", (63 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Oahu", (63 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Molokai", (63 * days_visited)/3.78, 0))
+
+### Molokai ###
+
+#On average a rental car in Molokai is $107/day
+
+##Insert car rental cost in Kauai
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Hawaii", (107 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Oahu", (107 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Kauai", (107 * days_visited)/3.78, 0))
+
+#########Parking fees#########
+
+### Oahu ###
+
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Oahu", (22 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Oahu", (22 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Oahu", (22 * days_visited)/3.78, 0))
+
+### Kauai ###
+
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Kauai", (24 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Kauai", (24 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Kauai", (24 * days_visited)/3.78, 0))
+
+### Big Island ###
+
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Hawaii", (24 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Hawaii", (24 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2019 <- final_data_2019 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Hawaii", (24 * days_visited)/3.78, 0))
+
+### BIG ISLAND ###
+
+#On average a rental car in The Big Island costs $430 per week ($61 per day).
+
+##Insert car rental cost in BI
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Oahu", (61 * days_visited)/3.78, 0))
+
+##Insert car rental cost in BI
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Kauai", (61 * days_visited)/3.78, 0))
+
+##Insert car rental cost in BI
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Molokai", (61 * days_visited)/3.78, 0))
+
+### OAHU ###
+
+#On average a rental car in Oahu is $48/day
+
+##Insert car rental cost in Oahu
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Hawaii", (48 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Oahu
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Kauai", (48 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Oahu
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Molokai", (48 * days_visited)/3.78, 0))
+
+### Kauai ###
+
+#On average a rental car in Kauai is $62/day
+
+##Insert car rental cost in Kauai
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Hawaii", (63 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Oahu", (63 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Molokai", (63 * days_visited)/3.78, 0))
+
+### Molokai ###
+
+#On average a rental car in Molokai is $107/day
+
+##Insert car rental cost in Kauai
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Hawaii", (107 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Oahu", (107 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Kauai", (107 * days_visited)/3.78, 0))
+
+#########Parking fees#########
+
+### Oahu ###
+
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Oahu", (22 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Oahu", (22 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Oahu", (22 * days_visited)/3.78, 0))
+
+### Kauai ###
+
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Kauai", (24 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Kauai", (24 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Kauai", (24 * days_visited)/3.78, 0))
+
+### Big Island ###
+
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Hawaii", (24 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Hawaii", (24 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2020 <- final_data_2020 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Hawaii", (24 * days_visited)/3.78, 0))
+
+
+### BIG ISLAND ###
+
+#On average a rental car in The Big Island costs $430 per week ($61 per day).
+
+##Insert car rental cost in BI
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Oahu", (61 * days_visited)/3.78, 0))
+
+##Insert car rental cost in BI
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Kauai", (61 * days_visited)/3.78, 0))
+
+##Insert car rental cost in BI
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Molokai", (61 * days_visited)/3.78, 0))
+
+### OAHU ###
+
+#On average a rental car in Oahu is $48/day
+
+##Insert car rental cost in Oahu
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Hawaii", (48 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Oahu
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Kauai", (48 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Oahu
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Molokai", (48 * days_visited)/3.78, 0))
+
+### Kauai ###
+
+#On average a rental car in Kauai is $62/day
+
+##Insert car rental cost in Kauai
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Hawaii", (63 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Oahu", (63 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Molokai", (63 * days_visited)/3.78, 0))
+
+### Molokai ###
+
+#On average a rental car in Molokai is $107/day
+
+##Insert car rental cost in Kauai
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Hawaii", (107 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Oahu", (107 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Kauai", (107 * days_visited)/3.78, 0))
+
+#########Parking fees#########
+
+### Oahu ###
+
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Oahu", (22 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Oahu", (22 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Oahu", (22 * days_visited)/3.78, 0))
+
+### Kauai ###
+
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Kauai", (24 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Kauai", (24 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Kauai", (24 * days_visited)/3.78, 0))
+
+### Big Island ###
+
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Hawaii", (24 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Hawaii", (24 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2021 <- final_data_2021 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Hawaii", (24 * days_visited)/3.78, 0))
+
+
+### BIG ISLAND ###
+
+#On average a rental car in The Big Island costs $430 per week ($61 per day).
+
+##Insert car rental cost in BI
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Oahu", (61 * days_visited)/3.78, 0))
+
+##Insert car rental cost in BI
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Kauai", (61 * days_visited)/3.78, 0))
+
+##Insert car rental cost in BI
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Molokai", (61 * days_visited)/3.78, 0))
+
+### OAHU ###
+
+#On average a rental car in Oahu is $48/day
+
+##Insert car rental cost in Oahu
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Hawaii", (48 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Oahu
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Kauai", (48 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Oahu
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Molokai", (48 * days_visited)/3.78, 0))
+
+### Kauai ###
+
+#On average a rental car in Kauai is $62/day
+
+##Insert car rental cost in Kauai
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Hawaii", (63 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Oahu", (63 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Molokai", (63 * days_visited)/3.78, 0))
+
+### Molokai ###
+
+#On average a rental car in Molokai is $107/day
+
+##Insert car rental cost in Kauai
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Hawaii", (107 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Oahu", (107 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Kauai", (107 * days_visited)/3.78, 0))
+
+#########Parking fees#########
+
+### Oahu ###
+
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Oahu", (22 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Oahu", (22 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Oahu", (22 * days_visited)/3.78, 0))
+
+### Kauai ###
+
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Kauai", (24 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Kauai", (24 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Kauai", (24 * days_visited)/3.78, 0))
+
+### Big Island ###
+
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Hawaii", (24 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Hawaii", (24 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2022 <- final_data_2022 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Hawaii", (24 * days_visited)/3.78, 0))
+
+
+### BIG ISLAND ###
+
+#On average a rental car in The Big Island costs $430 per week ($61 per day).
+
+##Insert car rental cost in BI
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Oahu", (61 * days_visited)/3.78, 0))
+
+##Insert car rental cost in BI
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Kauai", (61 * days_visited)/3.78, 0))
+
+##Insert car rental cost in BI
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Molokai", (61 * days_visited)/3.78, 0))
+
+### OAHU ###
+
+#On average a rental car in Oahu is $48/day
+
+##Insert car rental cost in Oahu
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Hawaii", (48 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Oahu
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Kauai", (48 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Oahu
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Molokai", (48 * days_visited)/3.78, 0))
+
+### Kauai ###
+
+#On average a rental car in Kauai is $62/day
+
+##Insert car rental cost in Kauai
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Hawaii", (63 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Oahu", (63 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Molokai", (63 * days_visited)/3.78, 0))
+
+### Molokai ###
+
+#On average a rental car in Molokai is $107/day
+
+##Insert car rental cost in Kauai
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Hawaii", (107 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Oahu", (107 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Kauai", (107 * days_visited)/3.78, 0))
+
+#########Parking fees#########
+
+### Oahu ###
+
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Oahu", (22 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Oahu", (22 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Oahu", (22 * days_visited)/3.78, 0))
+
+### Kauai ###
+
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Kauai", (24 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Hawaii" & island_live == "Kauai", (24 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Kauai", (24 * days_visited)/3.78, 0))
+
+### Big Island ###
+
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Oahu" & island_live == "Hawaii", (24 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Kauai" & island_live == "Hawaii", (24 * days_visited)/3.78, 0))
+
+##Insert car rental cost in Kauai
+final_data_2023 <- final_data_2023 %>%
+  mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Hawaii", (24 * days_visited)/3.78, 0))
+
+
+##Mean travel cost
+summary(final_data_2018$price)
+
+final_data_2018 <- final_data_2018 %>%
+  arrange(Permittee, parkname)
+
+final_data_2018$parkname_numeric <- as.integer(factor(final_data_2018$parkname, levels = unique(final_data_2018$parkname)))
+
+##Mean travel cost
+summary(final_data_2019$price)
+
+final_data_2019 <- final_data_2019 %>%
+  arrange(Permittee, parkname)
+
+final_data_2019$parkname_numeric <- as.integer(factor(final_data_2019$parkname, levels = unique(final_data_2019$parkname)))
+
+##Mean travel cost
+summary(final_data_2020$price)
+
+final_data_2020 <- final_data_2020 %>%
+  arrange(Permittee, parkname)
+
+final_data_2020$parkname_numeric <- as.integer(factor(final_data_2020$parkname, levels = unique(final_data_2020$parkname)))
+
+##Mean travel cost
+summary(final_data_2021$price)
+
+final_data_2021 <- final_data_2021 %>%
+  arrange(Permittee, parkname)
+
+final_data_2021$parkname_numeric <- as.integer(factor(final_data_2021$parkname, levels = unique(final_data_2021$parkname)))
+
+##Mean travel cost
+summary(final_data_2022$price)
+
+final_data_2022 <- final_data_2022 %>%
+  arrange(Permittee, parkname)
+
+final_data_2022$parkname_numeric <- as.integer(factor(final_data_2022$parkname, levels = unique(final_data_2022$parkname)))
+
+##Mean travel cost
+summary(final_data_2023$price)
+
+final_data_2023 <- final_data_2023 %>%
+  arrange(Permittee, parkname)
+
+final_data_2023$parkname_numeric <- as.integer(factor(final_data_2023$parkname, levels = unique(final_data_2023$parkname)))
+
+```
+
+## Rum
+```{r setup}
+library(mlogit)
+
+
+# Create unique choice occasions for every visit
+data_rum <- final_data_2018 %>%
+  filter(VisitCount > 0) %>%
+  uncount(VisitCount) %>%
+  group_by(id) %>%
+  mutate(choice_id = paste0(id, "_", row_number())) %>%
+  ungroup() %>%
+  select(choice_id, id, chosen_park = parkname) %>%
+  expand_grid(parkname = unique(final_data_2018$parkname)) %>%
+  mutate(choice = (chosen_park == parkname)) %>%
+  left_join(final_data_2018 %>% select(id, parkname, price, travel_distance_km,income,zip), 
+            by = c("id", "parkname"))
+
+# Create Stay at Home
+
+# Create the Stay-at-Home option for every choice occasion
+outside_home <- data_rum %>%
+  distinct(choice_id, id,income,zip) %>%
+  mutate(
+    parkname = "Stay_Home",
+    choice = FALSE,      
+    price = 0,
+    travel_distance_km = 0
+  )
+
+# Combine with your existing data
+data_rum<- bind_rows(data_rum, outside_home)
+
+# Re-format for mlogit
+df_rum <- dfidx(data_rum, 
+                        idx = list("choice_id", "parkname"), 
+                        shape = "long")
+
+# Simple Multinomial Logit
+rum_mle <- mlogit(choice ~ price  | 1, data = df_rum)
+summary(rum_mle)
+
+
+
+# Calculate the 'Logsum' (Total Utility) for the status quo
+logsum_base <- logsum(rum_mle)
+
+# 1. Convert df_rum to a standard data frame for our math
+df_math <- as.data.frame(df_rum)
+
+# 2. Extract the IDs and Park names from the 'idx' column
+# idx(df_rum, 1) gets the 'choice_id'
+# idx(df_rum, 2) gets the 'parkname'
+df_math$trip_id   <- as.character(idx(df_rum, 1))
+df_math$park_name <- as.character(idx(df_rum, 2))
+
+# 3. Calculate the Systematic Utility (V)
+# This uses the model coefficients and the data matrix
+df_math$V <- as.numeric(model.matrix(rum_mle) %*% coef(rum_mle))
+
+# 4. Double check the columns are there
+head(df_math[, c("trip_id", "park_name", "V")])
+
+
+
+```
+
+#### McFaddenR2
+
+The mlogit gives NA so running manually to calculate McFadden to double check the R2
+
+and it above .2 so that great
+
+```{r }
+# 1. Estimate your model (The "Full" model)
+rum_full <- mlogit(choice ~ price | 1, data = df_rum)
+
+# 2. Estimate the "Null" model (Intersects only, no price)
+# Use '0' for the first part of the formula to remove choice-specific variables
+rum_null <- mlogit(choice ~ 0 | 1, data = df_rum)
+
+# 3. Use the lrtest function to get your Chi-square and p-value
+library(lmtest)
+lr_test_result <- lrtest(rum_full, rum_null)
+print(lr_test_result)
+
+# 4. Calculate McFadden's R-squared manually
+ll_full <- as.numeric(logLik(rum_full))
+ll_null <- as.numeric(logLik(rum_null))
+mcfadden_r2 <- 1 - (ll_full / ll_null)
+
+print(paste("Manual McFadden R2:", round(mcfadden_r2, 4)))
+
+
+
+```
+
+#### Per Trip Value
+
+```{r }
+
+
+# Get the unique list of parks from your data
+# We exclude "Stay_Home" because we aren't "closing" the option to stay home
+all_parks <- unique(df_math$park_name)
+all_parks <- all_parks[all_parks != "Stay_Home"]
+
+library(purrr)
+
+# 1. Define the list of parks
+all_parks <- unique(df_math$park_name)
+all_parks <- all_parks[all_parks != "Stay_Home"]
+
+# 2. Run the function for all parks and combine results
+# This replaces your 'for' loop entirely
+rum_results_2018 <- map_df(all_parks, function(p) {
+  
+  # Run your function (the one that returns mean, sd, ci)
+  stats <- calc_rum_welfare_manual(p)
+  
+  # Add the park name so we know which row is which
+  stats$parkname <- p
+  
+  return(stats)
+})
+
+# 3. Reorder columns to put parkname first
+rum_results_2018 <- rum_results_2018 %>% 
+  select(parkname, mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, n)
+
+print(rum_results_2018)
+
+rum_results_2018 <- rum_results_2018 %>% 
+  select(parkname, mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, n) %>%
+  mutate(
+    # Use mean_cv_rum because that is what your function produced
+    rum_total_annual_loss = mean_cv_rum * n
+  )
+
+library(dplyr)
+library(stringr)
+park_number <- final_data_2018 %>%
+  # Select only the two columns you need
+  select(parkname, parkname_numeric) %>%
+  # Keep only the unique combinations
+  distinct() %>%
+  # Sort them by the numeric ID for easier reading
+  arrange(parkname_numeric)
+
+welfare_summary=read_csv("welfare_summary_2018.csv")
+
+welfare_summary=welfare_summary %>%
+  mutate(
+    # Extract only the digits from the "policy" string and make it an integer
+    parkname_numeric = as.integer(str_extract(policy, "\\d+"))
+  ) %>%
+  # 2. Merge with your park_number key (created in the previous step)
+  left_join(park_number, by = "parkname_numeric") %>%
+  # 3. Clean up: Move parkname to the front and remove the "policy" column
+  select(parkname, parkname_numeric, mean, std.dev, everything(), -policy)
+
+
+
+```
+
+#### Comparison MDCEV
+
+So lets look at the comparison of MDCEV which will give us a value for the closure and compare it to the per trip value gives us for a site closure.
+
+```{r}
+final_comparison_2018 <- rum_results_2018 %>%
+  select(parkname, rum_mean_per_trip=mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, rum_total_annual_loss) %>%
+  left_join(welfare_summary, by = "parkname") %>%
+  rename(mdcev_mean_per_person = mean) %>%
+  mutate(
+    # 1. RUM Annual = (Mean per Trip) * (Total Number of Trips)
+    rum_annual_total = rum_mean_per_trip * sum(final_data_2019$VisitCount),
+    
+    # 2. MDCEV Annual = (Mean per Person) * (Number of Unique People)
+    # We use n_distinct(id) to get exactly 1,380
+    mdcev_annual_total = mdcev_mean_per_person * n_distinct(final_data_2019$id),
+    
+    # 3. The Gap
+    difference = rum_annual_total - mdcev_annual_total
+  )
+```
+
+### 2019
+
+I have each year thats basically copied from 2018 so if there is a change from 2018 then it needs to be changed for every single one.
+
+```{r}
+# Create unique choice occasions for every visit
+data_rum <- final_data_2019 %>%
+  filter(VisitCount > 0) %>%
+  uncount(VisitCount) %>%
+  group_by(id) %>%
+  mutate(choice_id = paste0(id, "_", row_number())) %>%
+  ungroup() %>%
+  select(choice_id, id, chosen_park = parkname) %>%
+  expand_grid(parkname = unique(final_data_2019$parkname)) %>%
+  mutate(choice = (chosen_park == parkname)) %>%
+  left_join(final_data_2019 %>% select(id, parkname, price, travel_distance_km), 
+            by = c("id", "parkname"))
+
+# Create Stay at Home
+
+# Create the Stay-at-Home option for every choice occasion
+outside_home <- data_rum %>%
+  distinct(choice_id, id) %>%
+  mutate(
+    parkname = "Stay_Home",
+    choice = FALSE,      
+    price = 0,
+    travel_distance_km = 0
+  )
+
+# Combine with existing data
+data_rum<- bind_rows(data_rum, outside_home)
+
+# Re-format for mlogit
+df_rum <- dfidx(data_rum, 
+                idx = list("choice_id", "parkname"), 
+                shape = "long")
+
+# Simple Multinomial Logit
+rum_mle <- mlogit(choice ~ price  | 1, data = df_rum)
+summary(rum_mle)
+
+
+
+# Calculate the 'Logsum' (Total Utility) for the status quo
+logsum_base <- logsum(rum_mle)
+
+# 1. Convert df_rum to a standard data frame for our math
+df_math <- as.data.frame(df_rum)
+
+# 2. Extract the IDs and Park names from the 'idx' column
+# idx(df_rum, 1) gets the 'choice_id'
+# idx(df_rum, 2) gets the 'parkname'
+df_math$trip_id   <- as.character(idx(df_rum, 1))
+df_math$park_name <- as.character(idx(df_rum, 2))
+
+# 3. Calculate the Systematic Utility (V)
+# This uses the model coefficients and the data matrix
+df_math$V <- as.numeric(model.matrix(rum_mle) %*% coef(rum_mle))
+
+# 4. Double check the columns are there
+head(df_math[, c("trip_id", "park_name", "V")])
+
+
+# Get the unique list of parks from your data
+# We exclude "Stay_Home" because we aren't "closing" the option to stay home
+all_parks <- unique(df_math$park_name)
+all_parks <- all_parks[all_parks != "Stay_Home"]
+
+# 2. Run the function for all parks and combine results
+# This replaces your 'for' loop entirely
+rum_results_2019 <- map_df(all_parks, function(p) {
+  
+  # Run your function (the one that returns mean, sd, ci)
+  stats <- calc_rum_welfare_manual(p)
+  
+  # Add the park name so we know which row is which
+  stats$parkname <- p
+  
+  return(stats)
+})
+
+# 3. Reorder columns to put parkname first
+rum_results_2019 <- rum_results_2019 %>% 
+  select(parkname, mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, n)
+
+print(rum_results_2019)
+
+rum_results_2019 <- rum_results_2019 %>% 
+  select(parkname, mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, n) %>%
+  mutate(
+    # Use mean_cv_rum because that is what your function produced
+    rum_total_annual_loss = mean_cv_rum * n
+  )
+
+library(dplyr)
+library(stringr)
+park_number <- final_data_2019 %>%
+  # Select only the two columns you need
+  select(parkname, parkname_numeric) %>%
+  # Keep only the unique combinations
+  distinct() %>%
+  # Sort them by the numeric ID for easier reading
+  arrange(parkname_numeric)
+
+welfare_summary=read_csv("welfare_summary_2019.csv")
+welfare_summary=welfare_summary %>%
+  mutate(
+    # Extract only the digits from the "policy" string and make it an integer
+    parkname_numeric = as.integer(str_extract(policy, "\\d+"))
+  ) %>%
+  # 2. Merge with your park_number key (created in the previous step)
+  left_join(park_number, by = "parkname_numeric") %>%
+  # 3. Clean up: Move parkname to the front and remove the "policy" column
+  select(parkname, parkname_numeric, mean, std.dev, everything(), -policy)
+
+final_comparison_2019 <- rum_results_2019 %>%
+  select(parkname, rum_mean_per_trip=mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, rum_total_annual_loss) %>%
+  left_join(welfare_summary, by = "parkname") %>%
+  rename(mdcev_mean_per_person = mean) %>%
+  mutate(
+    # 1. RUM Annual = (Mean per Trip) * (Total Number of Trips)
+    rum_annual_total = rum_mean_per_trip * sum(final_data_2019$VisitCount),
+    
+    # 2. MDCEV Annual = (Mean per Person) * (Number of Unique People)
+    # We use n_distinct(id) to get exactly 1,380
+    mdcev_annual_total = mdcev_mean_per_person * n_distinct(final_data_2019$id),
+    
+    # 3. The Gap
+    difference = rum_annual_total - mdcev_annual_total
+  )
+```
+
+### 2020
+
+```{r }
+
+# Create unique choice occasions for every visit
+data_rum <- final_data_2020 %>%
+  filter(VisitCount > 0) %>%
+  uncount(VisitCount) %>%
+  group_by(id) %>%
+  mutate(choice_id = paste0(id, "_", row_number())) %>%
+  ungroup() %>%
+  select(choice_id, id, chosen_park = parkname) %>%
+  expand_grid(parkname = unique(final_data_2020$parkname)) %>%
+  mutate(choice = (chosen_park == parkname)) %>%
+  left_join(final_data_2020 %>% select(id, parkname, price, travel_distance_km), 
+            by = c("id", "parkname"))
+
+# Create Stay at Home
+
+# Create the Stay-at-Home option for every choice occasion
+outside_home <- data_rum %>%
+  distinct(choice_id, id) %>%
+  mutate(
+    parkname = "Stay_Home",
+    choice = FALSE,      
+    price = 0,
+    travel_distance_km = 0
+  )
+
+# Combine with existing data
+data_rum<- bind_rows(data_rum, outside_home)
+
+# Re-format for mlogit
+df_rum <- dfidx(data_rum, 
+                idx = list("choice_id", "parkname"), 
+                shape = "long")
+
+# Simple Multinomial Logit
+rum_mle <- mlogit(choice ~ price  | 1, data = df_rum)
+summary(rum_mle)
+
+
+
+# Calculate the 'Logsum' (Total Utility) for the status quo
+logsum_base <- logsum(rum_mle)
+
+# 1. Convert df_rum to a standard data frame for our math
+df_math <- as.data.frame(df_rum)
+
+# 2. Extract the IDs and Park names from the 'idx' column
+# idx(df_rum, 1) gets the 'choice_id'
+# idx(df_rum, 2) gets the 'parkname'
+df_math$trip_id   <- as.character(idx(df_rum, 1))
+df_math$park_name <- as.character(idx(df_rum, 2))
+
+# 3. Calculate the Systematic Utility (V)
+# This uses the model coefficients and the data matrix
+df_math$V <- as.numeric(model.matrix(rum_mle) %*% coef(rum_mle))
+
+# 4. Double check the columns are there
+head(df_math[, c("trip_id", "park_name", "V")])
+
+
+# Get the unique list of parks from your data
+# We exclude "Stay_Home" because we aren't "closing" the option to stay home
+all_parks <- unique(df_math$park_name)
+all_parks <- all_parks[all_parks != "Stay_Home"]
+
+# Create a data frame to store the results
+
+# Get the unique list of parks from your data
+# We exclude "Stay_Home" because we aren't "closing" the option to stay home
+all_parks <- unique(df_math$park_name)
+all_parks <- all_parks[all_parks != "Stay_Home"]
+
+# Run the function for all parks and combine results
+# This replaces your 'for' loop entirely
+rum_results_2020 <- map_df(all_parks, function(p) {
+  
+  # Run your function (the one that returns mean, sd, ci)
+  stats <- calc_rum_welfare_manual(p)
+  
+  # Add the park name so we know which row is which
+  stats$parkname <- p
+  
+  return(stats)
+})
+
+# 3. Reorder columns to put parkname first
+rum_results_2020 <- rum_results_2020 %>% 
+  select(parkname, mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, n)
+
+print(rum_results_2020)
+
+rum_results_2020<- rum_results_2020 %>% 
+  select(parkname, mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, n) %>%
+  mutate(
+    # Use mean_cv_rum because that is what your function produced
+    rum_total_annual_loss = mean_cv_rum * n
+  )
+
+park_number <- final_data_2020 %>%
+  # Select only the two columns you need
+  select(parkname, parkname_numeric) %>%
+  # Keep only the unique combinations
+  distinct() %>%
+  # Sort them by the numeric ID for easier reading
+  arrange(parkname_numeric)
+
+welfare_summary=read_csv("welfare_summary_2020.csv")
+welfare_summary=welfare_summary %>%
+  mutate(
+    # Extract only the digits from the "policy" string and make it an integer
+    parkname_numeric = as.integer(str_extract(policy, "\\d+"))
+  ) %>%
+  # 2. Merge with your park_number key (created in the previous step)
+  left_join(park_number, by = "parkname_numeric") %>%
+  # 3. Clean up: Move parkname to the front and remove the "policy" column
+  select(parkname, parkname_numeric, mean, std.dev, everything(), -policy)
+
+final_comparison_2020 <- rum_results_2020 %>%
+  select(parkname, rum_mean_per_trip=mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, rum_total_annual_loss) %>%
+  left_join(welfare_summary, by = "parkname") %>%
+  rename(mdcev_mean_per_person = mean) %>%
+  mutate(
+    # 1. RUM Annual = (Mean per Trip) * (Total Number of Trips)
+    rum_annual_total = rum_mean_per_trip * sum(final_data_2019$VisitCount),
+    
+    # 2. MDCEV Annual = (Mean per Person) * (Number of Unique People)
+    # We use n_distinct(id) to get exactly 1,380
+    mdcev_annual_total = mdcev_mean_per_person * n_distinct(final_data_2019$id),
+    
+    # 3. The Gap
+    difference = rum_annual_total - mdcev_annual_total
+  )
+```
+
+### 2021
+
+```{r }
+
+
+
+# Create unique choice occasions for every visit
+data_rum <- final_data_2021 %>%
+  filter(VisitCount > 0) %>%
+  uncount(VisitCount) %>%
+  group_by(id) %>%
+  mutate(choice_id = paste0(id, "_", row_number())) %>%
+  ungroup() %>%
+  select(choice_id, id, chosen_park = parkname) %>%
+  expand_grid(parkname = unique(final_data_2021$parkname)) %>%
+  mutate(choice = (chosen_park == parkname)) %>%
+  left_join(final_data_2021 %>% select(id, parkname, price, travel_distance_km), 
+            by = c("id", "parkname"))
+
+# Create Stay at Home
+
+# Create the Stay-at-Home option for every choice occasion
+outside_home <- data_rum %>%
+  distinct(choice_id, id) %>%
+  mutate(
+    parkname = "Stay_Home",
+    choice = FALSE,      
+    price = 0,
+    travel_distance_km = 0
+  )
+
+# Combine with existing data
+data_rum<- bind_rows(data_rum, outside_home)
+
+# Re-format for mlogit
+df_rum <- dfidx(data_rum, 
+                idx = list("choice_id", "parkname"), 
+                shape = "long")
+
+# Simple Multinomial Logit
+rum_mle <- mlogit(choice ~ price  | 1, data = df_rum)
+summary(rum_mle)
+
+
+
+# Calculate the 'Logsum' (Total Utility) for the status quo
+logsum_base <- logsum(rum_mle)
+
+# 1. Convert df_rum to a standard data frame for our math
+df_math <- as.data.frame(df_rum)
+
+# 2. Extract the IDs and Park names from the 'idx' column
+# idx(df_rum, 1) gets the 'choice_id'
+# idx(df_rum, 2) gets the 'parkname'
+df_math$trip_id   <- as.character(idx(df_rum, 1))
+df_math$park_name <- as.character(idx(df_rum, 2))
+
+# Calculate the Systematic Utility (V)
+# This uses the model coefficients and the data matrix
+df_math$V <- as.numeric(model.matrix(rum_mle) %*% coef(rum_mle))
+
+# Double check the columns are there
+head(df_math[, c("trip_id", "park_name", "V")])
+
+
+
+# Get the unique list of parks from your data
+# We exclude "Stay_Home" because we aren't "closing" the option to stay home
+all_parks <- unique(df_math$park_name)
+all_parks <- all_parks[all_parks != "Stay_Home"]
+
+
+# Run the function for all parks and combine results
+# This replaces your 'for' loop entirely
+rum_results_2021 <- map_df(all_parks, function(p) {
+  
+  # Run your function (the one that returns mean, sd, ci)
+  stats <- calc_rum_welfare_manual(p)
+  
+  # Add the park name so we know which row is which
+  stats$parkname <- p
+  
+  return(stats)
+})
+
+# 3. Reorder columns to put parkname first
+rum_results_2021 <- rum_results_2021 %>% 
+  select(parkname, mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, n)
+
+print(rum_results_2021)
+
+rum_results_2021<- rum_results_2021 %>% 
+  select(parkname, mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, n) %>%
+  mutate(
+    # Use mean_cv_rum because that is what your function produced
+    rum_total_annual_loss = mean_cv_rum * n
+  )
+
+park_number <- final_data_2021 %>%
+  # Select only the two columns you need
+  select(parkname, parkname_numeric) %>%
+  # Keep only the unique combinations
+  distinct() %>%
+  # Sort them by the numeric ID for easier reading
+  arrange(parkname_numeric)
+
+welfare_summary<- read_csv("welfare_summary_2021.csv")
+
+#welfare_summary=welfare_summary$CoefTable
+welfare_summary=welfare_summary %>%
+  mutate(
+    # Extract only the digits from the "policy" string and make it an integer
+    parkname_numeric = as.integer(str_extract(policy, "\\d+"))
+  ) %>%
+  # 2. Merge with your park_number key (created in the previous step)
+  left_join(park_number, by = "parkname_numeric") %>%
+  # 3. Clean up: Move parkname to the front and remove the "policy" column
+  select(parkname, parkname_numeric, mean, std.dev, everything(), -policy)
+
+final_comparison_2021 <- rum_results_2021 %>%
+  select(parkname, rum_mean_per_trip=mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, rum_total_annual_loss) %>%
+  left_join(welfare_summary, by = "parkname") %>%
+  rename(mdcev_mean_per_person = mean) %>%
+  mutate(
+    # 1. RUM Annual = (Mean per Trip) * (Total Number of Trips)
+    rum_annual_total = rum_mean_per_trip * sum(final_data_2019$VisitCount),
+    
+    # 2. MDCEV Annual = (Mean per Person) * (Number of Unique People)
+    # We use n_distinct(id) to get exactly 1,380
+    mdcev_annual_total = mdcev_mean_per_person * n_distinct(final_data_2019$id),
+    
+    # 3. The Gap
+    difference = rum_annual_total - mdcev_annual_total
+  )
+
+
+```
+
+### 2022
+
+```{r }
+
+# Create unique choice occasions for every visit
+data_rum <- final_data_2022 %>%
+  filter(VisitCount > 0) %>%
+  uncount(VisitCount) %>%
+  group_by(id) %>%
+  mutate(choice_id = paste0(id, "_", row_number())) %>%
+  ungroup() %>%
+  select(choice_id, id, chosen_park = parkname) %>%
+  expand_grid(parkname = unique(final_data_2022$parkname)) %>%
+  mutate(choice = (chosen_park == parkname)) %>%
+  left_join(final_data_2022 %>% select(id, parkname, price, travel_distance_km), 
+            by = c("id", "parkname"))
+
+# Create Stay at Home
+
+# Create the Stay-at-Home option for every choice occasion
+outside_home <- data_rum %>%
+  distinct(choice_id, id) %>%
+  mutate(
+    parkname = "Stay_Home",
+    choice = FALSE,      
+    price = 0,
+    travel_distance_km = 0
+  )
+
+# Combine with existing data
+data_rum<- bind_rows(data_rum, outside_home)
+
+# Re-format for mlogit
+df_rum <- dfidx(data_rum, 
+                idx = list("choice_id", "parkname"), 
+                shape = "long")
+
+# Simple Multinomial Logit
+rum_mle <- mlogit(choice ~ price  | 1, data = df_rum)
+summary(rum_mle)
+
+
+
+# Calculate the 'Logsum' (Total Utility) for the status quo
+logsum_base <- logsum(rum_mle)
+
+# Convert df_rum to a standard data frame for our math
+df_math <- as.data.frame(df_rum)
+
+# Extract the IDs and Park names from the 'idx' column
+# idx(df_rum, 1) gets the 'choice_id'
+# idx(df_rum, 2) gets the 'parkname'
+df_math$trip_id   <- as.character(idx(df_rum, 1))
+df_math$park_name <- as.character(idx(df_rum, 2))
+
+#  Calculate the Systematic Utility (V)
+# This uses the model coefficients and the data matrix
+df_math$V <- as.numeric(model.matrix(rum_mle) %*% coef(rum_mle))
+
+# Double check the columns are there
+head(df_math[, c("trip_id", "park_name", "V")])
+
+
+# Get the unique list of parks from your data
+# We exclude "Stay_Home" because we aren't "closing" the option to stay home
+all_parks <- unique(df_math$park_name)
+all_parks <- all_parks[all_parks != "Stay_Home"]
+
+# 2. Run the function for all parks and combine results
+# This replaces your 'for' loop entirely
+rum_results_2022 <- map_df(all_parks, function(p) {
+  
+  # Run your function (the one that returns mean, sd, ci)
+  stats <- calc_rum_welfare_manual(p)
+  
+  # Add the park name so we know which row is which
+  stats$parkname <- p
+  
+  return(stats)
+})
+
+# 3. Reorder columns to put parkname first
+rum_results_2022 <- rum_results_2022 %>% 
+  select(parkname, mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, n)
+
+print(rum_results_2022)
+
+rum_results_2022<- rum_results_2022 %>% 
+  select(parkname, mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, n) %>%
+  mutate(
+    # Use mean_cv_rum because that is what your function produced
+    rum_total_annual_loss = mean_cv_rum * n
+  )
+
+park_number <- final_data_2022 %>%
+  # Select only the two columns you need
+  select(parkname, parkname_numeric) %>%
+  # Keep only the unique combinations
+  distinct() %>%
+  # Sort them by the numeric ID for easier reading
+  arrange(parkname_numeric)
+
+welfare_summary<- read_csv("welfare_summary_2022.csv")
+
+#welfare_summary=welfare_summary$CoefTable
+welfare_summary=welfare_summary %>%
+  mutate(
+    # Extract only the digits from the "policy" string and make it an integer
+    parkname_numeric = as.integer(str_extract(policy, "\\d+"))
+  ) %>%
+  # 2. Merge with your park_number key (created in the previous step)
+  left_join(park_number, by = "parkname_numeric") %>%
+  # 3. Clean up: Move parkname to the front and remove the "policy" column
+  select(parkname, parkname_numeric, mean, std.dev, everything(), -policy)
+
+
+#  Join with RUM
+final_comparison_2022 <- rum_results_2022 %>%
+  select(parkname, rum_mean_per_trip=mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, rum_total_annual_loss) %>%
+  left_join(welfare_summary, by = "parkname") %>%
+  rename(mdcev_mean_per_person = mean) %>%
+  mutate(
+    # 1. RUM Annual = (Mean per Trip) * (Total Number of Trips)
+    rum_annual_total = rum_mean_per_trip * sum(final_data_2019$VisitCount),
+    
+    # 2. MDCEV Annual = (Mean per Person) * (Number of Unique People)
+    # We use n_distinct(id) to get exactly 1,380
+    mdcev_annual_total = mdcev_mean_per_person * n_distinct(final_data_2019$id),
+    
+    # 3. The Gap
+    difference = rum_annual_total - mdcev_annual_total
+  )
+```
+
+### 2023
+
+```{r }
+
+
+# Create unique choice occasions for every visit
+data_rum <- final_data_2023 %>%
+  filter(VisitCount > 0) %>%
+  uncount(VisitCount) %>%
+  group_by(id) %>%
+  mutate(choice_id = paste0(id, "_", row_number())) %>%
+  ungroup() %>%
+  select(choice_id, id, chosen_park = parkname) %>%
+  expand_grid(parkname = unique(final_data_2023$parkname)) %>%
+  mutate(choice = (chosen_park == parkname)) %>%
+  left_join(final_data_2023 %>% select(id, parkname, price, travel_distance_km), 
+            by = c("id", "parkname"))
+
+# Create Stay at Home
+
+# Create the Stay-at-Home option for every choice occasion
+outside_home <- data_rum %>%
+  distinct(choice_id, id) %>%
+  mutate(
+    parkname = "Stay_Home",
+    choice = FALSE,      
+    price = 0,
+    travel_distance_km = 0
+  )
+
+# Combine with existing data
+data_rum<- bind_rows(data_rum, outside_home)
+
+# Re-format for mlogit
+df_rum <- dfidx(data_rum, 
+                idx = list("choice_id", "parkname"), 
+                shape = "long")
+
+# Simple Multinomial Logit
+rum_mle <- mlogit(choice ~ price  | 1, data = df_rum)
+summary(rum_mle)
+
+
+
+# Calculate the 'Logsum' (Total Utility) for the status quo
+logsum_base <- logsum(rum_mle)
+
+# 1. Convert df_rum to a standard data frame for our math
+df_math <- as.data.frame(df_rum)
+
+# 2. Extract the IDs and Park names from the 'idx' column
+# idx(df_rum, 1) gets the 'choice_id'
+# idx(df_rum, 2) gets the 'parkname'
+df_math$trip_id   <- as.character(idx(df_rum, 1))
+df_math$park_name <- as.character(idx(df_rum, 2))
+
+# 3. Calculate the Systematic Utility (V)
+# This uses the model coefficients and the data matrix
+df_math$V <- as.numeric(model.matrix(rum_mle) %*% coef(rum_mle))
+
+# 4. Double check the columns are there
+head(df_math[, c("trip_id", "park_name", "V")])
+
+
+# Get the unique list of parks from your data
+# We exclude "Stay_Home" because we aren't "closing" the option to stay home
+all_parks <- unique(df_math$park_name)
+all_parks <- all_parks[all_parks != "Stay_Home"]
+
+# 2. Run the function for all parks and combine results
+# This replaces your 'for' loop entirely
+rum_results_2023 <- map_df(all_parks, function(p) {
+  
+  # Run your function (the one that returns mean, sd, ci)
+  stats <- calc_rum_welfare_manual(p)
+  
+  # Add the park name so we know which row is which
+  stats$parkname <- p
+  
+  return(stats)
+})
+
+# 3. Reorder columns to put parkname first
+rum_results_2023 <- rum_results_2023 %>% 
+  select(parkname, mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, n)
+
+print(rum_results_2023)
+
+rum_results_2023<- rum_results_2023 %>% 
+  select(parkname, mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, n) %>%
+  mutate(
+    # Use mean_cv_rum because that is what your function produced
+    rum_total_annual_loss = mean_cv_rum * n
+  )
+
+park_number <- final_data_2023 %>%
+  # Select only the two columns you need
+  select(parkname, parkname_numeric) %>%
+  # Keep only the unique combinations
+  distinct() %>%
+  # Sort them by the numeric ID for easier reading
+  arrange(parkname_numeric)
+
+welfare_summary<- read_csv("welfare_summary_2023.csv")
+
+#welfare_summary=welfare_summary$CoefTable
+welfare_summary=welfare_summary %>%
+  mutate(
+    # Extract only the digits from the "policy" string and make it an integer
+    parkname_numeric = as.integer(str_extract(policy, "\\d+"))
+  ) %>%
+  # 2. Merge with your park_number key (created in the previous step)
+  left_join(park_number, by = "parkname_numeric") %>%
+  # 3. Clean up: Move parkname to the front and remove the "policy" column
+  select(parkname, parkname_numeric, mean, std.dev, everything(), -policy)
+
+
+
+#  Join with RUM
+
+  final_comparison_2023 <- rum_results_2023 %>%
+  select(parkname, rum_mean_per_trip=mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, rum_total_annual_loss) %>%
+  left_join(welfare_summary, by = "parkname") %>%
+  rename(mdcev_mean_per_person = mean) %>%
+  mutate(
+    # 1. RUM Annual = (Mean per Trip) * (Total Number of Trips)
+    rum_annual_total = rum_mean_per_trip * sum(final_data_2019$VisitCount),
+    
+    # 2. MDCEV Annual = (Mean per Person) * (Number of Unique People)
+    # We use n_distinct(id) to get exactly 1,380
+    mdcev_annual_total = mdcev_mean_per_person * n_distinct(final_data_2019$id),
+    
+    # 3. The Gap
+    difference = rum_annual_total - mdcev_annual_total
+  )
+
+final_comparison_2018$year=2018
+final_comparison_2019$year=2019
+final_comparison_2020$year=2020
+final_comparison_2021$year=2021
+final_comparison_2022$year=2022
+final_comparison_2023$year=2023
+
+combined_welfare=rbind(final_comparison_2018,final_comparison_2019,final_comparison_2020,final_comparison_2021,final_comparison_2022,final_comparison_2023)
+
+write_csv(combined_welfare,file="rum_combined_totalWF.csv")
+```
+
+# Results comparison
+
+```{r}
+combined_welfare=read_csv("rum_combined_totalWF.csv")
+print(combined_welfare)
+
+```
+
+This would be the estimate for a closer of each park.
+
+If MDCEV is the mean for **per person** and RUM mean is **per trip**, then to compare them by looking at the **Total Annual Welfare Loss** for each park:
+
+$Total\ MDCEV\ Loss = (MDCEV\ MeanPerson) \times (Total\ Number\ of\ People)$
+
+$Total\ RUM\ Loss = (RUM\ Mean Trip) \times (Total\ Number\ of\ Trips)$
+
+```{r}
+
+library(ggplot2)
+
+
+
+# Prepare the data into a long format for the two models
+plot_data_long <- combined_welfare %>%
+  select(year, parkname, rum_annual_total, mdcev_annual_total) %>%
+  pivot_longer(cols = c(rum_annual_total, mdcev_annual_total), 
+               names_to = "Model", 
+               values_to = "Annual_Loss") %>%
+  mutate(Model = ifelse(Model == "rum_annual_total", "RUM", "MDCEV"),
+         # Convert to absolute values (positive dollars) for easier reading
+         Annual_Loss_Abs = abs(Annual_Loss))
+
+ggplot(plot_data_long, aes(x = as.factor(year), y = Annual_Loss_Abs, fill = Model)) +
+  geom_boxplot(alpha = 0.7, outlier.shape = 21, outlier.fill = "white") +
+  scale_y_log10(labels = scales::dollar_format()) +
+  labs(title = "Distribution of Annual Welfare Losses Across Parks",
+       subtitle = "Comparing RUM vs MDCEV Park-Level Estimates (2018-2023)",
+       x = "Year", 
+       y = "Annual Welfare Loss per Park (Log Scale)") +
+  theme_minimal() +
+  scale_fill_manual(values = c("MDCEV" = "#2c3e50", "RUM" = "#e74c3c"))
+
+```
+
+## Comparison Individual
+
+```{r}
+
+
+# Create unique choice occasions for every visit
+data_rum <- final_data_2018 %>%
+  filter(VisitCount > 0) %>%
+  uncount(VisitCount) %>%
+  group_by(id) %>%
+  mutate(choice_id = paste0(id, "_", row_number())) %>%
+  ungroup() %>%
+  select(choice_id, id, chosen_park = parkname) %>%
+  expand_grid(parkname = unique(final_data_2018$parkname)) %>%
+  mutate(choice = (chosen_park == parkname)) %>%
+  left_join(final_data_2018 %>% select(id, parkname, price, travel_distance_km,income,zip), 
+            by = c("id", "parkname"))
+
+# Create Stay at Home
+
+# Create the Stay-at-Home option for every choice occasion
+outside_home <- data_rum %>%
+  distinct(choice_id, id,income,zip) %>%
+  mutate(
+    parkname = "Stay_Home",
+    choice = FALSE,      
+    price = 0,
+    travel_distance_km = 0
+  )
+
+# Combine with your existing data
+data_rum<- bind_rows(data_rum, outside_home)
+
+# Re-format for mlogit
+df_rum <- dfidx(data_rum, 
+                        idx = list("choice_id", "parkname"), 
+                        shape = "long")
+
+# Simple Multinomial Logit
+rum_mle <- mlogit(choice ~ price  | 1, data = df_rum)
+summary(rum_mle)
+
+
+
+
+# 1. Generate the utilities for ALL alternatives (38,786 rows)
+V_all <- as.numeric(model.matrix(rum_mle) %*% coef(rum_mle))
+
+# 2. Extract the long-format model frame and attach V
+df_long_v <- as.data.frame(model.frame(rum_mle))
+df_long_v$V <- V_all
+df_long_v$choice_id <- idx(rum_mle, 1)
+df_long_v$parkname  <- idx(rum_mle, 2)
+
+# 3. Get metadata (id and zip) to ensure we don't lose them
+# We grab this from your 'data_rum' object
+metadata <- data_rum %>% distinct(choice_id, id, zip)
+
+# 4. Define the list of sites (excluding Stay_Home)
+sites_to_test <- unique(df_long_v$parkname)
+sites_to_test <- sites_to_test[sites_to_test != "Stay_Home"]
+
+# 5. Extract Price Coefficient
+beta_p <- abs(coef(rum_mle)["price"])
+
+library(purrr)
+
+# Use map_dfr to loop through sites and bind results into one dataframe
+welfare_2018_rum_ind <- map_dfr(sites_to_test, function(s) {
+    
+    df_long_v %>%
+        group_by(choice_id) %>%
+        summarise(
+            # Welfare change = [ln(sum exp V_all) - ln(sum exp V_minus_s)] / beta_p
+            ls_all = log(sum(exp(V))),
+            ls_minus_s = log(sum(exp(V[parkname != s]))),
+            .groups = "drop"
+        ) %>%
+        mutate(
+            site = s,
+            trip_welfare = (ls_all - ls_minus_s) / beta_p
+        ) %>%
+        # Join metadata to get 'id' and 'zip'
+        left_join(metadata, by = "choice_id") %>%
+        # Sum up welfare across all trips for each person
+        group_by(id, zip, site) %>%
+        summarise(mean_value = sum(trip_welfare), .groups = "drop")
+})
+
+# Final view
+head(welfare_2018_rum_ind)
+```
+
+From here lets compare the same hicksan Consumer Surplus the MDCEV is calculating the change from a loss of a site and holding utility constant
+
+Where as the Rum utility we are measuring the marshallian where income is held constant and the indirect utility is the theory.
+
+The measurement is higher when we looked at per site but is it the same if we look at individual? This is the next section.
+
+```{r}
+welfare_2018_ind <- read_csv("welfare_2018_ind.csv")
+
+
+welfare_2018_rum_ind=merge(park_number,welfare_2018_rum_ind, by.x=c("parkname"), by.y =c("site") )
+
+welfare_2018_ind <- read_csv("welfare_2018_ind.csv")
+colnames(welfare_2018_rum_ind)[5]="mean_value_rum"
+welfare_2018_ind_combined=merge(welfare_2018_rum_ind,welfare_2018_ind, by.x=c("parkname_numeric","id","zip"), by.y =c("site","id","zip") )
+```
+
+# Calculating Cumulative Value
+
+We can think of the two as RUM gets us an idea of charging for a trip while the MDCEV gives us the total value to think about its
+
+```{r}
+
+
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+#"Staple" and "Satiating" parks for 2023
+satiation_ranking <- combined_welfare %>%
+  filter(year == 2023) %>%
+  mutate(satiation_index = abs(mdcev_mean_per_person / rum_mean_per_trip)) %>%
+  arrange(satiation_index)
+
+#two extremes
+staple_park <- satiation_ranking %>% slice_max(satiation_index, n = 1)
+satiating_park <- satiation_ranking %>% slice_min(satiation_index, n = 1)
+
+# Function to generate cumulative data
+generate_cum_data <- function(park_row, label, max_trips = 30) {
+  trip_seq <- 1:max_trips
+  val_per_trip <- abs(park_row$rum_mean_per_trip)
+  val_total_person <- abs(park_row$mdcev_mean_per_person)
+  
+  # RUM: Linear growth
+  rum_cum <- trip_seq * val_per_trip
+  
+  # MDCEV: Logarithmic growth constrained to the 'Total Annual' result
+  # We assume the MDCEV total is reached at roughly the 'average' frequency
+  mdcev_cum <- val_total_person * (log10(trip_seq + 1) / log10(max_trips + 1))
+  
+  data.frame(
+    Trip = rep(trip_seq, 2),
+    Surplus = c(rum_cum, mdcev_cum),
+    Model = rep(c("RUM (Trip-Based)", "MDCEV (Person-Based)"), each = max_trips),
+    Park_Type = label,
+    Park_Name = park_row$parkname
+  )
+}
+
+# Combine data for both parks
+plot_data_combined <- rbind(
+  generate_cum_data(staple_park, "Staple Park (Low Satiation)"),
+  generate_cum_data(satiating_park, "Satiating Park (High Satiation)")
+)
+
+# Create the Comparison Plot
+ggplot(plot_data_combined, aes(x = Trip, y = Surplus, fill = Model, color = Model)) +
+  geom_area(alpha = 0.3, position = "identity") +
+  geom_line(size = 1) +
+  facet_wrap(~Park_Type + Park_Name, scales = "free_y") +
+  scale_y_continuous(labels = scales::dollar) +
+  scale_fill_manual(values = c("MDCEV (Person-Based)" = "#2c3e50", "RUM (Trip-Based)" = "#e74c3c")) +
+  scale_color_manual(values = c("MDCEV (Person-Based)" = "#2c3e50", "RUM (Trip-Based)" = "#e74c3c")) +
+  labs(
+    title = "Satiation Comparison: How Model Choice Diverges with Frequency",
+    subtitle = "The 'Red Gap' represents surplus RUM creates that MDCEV assumes is lost to satiation.",
+    x = "Number of Trips per Year",
+    y = "Cumulative Consumer Surplus ($)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom", strip.text = element_text(face="bold"))
+```
+
+## 52-weeks
+
+Testing the idea of putting more choosing stay at home... Increases WTP. Problem here is final data doesn't have day so maybe this is not a good assumption.
+
+```{r}
+library(dplyr)
+library(tidyr)
+
+# 1. Get all unique users and all unique parks from current data
+unique_users <- final_data_2018 %>% distinct(id, zip, income)
+all_parks <- unique(final_data_2018$parkname)
+
+# 2. Create the "52 Week" Skeleton
+# This creates 52 rows for every single person in dataset
+df_52_weeks <- unique_users %>%
+  expand_grid(week = 1:52) %>%
+  mutate(choice_id = paste0(id, "_w", week))
+
+# 3. Identify the ACTUAL trips taken (from reservation data)
+# need to assign these to specific weeks. 
+# if no exact dates, we distribute them randomly or to the first few weeks.
+actual_trips <- data_rum %>%
+  filter(choice == TRUE & parkname != "Stay_Home") %>%
+  group_by(id) %>%
+  mutate(week = row_number()) %>% # Assigns trip 1 to week 1, trip 2 to week 2
+  ungroup() %>%
+  select(id, week, chosen_park = parkname)
+
+# 4. Join the actual trips into the 52-week skeleton
+df_expanded_rum <- df_52_weeks %>%
+  left_join(actual_trips, by = c("id", "week")) %>%
+  # If 'chosen_park' is NA, it means they stayed home that week
+  mutate(chosen_park = ifelse(is.na(chosen_park), "Stay_Home", chosen_park))
+# 5. Expand to full choice sets (Parks + Stay_Home) for every week
+df_rum_final <- df_expanded_rum %>%
+  expand_grid(parkname = c(all_parks, "Stay_Home")) %>%
+  mutate(choice = (chosen_park == parkname))
+
+# 6. Re-attach Prices and Distance
+# Note: Price for 'Stay_Home' is always 0.
+df_rum_final <- df_rum_final %>%
+  left_join(final_data_2018 %>% select(id, parkname, price, travel_distance_km), 
+            by = c("id", "parkname")) %>%
+  mutate(
+    price = ifelse(parkname == "Stay_Home", 0, price),
+    travel_distance_km = ifelse(parkname == "Stay_Home", 0, travel_distance_km)
+  )
+
+# 7. Re-format for mlogit
+library(mlogit)
+df_idx_52 <- dfidx(df_rum_final, 
+                   idx = list("choice_id", "parkname"), 
+                   shape = "long")
+
+rum_mle_52 <- mlogit(choice ~ price | 1 , data = df_idx_52)
+
+summary(rum_mle_52)
+
+
+```
