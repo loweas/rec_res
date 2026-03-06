@@ -1716,7 +1716,7 @@ final_data_2023$parkname_numeric <- as.integer(factor(final_data_2023$parkname, 
 
 ```
 
-## Rum
+#### Rum
 
 ```{r setup}
 library(mlogit)
@@ -1904,694 +1904,101 @@ final_comparison_2018 <- rum_results_2018 %>%
   )
 ```
 
-### 2019
+### Loop
 
 I have each year thats basically copied from 2018 so if there is a change from 2018 then it needs to be changed for every single one.
 
 ```{r}
-# Create unique choice occasions for every visit
-data_rum <- final_data_2019 %>%
-  filter(VisitCount > 0) %>%
-  uncount(VisitCount) %>%
-  group_by(id) %>%
-  mutate(choice_id = paste0(id, "_", row_number())) %>%
-  ungroup() %>%
-  select(choice_id, id, chosen_park = parkname) %>%
-  expand_grid(parkname = unique(final_data_2019$parkname)) %>%
-  mutate(choice = (chosen_park == parkname)) %>%
-  left_join(final_data_2019 %>% select(id, parkname, price, travel_distance_km), 
-            by = c("id", "parkname"))
-
-# Create Stay at Home
-
-# Create the Stay-at-Home option for every choice occasion
-outside_home <- data_rum %>%
-  distinct(choice_id, id) %>%
-  mutate(
-    parkname = "Stay_Home",
-    choice = FALSE,      
-    price = 0,
-    travel_distance_km = 0
-  )
-
-# Combine with existing data
-data_rum<- bind_rows(data_rum, outside_home)
-
-# Re-format for mlogit
-df_rum <- dfidx(data_rum, 
-                idx = list("choice_id", "parkname"), 
-                shape = "long")
-
-# Simple Multinomial Logit
-rum_mle <- mlogit(choice ~ price  | 1, data = df_rum)
-summary(rum_mle)
-
-
-
-# Calculate the 'Logsum' (Total Utility) for the status quo
-logsum_base <- logsum(rum_mle)
-
-# 1. Convert df_rum to a standard data frame for our math
-df_math <- as.data.frame(df_rum)
-
-# 2. Extract the IDs and Park names from the 'idx' column
-# idx(df_rum, 1) gets the 'choice_id'
-# idx(df_rum, 2) gets the 'parkname'
-df_math$trip_id   <- as.character(idx(df_rum, 1))
-df_math$park_name <- as.character(idx(df_rum, 2))
-
-# 3. Calculate the Systematic Utility (V)
-# This uses the model coefficients and the data matrix
-df_math$V <- as.numeric(model.matrix(rum_mle) %*% coef(rum_mle))
-
-# 4. Double check the columns are there
-head(df_math[, c("trip_id", "park_name", "V")])
-
-
-# Get the unique list of parks from your data
-# We exclude "Stay_Home" because we aren't "closing" the option to stay home
-all_parks <- unique(df_math$park_name)
-all_parks <- all_parks[all_parks != "Stay_Home"]
-
-# 2. Run the function for all parks and combine results
-# This replaces your 'for' loop entirely
-rum_results_2019 <- map_df(all_parks, function(p) {
-  
-  # Run your function (the one that returns mean, sd, ci)
-  stats <- calc_rum_welfare_manual(p)
-  
-  # Add the park name so we know which row is which
-  stats$parkname <- p
-  
-  return(stats)
-})
-
-# 3. Reorder columns to put parkname first
-rum_results_2019 <- rum_results_2019 %>% 
-  select(parkname, mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, n)
-
-print(rum_results_2019)
-
-rum_results_2019 <- rum_results_2019 %>% 
-  select(parkname, mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, n) %>%
-  mutate(
-    # Use mean_cv_rum because that is what your function produced
-    rum_total_annual_loss = mean_cv_rum * n
-  )
-
 library(dplyr)
+library(tidyr)
+library(purrr)
+library(mlogit)
 library(stringr)
-park_number <- final_data_2019 %>%
-  # Select only the two columns you need
-  select(parkname, parkname_numeric) %>%
-  # Keep only the unique combinations
-  distinct() %>%
-  # Sort them by the numeric ID for easier reading
-  arrange(parkname_numeric)
+library(readr)
 
-welfare_summary=read_csv("welfare_summary_2019.csv")
-welfare_summary=welfare_summary %>%
-  mutate(
-    # Extract only the digits from the "policy" string and make it an integer
-    parkname_numeric = as.integer(str_extract(policy, "\\d+"))
-  ) %>%
-  # 2. Merge with your park_number key (created in the previous step)
-  left_join(park_number, by = "parkname_numeric") %>%
-  # 3. Clean up: Move parkname to the front and remove the "policy" column
-  select(parkname, parkname_numeric, mean, std.dev, everything(), -policy)
+years <- 2018:2023
 
-final_comparison_2019 <- rum_results_2019 %>%
-  select(parkname, rum_mean_per_trip=mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, rum_total_annual_loss) %>%
-  left_join(welfare_summary, by = "parkname") %>%
-  rename(mdcev_mean_per_person = mean) %>%
-  mutate(
-    # 1. RUM Annual = (Mean per Trip) * (Total Number of Trips)
-    rum_annual_total = rum_mean_per_trip * sum(final_data_2019$VisitCount),
-    
-    # 2. MDCEV Annual = (Mean per Person) * (Number of Unique People)
-    # We use n_distinct(id) to get exactly 1,380
-    mdcev_annual_total = mdcev_mean_per_person * n_distinct(final_data_2019$id),
-    
-    # 3. The Gap
-    difference = rum_annual_total - mdcev_annual_total
-  )
-```
-
-### 2020
-
-```{r }
-
-# Create unique choice occasions for every visit
-data_rum <- final_data_2020 %>%
-  filter(VisitCount > 0) %>%
-  uncount(VisitCount) %>%
-  group_by(id) %>%
-  mutate(choice_id = paste0(id, "_", row_number())) %>%
-  ungroup() %>%
-  select(choice_id, id, chosen_park = parkname) %>%
-  expand_grid(parkname = unique(final_data_2020$parkname)) %>%
-  mutate(choice = (chosen_park == parkname)) %>%
-  left_join(final_data_2020 %>% select(id, parkname, price, travel_distance_km), 
-            by = c("id", "parkname"))
-
-# Create Stay at Home
-
-# Create the Stay-at-Home option for every choice occasion
-outside_home <- data_rum %>%
-  distinct(choice_id, id) %>%
-  mutate(
-    parkname = "Stay_Home",
-    choice = FALSE,      
-    price = 0,
-    travel_distance_km = 0
-  )
-
-# Combine with existing data
-data_rum<- bind_rows(data_rum, outside_home)
-
-# Re-format for mlogit
-df_rum <- dfidx(data_rum, 
-                idx = list("choice_id", "parkname"), 
-                shape = "long")
-
-# Simple Multinomial Logit
-rum_mle <- mlogit(choice ~ price  | 1, data = df_rum)
-summary(rum_mle)
-
-
-
-# Calculate the 'Logsum' (Total Utility) for the status quo
-logsum_base <- logsum(rum_mle)
-
-# 1. Convert df_rum to a standard data frame for our math
-df_math <- as.data.frame(df_rum)
-
-# 2. Extract the IDs and Park names from the 'idx' column
-# idx(df_rum, 1) gets the 'choice_id'
-# idx(df_rum, 2) gets the 'parkname'
-df_math$trip_id   <- as.character(idx(df_rum, 1))
-df_math$park_name <- as.character(idx(df_rum, 2))
-
-# 3. Calculate the Systematic Utility (V)
-# This uses the model coefficients and the data matrix
-df_math$V <- as.numeric(model.matrix(rum_mle) %*% coef(rum_mle))
-
-# 4. Double check the columns are there
-head(df_math[, c("trip_id", "park_name", "V")])
-
-
-# Get the unique list of parks from your data
-# We exclude "Stay_Home" because we aren't "closing" the option to stay home
-all_parks <- unique(df_math$park_name)
-all_parks <- all_parks[all_parks != "Stay_Home"]
-
-# Create a data frame to store the results
-
-# Get the unique list of parks from your data
-# We exclude "Stay_Home" because we aren't "closing" the option to stay home
-all_parks <- unique(df_math$park_name)
-all_parks <- all_parks[all_parks != "Stay_Home"]
-
-# Run the function for all parks and combine results
-# This replaces your 'for' loop entirely
-rum_results_2020 <- map_df(all_parks, function(p) {
+final_comparison_all_years <- map_df(years, function(yr) {
   
-  # Run your function (the one that returns mean, sd, ci)
-  stats <- calc_rum_welfare_manual(p)
+  message(paste(">>> Processing Year:", yr))
   
-  # Add the park name so we know which row is which
-  stats$parkname <- p
+  # 0. Get current year data
+  current_data <- get(paste0("final_data_", yr))
   
-  return(stats)
+  # 1. Create unique choice occasions for every visit
+  data_rum_raw <- current_data %>%
+    filter(VisitCount > 0) %>%
+    uncount(VisitCount) %>%
+    group_by(id) %>%
+    mutate(choice_id = paste0(id, "_", row_number())) %>%
+    ungroup() %>%
+    select(choice_id, id, chosen_park = parkname) %>%
+    expand_grid(parkname = unique(current_data$parkname)) %>%
+    mutate(choice = (chosen_park == parkname)) %>%
+    left_join(current_data %>% select(id, parkname, price, travel_distance_km), 
+              by = c("id", "parkname"))
+
+  # 2. Add Stay-at-Home Option
+  outside_home <- data_rum_raw %>%
+    distinct(choice_id, id) %>%
+    mutate(parkname = "Stay_Home", choice = FALSE, price = 0, travel_distance_km = 0)
+  
+  data_rum_combined <- bind_rows(data_rum_raw, outside_home)
+
+  # 3. Model Estimation - Pushed to Global for the function to see
+  df_idx_local <- dfidx(data_rum_combined, idx = list("choice_id", "parkname"), shape = "long")
+  rum_mle <<- mlogit(choice ~ price | 1, data = df_idx_local)
+  
+  # 4. Prepare df_math - Pushed to Global for the function to see
+  # This is the step that was likely missing or stale in your previous run
+  df_math_local <- as.data.frame(df_idx_local)
+  df_math_local$trip_id   <- as.character(idx(df_idx_local, 1))
+  df_math_local$park_name <- as.character(idx(df_idx_local, 2))
+  
+  # Calculate V (Systematic Utility) using the CURRENT year's model
+  df_math_local$V <- as.numeric(model.matrix(rum_mle) %*% coef(rum_mle))
+  
+  # Update Global df_math so calc_rum_welfare_manual uses the NEW year's V and trip_ids
+  df_math <<- df_math_local
+
+  # 5. RUM Welfare Calculations
+  all_parks_list <- unique(df_math$park_name)
+  all_parks_list <- all_parks_list[all_parks_list != "Stay_Home"]
+  
+  rum_results <- map_df(all_parks_list, function(p) {
+    stats <- calc_rum_welfare_manual(p) 
+    stats$parkname <- p
+    return(stats)
+  })
+
+  # 6. Process Welfare Summary CSV
+  welfare_summary_yr <- read_csv(paste0("welfare_summary_", yr, ".csv")) %>%
+    mutate(parkname_numeric = as.integer(str_extract(policy, "\\d+"))) %>%
+    left_join(
+      current_data %>% select(parkname, parkname_numeric) %>% distinct(), 
+      by = "parkname_numeric"
+    ) %>%
+    rename(mdcev_mean_per_person = mean)
+
+  # 7. Final Join for the specific year
+  year_comparison <- rum_results %>%
+    mutate(rum_total_annual_loss = mean_cv_rum * n) %>%
+    select(parkname, rum_mean_per_trip = mean_cv_rum, std_dev_rum, 
+           ci_lo_2.5_rum, ci_hi_97.5_rum, rum_total_annual_loss) %>%
+    left_join(welfare_summary_yr, by = "parkname") %>%
+    mutate(
+      year = yr,
+      rum_annual_total = rum_mean_per_trip * sum(current_data$VisitCount, na.rm = TRUE),
+      mdcev_annual_total = mdcev_mean_per_person * n_distinct(current_data$id),
+      difference = rum_annual_total - mdcev_annual_total
+    ) %>%
+    select(year, parkname, rum_mean_per_trip, mdcev_mean_per_person, 
+           rum_annual_total, mdcev_annual_total, difference, everything(), -policy)
+
+  return(year_comparison)
 })
 
-# 3. Reorder columns to put parkname first
-rum_results_2020 <- rum_results_2020 %>% 
-  select(parkname, mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, n)
-
-print(rum_results_2020)
-
-rum_results_2020<- rum_results_2020 %>% 
-  select(parkname, mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, n) %>%
-  mutate(
-    # Use mean_cv_rum because that is what your function produced
-    rum_total_annual_loss = mean_cv_rum * n
-  )
-
-park_number <- final_data_2020 %>%
-  # Select only the two columns you need
-  select(parkname, parkname_numeric) %>%
-  # Keep only the unique combinations
-  distinct() %>%
-  # Sort them by the numeric ID for easier reading
-  arrange(parkname_numeric)
-
-welfare_summary=read_csv("welfare_summary_2020.csv")
-welfare_summary=welfare_summary %>%
-  mutate(
-    # Extract only the digits from the "policy" string and make it an integer
-    parkname_numeric = as.integer(str_extract(policy, "\\d+"))
-  ) %>%
-  # 2. Merge with your park_number key (created in the previous step)
-  left_join(park_number, by = "parkname_numeric") %>%
-  # 3. Clean up: Move parkname to the front and remove the "policy" column
-  select(parkname, parkname_numeric, mean, std.dev, everything(), -policy)
-
-final_comparison_2020 <- rum_results_2020 %>%
-  select(parkname, rum_mean_per_trip=mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, rum_total_annual_loss) %>%
-  left_join(welfare_summary, by = "parkname") %>%
-  rename(mdcev_mean_per_person = mean) %>%
-  mutate(
-    # 1. RUM Annual = (Mean per Trip) * (Total Number of Trips)
-    rum_annual_total = rum_mean_per_trip * sum(final_data_2019$VisitCount),
-    
-    # 2. MDCEV Annual = (Mean per Person) * (Number of Unique People)
-    # We use n_distinct(id) to get exactly 1,380
-    mdcev_annual_total = mdcev_mean_per_person * n_distinct(final_data_2019$id),
-    
-    # 3. The Gap
-    difference = rum_annual_total - mdcev_annual_total
-  )
-```
-
-### 2021
-
-```{r }
-
-
-
-# Create unique choice occasions for every visit
-data_rum <- final_data_2021 %>%
-  filter(VisitCount > 0) %>%
-  uncount(VisitCount) %>%
-  group_by(id) %>%
-  mutate(choice_id = paste0(id, "_", row_number())) %>%
-  ungroup() %>%
-  select(choice_id, id, chosen_park = parkname) %>%
-  expand_grid(parkname = unique(final_data_2021$parkname)) %>%
-  mutate(choice = (chosen_park == parkname)) %>%
-  left_join(final_data_2021 %>% select(id, parkname, price, travel_distance_km), 
-            by = c("id", "parkname"))
-
-# Create Stay at Home
-
-# Create the Stay-at-Home option for every choice occasion
-outside_home <- data_rum %>%
-  distinct(choice_id, id) %>%
-  mutate(
-    parkname = "Stay_Home",
-    choice = FALSE,      
-    price = 0,
-    travel_distance_km = 0
-  )
-
-# Combine with existing data
-data_rum<- bind_rows(data_rum, outside_home)
-
-# Re-format for mlogit
-df_rum <- dfidx(data_rum, 
-                idx = list("choice_id", "parkname"), 
-                shape = "long")
-
-# Simple Multinomial Logit
-rum_mle <- mlogit(choice ~ price  | 1, data = df_rum)
-summary(rum_mle)
-
-
-
-# Calculate the 'Logsum' (Total Utility) for the status quo
-logsum_base <- logsum(rum_mle)
-
-# 1. Convert df_rum to a standard data frame for our math
-df_math <- as.data.frame(df_rum)
-
-# 2. Extract the IDs and Park names from the 'idx' column
-# idx(df_rum, 1) gets the 'choice_id'
-# idx(df_rum, 2) gets the 'parkname'
-df_math$trip_id   <- as.character(idx(df_rum, 1))
-df_math$park_name <- as.character(idx(df_rum, 2))
-
-# Calculate the Systematic Utility (V)
-# This uses the model coefficients and the data matrix
-df_math$V <- as.numeric(model.matrix(rum_mle) %*% coef(rum_mle))
-
-# Double check the columns are there
-head(df_math[, c("trip_id", "park_name", "V")])
-
-
-
-# Get the unique list of parks from your data
-# We exclude "Stay_Home" because we aren't "closing" the option to stay home
-all_parks <- unique(df_math$park_name)
-all_parks <- all_parks[all_parks != "Stay_Home"]
-
-
-# Run the function for all parks and combine results
-# This replaces your 'for' loop entirely
-rum_results_2021 <- map_df(all_parks, function(p) {
-  
-  # Run your function (the one that returns mean, sd, ci)
-  stats <- calc_rum_welfare_manual(p)
-  
-  # Add the park name so we know which row is which
-  stats$parkname <- p
-  
-  return(stats)
-})
-
-# 3. Reorder columns to put parkname first
-rum_results_2021 <- rum_results_2021 %>% 
-  select(parkname, mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, n)
-
-print(rum_results_2021)
-
-rum_results_2021<- rum_results_2021 %>% 
-  select(parkname, mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, n) %>%
-  mutate(
-    # Use mean_cv_rum because that is what your function produced
-    rum_total_annual_loss = mean_cv_rum * n
-  )
-
-park_number <- final_data_2021 %>%
-  # Select only the two columns you need
-  select(parkname, parkname_numeric) %>%
-  # Keep only the unique combinations
-  distinct() %>%
-  # Sort them by the numeric ID for easier reading
-  arrange(parkname_numeric)
-
-welfare_summary<- read_csv("welfare_summary_2021.csv")
-
-#welfare_summary=welfare_summary$CoefTable
-welfare_summary=welfare_summary %>%
-  mutate(
-    # Extract only the digits from the "policy" string and make it an integer
-    parkname_numeric = as.integer(str_extract(policy, "\\d+"))
-  ) %>%
-  # 2. Merge with your park_number key (created in the previous step)
-  left_join(park_number, by = "parkname_numeric") %>%
-  # 3. Clean up: Move parkname to the front and remove the "policy" column
-  select(parkname, parkname_numeric, mean, std.dev, everything(), -policy)
-
-final_comparison_2021 <- rum_results_2021 %>%
-  select(parkname, rum_mean_per_trip=mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, rum_total_annual_loss) %>%
-  left_join(welfare_summary, by = "parkname") %>%
-  rename(mdcev_mean_per_person = mean) %>%
-  mutate(
-    # 1. RUM Annual = (Mean per Trip) * (Total Number of Trips)
-    rum_annual_total = rum_mean_per_trip * sum(final_data_2019$VisitCount),
-    
-    # 2. MDCEV Annual = (Mean per Person) * (Number of Unique People)
-    # We use n_distinct(id) to get exactly 1,380
-    mdcev_annual_total = mdcev_mean_per_person * n_distinct(final_data_2019$id),
-    
-    # 3. The Gap
-    difference = rum_annual_total - mdcev_annual_total
-  )
-
-
-```
-
-### 2022
-
-```{r }
-
-# Create unique choice occasions for every visit
-data_rum <- final_data_2022 %>%
-  filter(VisitCount > 0) %>%
-  uncount(VisitCount) %>%
-  group_by(id) %>%
-  mutate(choice_id = paste0(id, "_", row_number())) %>%
-  ungroup() %>%
-  select(choice_id, id, chosen_park = parkname) %>%
-  expand_grid(parkname = unique(final_data_2022$parkname)) %>%
-  mutate(choice = (chosen_park == parkname)) %>%
-  left_join(final_data_2022 %>% select(id, parkname, price, travel_distance_km), 
-            by = c("id", "parkname"))
-
-# Create Stay at Home
-
-# Create the Stay-at-Home option for every choice occasion
-outside_home <- data_rum %>%
-  distinct(choice_id, id) %>%
-  mutate(
-    parkname = "Stay_Home",
-    choice = FALSE,      
-    price = 0,
-    travel_distance_km = 0
-  )
-
-# Combine with existing data
-data_rum<- bind_rows(data_rum, outside_home)
-
-# Re-format for mlogit
-df_rum <- dfidx(data_rum, 
-                idx = list("choice_id", "parkname"), 
-                shape = "long")
-
-# Simple Multinomial Logit
-rum_mle <- mlogit(choice ~ price  | 1, data = df_rum)
-summary(rum_mle)
-
-
-
-# Calculate the 'Logsum' (Total Utility) for the status quo
-logsum_base <- logsum(rum_mle)
-
-# Convert df_rum to a standard data frame for our math
-df_math <- as.data.frame(df_rum)
-
-# Extract the IDs and Park names from the 'idx' column
-# idx(df_rum, 1) gets the 'choice_id'
-# idx(df_rum, 2) gets the 'parkname'
-df_math$trip_id   <- as.character(idx(df_rum, 1))
-df_math$park_name <- as.character(idx(df_rum, 2))
-
-#  Calculate the Systematic Utility (V)
-# This uses the model coefficients and the data matrix
-df_math$V <- as.numeric(model.matrix(rum_mle) %*% coef(rum_mle))
-
-# Double check the columns are there
-head(df_math[, c("trip_id", "park_name", "V")])
-
-
-# Get the unique list of parks from your data
-# We exclude "Stay_Home" because we aren't "closing" the option to stay home
-all_parks <- unique(df_math$park_name)
-all_parks <- all_parks[all_parks != "Stay_Home"]
-
-# 2. Run the function for all parks and combine results
-# This replaces your 'for' loop entirely
-rum_results_2022 <- map_df(all_parks, function(p) {
-  
-  # Run your function (the one that returns mean, sd, ci)
-  stats <- calc_rum_welfare_manual(p)
-  
-  # Add the park name so we know which row is which
-  stats$parkname <- p
-  
-  return(stats)
-})
-
-# 3. Reorder columns to put parkname first
-rum_results_2022 <- rum_results_2022 %>% 
-  select(parkname, mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, n)
-
-print(rum_results_2022)
-
-rum_results_2022<- rum_results_2022 %>% 
-  select(parkname, mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, n) %>%
-  mutate(
-    # Use mean_cv_rum because that is what your function produced
-    rum_total_annual_loss = mean_cv_rum * n
-  )
-
-park_number <- final_data_2022 %>%
-  # Select only the two columns you need
-  select(parkname, parkname_numeric) %>%
-  # Keep only the unique combinations
-  distinct() %>%
-  # Sort them by the numeric ID for easier reading
-  arrange(parkname_numeric)
-
-welfare_summary<- read_csv("welfare_summary_2022.csv")
-
-#welfare_summary=welfare_summary$CoefTable
-welfare_summary=welfare_summary %>%
-  mutate(
-    # Extract only the digits from the "policy" string and make it an integer
-    parkname_numeric = as.integer(str_extract(policy, "\\d+"))
-  ) %>%
-  # 2. Merge with your park_number key (created in the previous step)
-  left_join(park_number, by = "parkname_numeric") %>%
-  # 3. Clean up: Move parkname to the front and remove the "policy" column
-  select(parkname, parkname_numeric, mean, std.dev, everything(), -policy)
-
-
-#  Join with RUM
-final_comparison_2022 <- rum_results_2022 %>%
-  select(parkname, rum_mean_per_trip=mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, rum_total_annual_loss) %>%
-  left_join(welfare_summary, by = "parkname") %>%
-  rename(mdcev_mean_per_person = mean) %>%
-  mutate(
-    # 1. RUM Annual = (Mean per Trip) * (Total Number of Trips)
-    rum_annual_total = rum_mean_per_trip * sum(final_data_2019$VisitCount),
-    
-    # 2. MDCEV Annual = (Mean per Person) * (Number of Unique People)
-    # We use n_distinct(id) to get exactly 1,380
-    mdcev_annual_total = mdcev_mean_per_person * n_distinct(final_data_2019$id),
-    
-    # 3. The Gap
-    difference = rum_annual_total - mdcev_annual_total
-  )
-```
-
-### 2023
-
-```{r }
-
-
-# Create unique choice occasions for every visit
-data_rum <- final_data_2023 %>%
-  filter(VisitCount > 0) %>%
-  uncount(VisitCount) %>%
-  group_by(id) %>%
-  mutate(choice_id = paste0(id, "_", row_number())) %>%
-  ungroup() %>%
-  select(choice_id, id, chosen_park = parkname) %>%
-  expand_grid(parkname = unique(final_data_2023$parkname)) %>%
-  mutate(choice = (chosen_park == parkname)) %>%
-  left_join(final_data_2023 %>% select(id, parkname, price, travel_distance_km), 
-            by = c("id", "parkname"))
-
-# Create Stay at Home
-
-# Create the Stay-at-Home option for every choice occasion
-outside_home <- data_rum %>%
-  distinct(choice_id, id) %>%
-  mutate(
-    parkname = "Stay_Home",
-    choice = FALSE,      
-    price = 0,
-    travel_distance_km = 0
-  )
-
-# Combine with existing data
-data_rum<- bind_rows(data_rum, outside_home)
-
-# Re-format for mlogit
-df_rum <- dfidx(data_rum, 
-                idx = list("choice_id", "parkname"), 
-                shape = "long")
-
-# Simple Multinomial Logit
-rum_mle <- mlogit(choice ~ price  | 1, data = df_rum)
-summary(rum_mle)
-
-
-
-# Calculate the 'Logsum' (Total Utility) for the status quo
-logsum_base <- logsum(rum_mle)
-
-# 1. Convert df_rum to a standard data frame for our math
-df_math <- as.data.frame(df_rum)
-
-# 2. Extract the IDs and Park names from the 'idx' column
-# idx(df_rum, 1) gets the 'choice_id'
-# idx(df_rum, 2) gets the 'parkname'
-df_math$trip_id   <- as.character(idx(df_rum, 1))
-df_math$park_name <- as.character(idx(df_rum, 2))
-
-# 3. Calculate the Systematic Utility (V)
-# This uses the model coefficients and the data matrix
-df_math$V <- as.numeric(model.matrix(rum_mle) %*% coef(rum_mle))
-
-# 4. Double check the columns are there
-head(df_math[, c("trip_id", "park_name", "V")])
-
-
-# Get the unique list of parks from your data
-# We exclude "Stay_Home" because we aren't "closing" the option to stay home
-all_parks <- unique(df_math$park_name)
-all_parks <- all_parks[all_parks != "Stay_Home"]
-
-# 2. Run the function for all parks and combine results
-# This replaces your 'for' loop entirely
-rum_results_2023 <- map_df(all_parks, function(p) {
-  
-  # Run your function (the one that returns mean, sd, ci)
-  stats <- calc_rum_welfare_manual(p)
-  
-  # Add the park name so we know which row is which
-  stats$parkname <- p
-  
-  return(stats)
-})
-
-# 3. Reorder columns to put parkname first
-rum_results_2023 <- rum_results_2023 %>% 
-  select(parkname, mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, n)
-
-print(rum_results_2023)
-
-rum_results_2023<- rum_results_2023 %>% 
-  select(parkname, mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, n) %>%
-  mutate(
-    # Use mean_cv_rum because that is what your function produced
-    rum_total_annual_loss = mean_cv_rum * n
-  )
-
-park_number <- final_data_2023 %>%
-  # Select only the two columns you need
-  select(parkname, parkname_numeric) %>%
-  # Keep only the unique combinations
-  distinct() %>%
-  # Sort them by the numeric ID for easier reading
-  arrange(parkname_numeric)
-
-welfare_summary<- read_csv("welfare_summary_2023.csv")
-
-#welfare_summary=welfare_summary$CoefTable
-welfare_summary=welfare_summary %>%
-  mutate(
-    # Extract only the digits from the "policy" string and make it an integer
-    parkname_numeric = as.integer(str_extract(policy, "\\d+"))
-  ) %>%
-  # 2. Merge with your park_number key (created in the previous step)
-  left_join(park_number, by = "parkname_numeric") %>%
-  # 3. Clean up: Move parkname to the front and remove the "policy" column
-  select(parkname, parkname_numeric, mean, std.dev, everything(), -policy)
-
-
-
-#  Join with RUM
-
-  final_comparison_2023 <- rum_results_2023 %>%
-  select(parkname, rum_mean_per_trip=mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, rum_total_annual_loss) %>%
-  left_join(welfare_summary, by = "parkname") %>%
-  rename(mdcev_mean_per_person = mean) %>%
-  mutate(
-    # 1. RUM Annual = (Mean per Trip) * (Total Number of Trips)
-    rum_annual_total = rum_mean_per_trip * sum(final_data_2019$VisitCount),
-    
-    # 2. MDCEV Annual = (Mean per Person) * (Number of Unique People)
-    # We use n_distinct(id) to get exactly 1,380
-    mdcev_annual_total = mdcev_mean_per_person * n_distinct(final_data_2019$id),
-    
-    # 3. The Gap
-    difference = rum_annual_total - mdcev_annual_total
-  )
-
-final_comparison_2018$year=2018
-final_comparison_2019$year=2019
-final_comparison_2020$year=2020
-final_comparison_2021$year=2021
-final_comparison_2022$year=2022
-final_comparison_2023$year=2023
-
-combined_welfare=rbind(final_comparison_2018,final_comparison_2019,final_comparison_2020,final_comparison_2021,final_comparison_2022,final_comparison_2023)
-
-write_csv(combined_welfare,file="rum_combined_totalWF.csv")
+write_csv(final_comparison_all_years,file="rum_combined_loop.csv")
 ```
 
 # Results comparison
@@ -2869,9 +2276,255 @@ df_idx_52 <- dfidx(df_rum_final,
                    idx = list("choice_id", "parkname"), 
                    shape = "long")
 
-rum_mle_52 <- mlogit(choice ~ price | 1 , data = df_idx_52)
+rum_mle_52 <- mlogit(choice ~ price | 1 |income , data = df_idx_52)
 
 summary(rum_mle_52)
+```
+
+#### 
+
+```{r}
+# Calculate the 'Logsum' (Total Utility) for the status quo
+logsum_base <- logsum(rum_mle_52)
+
+# 1. Convert df_rum to a standard data frame for our math
+df_math <- as.data.frame(df_idx_52)
+
+# 2. Extract the IDs and Park names from the 'idx' column
+# idx(df_rum, 1) gets the 'choice_id'
+# idx(df_rum, 2) gets the 'parkname'
+df_math$trip_id   <- as.character(idx(df_idx_52, 1))
+df_math$park_name <- as.character(idx(df_idx_52, 2))
+
+# 3. Calculate the Systematic Utility (V)
+# This uses the model coefficients and the data matrix
+df_math$V <- as.numeric(model.matrix(rum_mle_52) %*% coef(rum_mle_52))
+
+# 4. Double check the columns are there
+head(df_math[, c("trip_id", "park_name", "V")])
+
+
+# Get the unique list of parks from your data
+# We exclude "Stay_Home" because we aren't "closing" the option to stay home
+all_parks <- unique(df_math$park_name)
+all_parks <- all_parks[all_parks != "Stay_Home"]
+
+library(purrr)
+
+# 1. Define the list of parks
+all_parks <- unique(df_math$park_name)
+all_parks <- all_parks[all_parks != "Stay_Home"]
+
+# 2. Run the function for all parks and combine results
+# This replaces your 'for' loop entirely
+rum_results_2018_52 <- map_df(all_parks, function(p) {
+  
+  # Run your function (the one that returns mean, sd, ci)
+  stats <- calc_rum_welfare_manual(p)
+  
+  # Add the park name so we know which row is which
+  stats$parkname <- p
+  
+  return(stats)
+})
+
+# 3. Reorder columns to put parkname first
+rum_results_2018_52 <- rum_results_2018_52 %>% 
+  select(parkname, mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, n)
+
+print(rum_results_2018_52)
+
+rum_results_2018_52 <- rum_results_2018_52 %>% 
+  select(parkname, mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, n) %>%
+  mutate(
+    # Use mean_cv_rum because that is what your function produced
+    rum_total_annual_loss = mean_cv_rum * n
+  )
+
+library(dplyr)
+library(stringr)
+park_number <- final_data_2018 %>%
+  # Select only the two columns you need
+  select(parkname, parkname_numeric) %>%
+  # Keep only the unique combinations
+  distinct() %>%
+  # Sort them by the numeric ID for easier reading
+  arrange(parkname_numeric)
+
+welfare_summary=read_csv("welfare_summary_2018.csv")
+
+welfare_summary=welfare_summary %>%
+  mutate(
+    # Extract only the digits from the "policy" string and make it an integer
+    parkname_numeric = as.integer(str_extract(policy, "\\d+"))
+  ) %>%
+  # 2. Merge with your park_number key (created in the previous step)
+  left_join(park_number, by = "parkname_numeric") %>%
+  # 3. Clean up: Move parkname to the front and remove the "policy" column
+  select(parkname, parkname_numeric, mean, std.dev, everything(), -policy)
+
+final_comparison_2018_52 <- rum_results_2018_52 %>%
+  select(parkname, rum_mean_per_trip=mean_cv_rum, std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum, rum_total_annual_loss) %>%
+  left_join(welfare_summary, by = "parkname") %>%
+  rename(mdcev_mean_per_person = mean) %>%
+  mutate(
+    # 1. RUM Annual = (Mean per Trip) * (Total Number of Trips)
+    rum_annual_total = rum_mean_per_trip * sum(final_data_2019$VisitCount),
+    
+    # 2. MDCEV Annual = (Mean per Person) * (Number of Unique People)
+    mdcev_annual_total = mdcev_mean_per_person * n_distinct(final_data_2018$id),
+    
+    # 3. The Gap
+    difference = rum_annual_total - mdcev_annual_total
+  )
+
+```
+
+### Loop code
+
+This just simiplifes the
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(mlogit)
+library(stringr)
+library(readr)
+
+years <- 2018:2023
+
+final_comparison_52 <- map_df(years, function(yr) {
+    
+    message(paste(">>> Processing Year (52-week model):", yr))
+    
+    # 0. Get current year data
+    current_data <- get(paste0("final_data_", yr))
+    
+    # 1. Skeleton Setup
+    unique_users <- current_data %>% distinct(id, zip, income)
+    all_parks <- unique(current_data$parkname)
+    
+    df_52_weeks <- unique_users %>%
+        expand_grid(week = 1:52) %>%
+        mutate(choice_id = paste0(id, "_w", week))
+    
+    # Ensure actual_trips is specific to the current year's data
+    actual_trips <- current_data %>% 
+        filter(VisitCount > 0) %>% # Using current_data to find where trips actually happened
+        uncount(VisitCount) %>%
+        group_by(id) %>%
+        mutate(week = row_number()) %>%
+        filter(week <= 52) %>% # Safety check for skeleton bounds
+        ungroup() %>%
+        select(id, week, chosen_park = parkname)
+    
+    # 2. Build Choice Set
+    df_rum_final <- df_52_weeks %>%
+        left_join(actual_trips, by = c("id", "week")) %>%
+        mutate(chosen_park = replace_na(chosen_park, "Stay_Home")) %>%
+        expand_grid(parkname = c(all_parks, "Stay_Home")) %>%
+        mutate(choice = (chosen_park == parkname)) %>%
+        left_join(current_data %>% select(id, parkname, price, travel_distance_km), 
+                  by = c("id", "parkname")) %>%
+        mutate(across(c(price, travel_distance_km), ~replace_na(.x, 0)))
+    
+    # 3. Model Estimation - Update GLOBAL rum_mle_52
+    df_idx_local <- dfidx(df_rum_final, idx = list("choice_id", "parkname"), shape = "long")
+    rum_mle_52 <<- mlogit(choice ~ price | 1 , data = df_idx_local)
+    
+    # 4. Prepare df_math - Update GLOBAL df_math
+    # This is the crucial step for your function to calculate correct logsums
+    df_math_local <- as.data.frame(df_idx_local)
+    df_math_local$trip_id   <- as.character(idx(df_idx_local, 1))
+    df_math_local$park_name <- as.character(idx(df_idx_local, 2))
+    
+    # Recalculate V for the current year's model coefficients
+    df_math_local$V <- as.numeric(model.matrix(rum_mle_52) %*% coef(rum_mle_52))
+    
+    # Push to Global
+    df_math <<- df_math_local
+    
+    # 5. RUM Welfare Calculations
+    parks_to_test <- all_parks[all_parks != "Stay_Home"]
+    
+    rum_results <- map_df(parks_to_test, function(p) {
+        # This now finds the UPDATED rum_mle_52 and df_math
+        stats <- calc_rum_welfare_manual(p) 
+        stats$parkname <- p
+        return(stats)
+    })
+    
+    # 6. Process Welfare Summary CSV
+    welfare_summary_yr <- read_csv(paste0("welfare_summary_", yr, ".csv")) %>%
+        mutate(parkname_numeric = as.integer(str_extract(policy, "\\d+"))) %>%
+        left_join(current_data %>% select(parkname, parkname_numeric) %>% distinct(), 
+                  by = "parkname_numeric") %>%
+        rename(mdcev_mean_per_person = mean)
+    
+    # 7. Final Join and Metrics
+    year_comparison <- rum_results %>%
+        mutate(rum_total_annual_loss = mean_cv_rum * n) %>%
+        select(parkname, rum_mean_per_trip = mean_cv_rum, rum_total_annual_loss,
+               std_dev_rum, ci_lo_2.5_rum, ci_hi_97.5_rum) %>%
+        left_join(welfare_summary_yr, by = "parkname") %>%
+        mutate(
+            year = yr,
+            mdcev_annual_total = mdcev_mean_per_person * n_distinct(current_data$id),
+            rum_annual_total = rum_mean_per_trip * sum(current_data$VisitCount, na.rm = TRUE),
+            difference = rum_annual_total - mdcev_annual_total
+        ) %>%
+        select(year, parkname, rum_mean_per_trip, mdcev_mean_per_person, 
+               rum_annual_total, mdcev_annual_total, difference, everything(), -policy)
+    
+    return(year_comparison)
+})
+
+# View the final combined dataset
+print(final_comparison_52)
+
+
+```
+
+# Compare Total
+
+The MDVEC gives total surplus from choke price for each site
+
+Here this shows how dropping out a site in the RUM and recalculating the CS using the logsum process compares to this same process. One we look at just a simple rum and then we expand the RUM to include a choice every week 52 choice sets for each id. For the ones we don't observe during the week we assume they choose stay at home option.
+
+This is to try to get a comparision of the Hiskan composite good.
+
+Interesting part really is the over and under estimation where as the MDCEV provides a middle ground.. What do you think Anders?
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+# 1. Merge and Reshape
+plot_data <- final_comparison_all_years %>%
+  select(year, parkname, RUM_Standard = rum_annual_total, MDCEV = mdcev_annual_total) %>%
+  inner_join(
+    select(final_comparison_52, year, parkname, RUM_52_Week = rum_annual_total),
+    by = c("year", "parkname")
+  ) %>%
+  pivot_longer(cols = c(RUM_Standard, RUM_52_Week, MDCEV), 
+               names_to = "Model", values_to = "Loss") %>%
+  mutate(Loss_Abs = abs(Loss))
+
+# 2. Plot with Times New Roman
+ggplot(plot_data, aes(x = factor(year), y = Loss_Abs, fill = Model)) +
+  geom_boxplot(alpha = 0.7, outlier.size = 1) +
+  scale_y_log10(labels = scales::dollar_format()) +
+  scale_fill_manual(values = c("#2c3e50", "#e74c3c", "#3498db")) +
+  labs(title = "Predicted Annual Losses across 22 Site Closures",
+       subtitle = "Comparing Range from Standard RUM, 52-Week RUM, and MDCEV (2018-2023)",
+       x = "Year", y = "Annual Welfare Loss") +
+  # 'serif' maps to Times New Roman
+  theme_minimal(base_family = "serif") + 
+  theme(legend.position = "bottom",
+        text = element_text(size = 12),
+        plot.title = element_text(face = "bold"))
 
 
 ```
