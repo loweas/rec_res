@@ -249,27 +249,27 @@ The U.S. percentiles are computed based on the block groups nationwide. The stat
 
 Using EJScreen gives us flexibility where we can both examine the social factors and environmental factors. Here we will look at the social vulnerabilities of 90th percentiles within the state who are identified using :
 
--   Percentile for Demographic Index
+- Percentile for Demographic Index
 
--   Percentile for Supplemental Demographic Index
+- Percentile for Supplemental Demographic Index
 
--   Percentile for % people of color
+- Percentile for % people of color
 
--   Percentile for % low income
+- Percentile for % low income
 
--   Percentile for % unemployed
+- Percentile for % unemployed
 
--   Percentile for % persons with disabilities
+- Percentile for % persons with disabilities
 
--   Percentile for % limited English speaking
+- Percentile for % limited English speaking
 
--   Percentile for % less than high school education
+- Percentile for % less than high school education
 
--   Percentile for % under age 5
+- Percentile for % under age 5
 
--   Percentile for % over age 64
+- Percentile for % over age 64
 
--   Percentile for Low Life Expectancy
+- Percentile for Low Life Expectancy
 
 ```{r}
 
@@ -293,55 +293,55 @@ ggplot(t, aes(x = island, y = avg_welfare_loss_zip, fill = factor(soc_vulnerable
 
 Here we will look at the environmental hazard of 90th percentiles within the state who are identified using :
 
--   Percentile for Particulate Matter 2.5 Supplemental Index
+- Percentile for Particulate Matter 2.5 Supplemental Index
 
--   Percentile for Ozone EJ Index
+- Percentile for Ozone EJ Index
 
--   Percentile for Ozone Supplemental Index
+- Percentile for Ozone Supplemental Index
 
--   Percentile for Diesel particulate matter EJ Index
+- Percentile for Diesel particulate matter EJ Index
 
--   Percentile for Diesel particulate matter Supplemental Index
+- Percentile for Diesel particulate matter Supplemental Index
 
--   Percentile for Toxic Releases to Air EJ Index
+- Percentile for Toxic Releases to Air EJ Index
 
--   Percentile for Toxic Releases to Air Supplemental Index
+- Percentile for Toxic Releases to Air Supplemental Index
 
--   Percentile for Traffic proximity EJ Index
+- Percentile for Traffic proximity EJ Index
 
--   Percentile for Traffic proximity Supplemental Index
+- Percentile for Traffic proximity Supplemental Index
 
--   Percentile for Lead paint EJ Index
+- Percentile for Lead paint EJ Index
 
--   Percentile for Lead paint Supplemental Index
+- Percentile for Lead paint Supplemental Index
 
--   Percentile for Superfund proximity EJ Index
+- Percentile for Superfund proximity EJ Index
 
--   Percentile for Superfund proximity Supplemental Index
+- Percentile for Superfund proximity Supplemental Index
 
--   Percentile for RMP Facility Proximity EJ Index
+- Percentile for RMP Facility Proximity EJ Index
 
--   Percentile for RMP Facility Proximity Supplemental Index
+- Percentile for RMP Facility Proximity Supplemental Index
 
--   Percentile for Hazardous waste proximity EJ Index
+- Percentile for Hazardous waste proximity EJ Index
 
--   Percentile for Hazardous waste proximity Supplemental Index
+- Percentile for Hazardous waste proximity Supplemental Index
 
--   Percentile for Underground storage tanks EJ Index
+- Percentile for Underground storage tanks EJ Index
 
--   Percentile for Underground storage tanks Supplemental Index
+- Percentile for Underground storage tanks Supplemental Index
 
--   Percentile for Wastewater discharge EJ Index
+- Percentile for Wastewater discharge EJ Index
 
--   Percentile for Wastewater discharge Supplemental Index
+- Percentile for Wastewater discharge Supplemental Index
 
--   Percentile for Nitrogen Dioxide (NO2) EJ Index
+- Percentile for Nitrogen Dioxide (NO2) EJ Index
 
--   Percentile for Nitrogen Dioxide (NO2) Supplemental Index
+- Percentile for Nitrogen Dioxide (NO2) Supplemental Index
 
--   Percentile for Drinking Water Non-Compliance EJ Index
+- Percentile for Drinking Water Non-Compliance EJ Index
 
--   Percentile for Drinking Water Non-Compliance Supplemental Index
+- Percentile for Drinking Water Non-Compliance Supplemental Index
 
 ```{r}
 

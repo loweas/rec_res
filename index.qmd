@@ -31,16 +31,16 @@ library(tidyr)
 
 ```{r, message=FALSE}
 library(readr)
-welfare_2019_zip<- read_csv("~/Downloads/welfare_2019_zip (1).csv")
-welfare_2018_zip <- read_csv("~/Downloads/welfare_2018_zip (1).csv")
+welfare_2019_zip<- read_csv("welfare_2019_ind.csv")
+welfare_2018_zip <- read_csv("welfare_2018_ind.csv")
 #welfare_2018_zip$site=NULL
 #welfare_2018_zip$id=NULL
-welfare_2020_zip <- read_csv("~/Downloads/welfare_2020_zip (1).csv")
-welfare_2021_zip <- read_csv("~/Downloads/welfare_2021_zip (1).csv")
-welfare_2022_zip <- read_csv("~/Downloads/welfare_2022_zip (1).csv")
-welfare_2023_zip <- read_csv("~/Downloads/welfare_2023_zip (1).csv")
+welfare_2020_zip <- read_csv("welfare_2020_ind.csv")
+welfare_2021_zip <- read_csv("welfare_2021_ind.csv")
+welfare_2022_zip <- read_csv("welfare_2022_ind.csv")
+welfare_2023_zip <- read_csv("welfare_2023_ind.csv")
 #average_welfare_loss_per_zip <- read_csv("~/Downloads/average_welfare_loss_per_zip.csv")
-welfare_2018_zip=welfare_2018_zip %>% group_by(zip) %>% summarise(mean_value=mean(mean_value))
+
 
 
 welfare_2018_zip$Year=2018
@@ -52,11 +52,11 @@ welfare_2023_zip$Year=2023
 
 average_welfare_loss_per_zip =rbind(welfare_2018_zip,welfare_2019_zip,welfare_2020_zip,welfare_2021_zip,welfare_2022_zip,welfare_2023_zip)
 
-zip_tract_032022 <- read_csv("~/Downloads/zip_tract_032022.csv")
+zip_tract_032022 <- read_csv("data/zip_tract_032022.csv")
 
-dishawaii=read_csv("/Users/ashleylowe/EJ/EJScreen_2024_Tract_StatePct_with_AS_CNMI_GU_VI.csv")
+dishawaii <- readRDS("data/dishawaii.rds")
 
-blockIRA=read_sf("/Users/ashleylowe/EJ/EPA_IRA_Disadvantage_Hawaii.shp")
+blockIRA=read_sf("data//EPA_IRA_Disadvantage_Hawaii.shp")
 
 
 
@@ -167,7 +167,7 @@ zip_island <- tribble(
     96748, "Kaunakakai",                              "Molokaʻi",
     96757, "Kualapuu",                                "Molokaʻi",
     96770, "Maunaloa",                                "Molokaʻi",
-    s
+    
     # Island of Oahu
     96701, "Aiea",                                     "Oʻahu",
     96706, "Ewa Beach",                                "Oʻahu",
@@ -501,7 +501,7 @@ professional_table <- summary_table %>%
 # View
 professional_table
 
-save_as_docx(professional_table, path = "/Users/ashleylowe/welfare_table.docx")
+save_as_docx(professional_table, path = "data/welfare_table.docx")
 
 ```
 

@@ -1717,6 +1717,7 @@ final_data_2023$parkname_numeric <- as.integer(factor(final_data_2023$parkname, 
 ```
 
 ## Rum
+
 ```{r setup}
 library(mlogit)
 

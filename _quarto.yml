@@ -2,7 +2,7 @@ project:
   type: website
 
 website:
-  title: "Unequal Recreational Losses? Revealed Preference Evidence of Campsite Closures in Hawaiʻi"
+  title: "Unequal Recreational Losses?"
   search: true
   
   navbar:
@@ -11,8 +11,6 @@ website:
         text: Home
       - href: rum.qmd
         text: Random Utility
-      - href: ej.qmd
-        text: Environ.Justice
 
     tools:
       - icon: youtube
