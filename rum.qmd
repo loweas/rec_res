@@ -2118,7 +2118,11 @@ comparison_list <- list(
     "Observed" = model_list_obs[["Year_2023"]], 
     "52-Week"  = model_list_52[["52wk 2023"]]
 )
+```
 
+```{r}
+#| cache: true
+#| eval: false
 # 2. Generate the Professionally Grouped Table
 library(stargazer)
 
@@ -2175,6 +2179,12 @@ comparison_list <- list(
     "Observed" = model_list_obs[["Year_2023"]], 
     "52-Week"  = model_list_52[["52wk 2023"]]
 )
+
+```
+
+```{r}
+#| cache: true
+#| eval: false
 
 library(stargazer)
 stargazer(
@@ -2262,7 +2272,11 @@ summary_wide <- final_comparison_master %>%
          contains("2023")) %>%
   as.data.frame()
 
+```
 
+```{r}
+#| cache: true
+#| eval: false
 
 stargazer(summary_wide, 
           type = "html", 
@@ -2307,7 +2321,11 @@ summary_wide <- final_comparison_master %>%
   as.data.frame()
 
 
+```
 
+```{r}
+#| cache: true
+#| eval: false
 stargazer(summary_wide, 
           type = "html", 
           out = "Welfare_Comparison_Table_frequency.html",
@@ -2357,7 +2375,11 @@ summary_wide <- final_comparison_master %>%
          contains("2020")) %>%
   as.data.frame()
 
+```
 
+```{r}
+#| cache: true
+#| eval: false
 
 stargazer(summary_wide, 
           type = "html", 
@@ -2372,6 +2394,10 @@ stargazer(summary_wide,
           covariate.labels = c("Park", 
                                "Mean", "Lower CI", "Upper CI", 
                                "Mean", "Lower CI", "Upper CI"))
+```
+
+```{r}
+#| cache: true
 
 
 # ── Build summary for both models ─────────────────────────────────────────────
@@ -3263,6 +3289,107 @@ print(appendix_a)
 
 ```
 
+# Low-income Welfare 
+
+Why is the gradient the way it is? Why does it go downward in the 52-week choice set
+
+```{r}
+library(tidyverse)
+library(dplyr)
+# Stack all years
+all_years_raw <- map_df(2018:2023, function(yr) {
+  get(paste0("final_data_", yr)) %>%
+    mutate(year = yr, id = as.character(id))
+})
+# ── Step 1: Build clean income lookup — one row per id ────────────────────────
+income_lookup <- final_comparison_master1 %>%
+  mutate(id = as.character(id)) %>%
+  distinct(id, income_block, income) %>%
+  group_by(id) %>%
+  slice(1) %>%
+  ungroup()
+
+# ── Step 2: Site by income — remove income from summarise, join separately ─────
+site_by_income <- all_years_raw %>%
+  filter(parkname != "Stay_Home", VisitCount > 0) %>%
+  mutate(id = as.character(id)) %>%
+  left_join(income_lookup, by = "id") %>%
+  filter(!is.na(income_block)) %>%
+  group_by(income_block, parkname) %>%
+  summarise(
+    total_trips = sum(VisitCount, na.rm = TRUE),
+    .groups     = "drop"
+  ) %>%
+  group_by(income_block) %>%
+  mutate(
+    pct_trips = round(total_trips / sum(total_trips) * 100, 1)
+  ) %>%
+  ungroup() %>%
+  arrange(income_block, desc(pct_trips))
+
+# Top 3 sites per income block
+site_by_income %>%
+  group_by(income_block) %>%
+  slice_max(pct_trips, n = 3) %>%
+  print(n = 30)
+
+# ── Site welfare gap ───────────────────────────────────────────────────────────
+site_gap <- final_comparison_master %>%
+  filter(parkname != "Stay_Home") %>%
+  group_by(parkname) %>%
+  summarise(
+    mean_obs   = mean(loss_rum_observed, na.rm = TRUE),
+    mean_52wk  = mean(loss_rum_52wk,     na.rm = TRUE),
+    gap        = mean_52wk - mean_obs,
+    ratio      = mean_52wk / mean_obs,
+    .groups    = "drop"
+  ) %>%
+  arrange(gap)
+
+print(site_gap, n = 22)
+
+# ── Weighted gap by income block ───────────────────────────────────────────────
+income_site_gap <- site_by_income %>%
+  left_join(site_gap %>% select(parkname, gap, ratio),
+            by = "parkname") %>%
+  group_by(income_block) %>%
+  summarise(
+    weighted_gap   = round(sum(gap   * pct_trips / 100, na.rm = TRUE), 2),
+    weighted_ratio = round(sum(ratio * pct_trips / 100, na.rm = TRUE), 2),
+    n_sites_visited = n_distinct(parkname),
+    .groups        = "drop"
+  ) %>%
+  arrange(income_block)
+
+print(income_site_gap)
+
+```
+
+```{r}
+# Check if high income disproportionately visits Peacock and Waimanu
+site_by_income %>%
+  filter(parkname %in% c("Peacock Flats Campsite", 
+                          "Waimanu Campsite")) %>%
+  select(income_block, parkname, total_trips, pct_trips) %>%
+  arrange(parkname, income_block) %>%
+  print(n = 20)
+
+# What share of each income group's trips go to these two sites?
+site_by_income %>%
+  mutate(
+    high_value_site = parkname %in% c("Peacock Flats Campsite",
+                                       "Waimanu Campsite")
+  ) %>%
+  group_by(income_block, high_value_site) %>%
+  summarise(
+    pct_trips = sum(pct_trips),
+    .groups   = "drop"
+  ) %>%
+  filter(high_value_site) %>%
+  arrange(income_block)
+
+```
+
 # Spread Across Models & DCA
 
 The spread here show the value of park based on whether or not the person comes from a disadvantage community.
@@ -3854,6 +3981,8 @@ ggsave(
 )
 ```
 
+# Map
+
 ```{r}
 
 library(tidyverse)
@@ -4319,7 +4448,7 @@ ggsave(
 
 ```
 
-# Map
+# 
 
 ```{r}
 
@@ -4416,9 +4545,7 @@ stability_all <- bind_rows(
 )
 
 
-
-
-# Convergent validity across models — do they agree on rankings? 
+# Test  Convergent validity across models — do they agree on rankings? 
 site_welfare <- final_comparison_master %>%
     filter(parkname != "Stay_Home") %>%
     group_by(parkname) %>%
