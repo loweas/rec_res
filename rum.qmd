@@ -1784,7 +1784,7 @@ print(paste("Manual McFadden R2:", round(mcfadden_r2, 4)))
 
 This function calculate the rum welfare manual and is used for each year to get a comparison to the MDCEV.
 
-## Per Person Stay-At-Home
+# Per Person Stay-At-Home
 
 ```{r}
 #| cache: true
@@ -1914,7 +1914,7 @@ final_comparison <- map_df(years, function(yr) {
 })
 ```
 
-### Per person 52-weeks
+# Per person 52-weeks
 
 ```{r}
 #| cache: true
@@ -2800,7 +2800,7 @@ final_comparison_master1 <- final_comparison_master %>%
 
 ```
 
-### Income
+# Income
 
 ```{r}
 #| cache: true
@@ -3263,12 +3263,7 @@ print(appendix_a)
 
 ```
 
-## Zip to Tract
-
-```{}
-```
-
-## Spread Across Models & DCA
+# Spread Across Models & DCA
 
 The spread here show the value of park based on whether or not the person comes from a disadvantage community.
 
@@ -3861,8 +3856,6 @@ ggsave(
 
 ```{r}
 
-
-
 library(tidyverse)
 library(sf)
 library(tigris)
@@ -4083,9 +4076,9 @@ ggsave(
 
 ```
 
+# 
+
 ```{r}
-
-
 
 library(tidyverse)
 library(sf)
@@ -4326,7 +4319,17 @@ ggsave(
 
 ```
 
-## Sensitivity Test
+# Map
+
+```{r}
+
+print(hawaii_map_color)
+
+
+print(hawaii_map)
+```
+
+# Sensitivity Test
 
 ```{r}
 get_price_coef <- function(mle, yr, model_name) {
@@ -4337,7 +4340,6 @@ get_price_coef <- function(mle, yr, model_name) {
     
     # variance-covariance matrix
     se    <- sqrt(vcov(mle)["price", "price"])
-    
     tibble(
       year       = yr,
       model      = model_name,
@@ -4380,7 +4382,7 @@ price_stability_all <- map_df(2018:2023, function(yr) {
 
 print(price_stability_all)
 year_pairs <- combn(2018:2023, 2, simplify = FALSE)
-# ── Test 2: Pairwise welfare stability — all three models ─────────────────────
+# Pairwise welfare stability — all three models 
 test_year_pairs_model <- function(yr1, yr2, loss_col) {
   
   d1 <- final_comparison_master %>%
@@ -4413,10 +4415,10 @@ stability_all <- bind_rows(
     mutate(model = "Frequency RUM")
 )
 
-# Test 1: Parameter stability — price coefficient across years 
-# Already coded above — see price_stability_all
 
-# Test 2: Convergent validity across models — do they agree on rankings? 
+
+
+# Convergent validity across models — do they agree on rankings? 
 site_welfare <- final_comparison_master %>%
     filter(parkname != "Stay_Home") %>%
     group_by(parkname) %>%
@@ -4437,7 +4439,7 @@ rownames(cross_model_cor) <- c("MDCEV", "Observed RUM", "Frequency RUM")
 
 print(round(cross_model_cor, 3))
 
-# Test 3: Transfer error across models 
+# Transfer error across models 
 # Ji et al. transfer error as:
 # TE = |predicted - actual| / |actual| × 100
 
@@ -4462,7 +4464,7 @@ cross_model_te <- site_welfare %>%
 
 print(cross_model_te)
 
-# ── Test 4: Equality tests — are model welfare estimates significantly different from each other? 
+# Equality tests — are model welfare estimates significantly different from each other? 
 # (Ji et al. Section 4)
 
 # Paired t-test: MDCEV vs Observed RUM
@@ -4508,7 +4510,7 @@ equality_tests <- tibble(
 
 print(equality_tests)
 
-#Test 5: Transfer error by year pair AND model pair 
+# Transfer error by year pair AND model pair 
 # Ji et al.'s most comprehensive test — applies both dimensions
 
 te_full <- final_comparison_master %>%
@@ -4556,7 +4558,7 @@ te_full <- final_comparison_master %>%
 
 print(te_full, n = 30)
 
-# ── Summary table matching Ji et al. Table format ─────────────────────────────
+# Summary table matching Ji et al. Table format
 summary_ji <- tibble(
     Test               = c(
         "Mean Spearman Rank Correlation",
