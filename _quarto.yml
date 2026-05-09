@@ -1,5 +1,9 @@
 project:
   type: website
+  
+render:
+    - "*.qmd"
+    - "!rum_2.qmd"
 
 website:
   title: "Unequal Recreational Losses?"
@@ -22,6 +26,11 @@ website:
           - text: Report a Bug
             href:  https://github.com/loweas/rec_res/issues
 
+# Add this section below:
+execute:
+  message: false
+  warning: false
+  
 format:
   html:
     theme: cosmo
