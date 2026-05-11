@@ -11,3 +11,14 @@ stringr
 ggplot2
 stargazer
 readxl
+broom
+patchwork
+tidyverse
+tibble
+forcats
+lubridate
+sf
+tigris
+ggrepel
+ggspatial
+ggpattern
