@@ -31,15 +31,13 @@ library(tidyr)
 
 ```{r, message=FALSE}
 library(readr)
-welfare_2019_zip<- read_csv("welfare_2019_ind.csv")
-welfare_2018_zip <- read_csv("welfare_2018_ind.csv")
-#welfare_2018_zip$site=NULL
-#welfare_2018_zip$id=NULL
-welfare_2020_zip <- read_csv("welfare_2020_ind.csv")
-welfare_2021_zip <- read_csv("welfare_2021_ind.csv")
-welfare_2022_zip <- read_csv("welfare_2022_ind.csv")
-welfare_2023_zip <- read_csv("welfare_2023_ind.csv")
-#average_welfare_loss_per_zip <- read_csv("~/Downloads/average_welfare_loss_per_zip.csv")
+welfare_2019_zip<- read_csv("data/welfare_2019_ind.csv")
+welfare_2018_zip <- read_csv("data/welfare_2018_ind.csv")
+welfare_2020_zip <- read_csv("data/welfare_2020_ind.csv")
+welfare_2021_zip <- read_csv("data/welfare_2021_ind.csv")
+welfare_2022_zip <- read_csv("data/welfare_2022_ind.csv")
+welfare_2023_zip <- read_csv("data/welfare_2023_ind.csv")
+
 
 
 
@@ -397,150 +395,6 @@ Here we will look at the environmental hazard of 90th percentiles within the sta
 -   Percentile for Nitrogen Dioxide (NO2) EJ Index
 
 -   Percentile for Drinking Water Non-Compliance EJ Index
-
-```{r}
-
-ggplot(t, aes(x = island, y = mean_value, fill = factor(env_burden))) +
-    geom_boxplot(position = "dodge", aes(group = interaction(island, env_burden))) +
-    scale_fill_manual(
-        name = "EJScreen Environmental",
-        values = c("FALSE" = "white", "TRUE" = "grey70"),
-        labels = c("FALSE" = "Not Disadvantaged", "TRUE" = "Disadvantaged")
-    ) +
-    theme_minimal() +
-    theme_minimal(base_family = "Times New Roman")  +
-    labs(
-        x = "Island",
-        y = "Average Welfare Loss per ZIP",
-        title = "Welfare Loss by Island using EJScreen 90th Environmental Burdens"
-    )
-
-```
-
-### Overtime
-
-```{r}
-
-ggplot(t, aes(x = as.factor(Year), y = mean_value, fill = as.factor(env_burden))) +
-    geom_boxplot(outlier.size = 0.5, alpha = 0.8) +
-    scale_fill_manual(values = c("0" = "white", "1" = "grey"), 
-                      labels = c("Non-DAC", "DAC"), name = "Community Status") +
-    theme_light() +
-    labs(title = "Welfare Distribution",
-         subtitle = "Disadvantaged (orange) Non-Disadvantaged (teal) over time",
-         x = "Year",
-         y = "Welfare Value") +
-    coord_cartesian(ylim = c(-1000, 200)) +
-    # This line sets everything to Times New Roman
-    theme(text = element_text(family = "Times New Roman"))
-
-```
-
-## Table
-
-```{r}
-library(officer)
-library(flextable)
-library(dplyr)
-library(sf)
-
-summary_table <- t %>%
-    st_drop_geometry() %>%
-    group_by(env_burden, island) %>%
-    summarise(
-        variance = var(mean_value), 
-        median = median(mean_value), 
-        mean = mean(mean_value),
-        .groups = "drop"
-    ) %>%
-    mutate(
-        env_burden = ifelse(env_burden, "Disadvantaged", "Not Disadvantaged")
-    )
-
-summary_table1 <- t %>%
-    st_drop_geometry() %>%
-    group_by(soc_vulnerable, island) %>%
-    summarise(
-        variance = var(mean_value), 
-        median = median(mean_value), 
-        mean = mean(mean_value),
-        .groups = "drop"
-    ) %>%
-    mutate(
-        soc_vulnerable = ifelse(soc_vulnerable, "Disadvantaged", "Not Disadvantaged")
-    )
-
-
-
-
-professional_table <- summary_table %>%
-    flextable() %>%
-    set_header_labels(
-        Indicator = "Indicator",
-        island = "Island",
-        variance = "Variance",
-        median = "Median ($)",
-        mean = "Mean ($)"
-    ) %>%
-    colformat_double(j = "variance", digits = 0) %>%
-    colformat_double(j = c("median", "mean"), digits = 2) %>%
-    merge_v(j = "Indicator") %>%
-    theme_booktabs() %>%
-    bold(part = "header") %>%
-    align(j = c("variance", "median", "mean"), align = "center", part = "all") %>%
-    bg(part = "header", bg = "white") %>%
-    color(part = "header", color = "black") %>%
-    bg(i = seq(2, nrow(summary_table), by = 2), bg = "#F2F2F2", part = "body") %>%
-    autofit() %>%
-    border_outer(border = fp_border(color = "black", width = 2)) %>%
-    border_inner_h(border = fp_border(color = "gray", width = 1)) %>%
-    border_inner_v(border = fp_border(color = "gray", width = 1)) %>%
-    font(fontname = "Times New Roman", part = "all") %>%  # Add Times New Roman
-    fontsize(size = 12, part = "all")  # Standard 12pt font
-
-# View
-professional_table
-
-save_as_docx(professional_table, path = "data/welfare_table.docx")
-
-```
-
-# Rum Comparison
-
-This would be the estimate for a closer of each park.
-
-If MDCEV is the mean for **per person** and RUM mean is **per trip**, then to compare them by looking at the **Total Annual Welfare Loss** for each park:
-
-$Total\ MDCEV\ Loss = (MDCEV\ MeanPerson) \times (Total\ Number\ of\ People)$
-
-$Total\ RUM\ Loss = (RUM\ Mean Trip) \times (Total\ Number\ of\ Trips)$
-
-```{r}
-
-combined_welfare=read_csv("rum_combined_totalWF.csv")
-
-
-# Prepare the data into a long format for the two models
-plot_data_long <- combined_welfare %>%
-  select(year, parkname, rum_annual_total, mdcev_annual_total) %>%
-  pivot_longer(cols = c(rum_annual_total, mdcev_annual_total), 
-               names_to = "Model", 
-               values_to = "Annual_Loss") %>%
-  mutate(Model = ifelse(Model == "rum_annual_total", "RUM", "MDCEV"),
-         # Convert to absolute values (positive dollars) for easier reading
-         Annual_Loss_Abs = abs(Annual_Loss))
-
-ggplot(plot_data_long, aes(x = as.factor(year), y = Annual_Loss_Abs, fill = Model)) +
-  geom_boxplot(alpha = 0.7, outlier.shape = 21, outlier.fill = "white") +
-  scale_y_log10(labels = scales::dollar_format()) +
-  labs(title = "Distribution of Annual Welfare Losses Across Parks",
-       subtitle = "Comparing RUM vs MDCEV Park-Level Estimates (2018-2023)",
-       x = "Year", 
-       y = "Annual Welfare Loss per Park (Log Scale)") +
-  theme_minimal() +
-  scale_fill_manual(values = c("MDCEV" = "#2c3e50", "RUM" = "#e74c3c"))
-
-```
 
 
 
