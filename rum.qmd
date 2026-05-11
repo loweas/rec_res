@@ -21,6 +21,7 @@ This script will run a RUM model on our data assuming a stay at home option and 
 Need to run the same data for the MDCEV which gives us final_data_2018. So going to clip the code from the file R script high cost.
 
 The first code will produce final_data_yyyy by year and then should be able to run all the rest of the data
+
 ```{r}
 
 library(dplyr)
@@ -46,6 +47,8 @@ library(ggpattern)
 
 ```
 
+reservation_data \<- read_dta("reservation_data_merged_id_complete.dta")
+
 ```{r}
 #| cache: true
 #| message: false
@@ -56,8 +59,8 @@ library(ggpattern)
 
 
 # Load datasets
-reservation_data <- read_dta("reservation_data_merged_id_complete.dta")
-intra_island_distance <- read.csv("intra_island_distance2.csv")
+reservation_data <- read_dta("data/reservation_data_merged_id_complete.dta")
+intra_island_distance <- read.csv("data/intra_island_distance2.csv")
 
 # Add year
 reservation_data$year <- as.numeric(format(as.Date(reservation_data$CheckinDate, "%Y-%m-%d"), "%Y"))
@@ -1910,7 +1913,7 @@ final_comparison <- map_df(years, function(yr) {
     })
     
     # 6. Bring in MDCEV Data (Using Site 22 for Stay_Home)
-    mdcev_indiv <- read_csv(paste0("welfare_", yr, "_ind.csv"), show_col_types = FALSE) %>%
+    mdcev_indiv <- read_csv(paste0("data/welfare_", yr, "_ind.csv"), show_col_types = FALSE) %>%
         left_join(site_lookup, by = "site") %>%
         mutate(id = as.character(id)) %>%
         select(id, parkname, mdcev_annual_loss = mean_value) %>%
@@ -2045,7 +2048,7 @@ final_comparison_52_person <- map_df(years, function(yr) {
     })
     
     # Bring in MDCEV Individual Welfare
-    mdcev_indiv <- read_csv(paste0("welfare_", yr, "_ind.csv"), show_col_types = FALSE) %>%
+    mdcev_indiv <- read_csv(paste0("data/welfare_", yr, "_ind.csv"), show_col_types = FALSE) %>%
         left_join(site_lookup, by = "site") %>%
         mutate(id = as.character(id)) %>%
         select(id, parkname, mdcev_annual_loss = mean_value) %>%
@@ -2138,7 +2141,7 @@ comparison_list <- list(
 stargazer(
   comparison_list,
   type = "html",
-  out = "rum_comparison_results.html",
+  out = "tables/rum_comparison_results.html",
   title = "Table: Comparison of RUM Specifications (2018 vs. 2023)",
   
   # --- THE KEY ARGUMENT FOR SIDE-BY-SIDE SEs ---
@@ -2197,7 +2200,7 @@ comparison_list <- list(
 stargazer(
 comparison_list,
 type = "html",
-out = "rum_comparison_results_appendix.html",
+out = "tables/rum_comparison_results_appendix.html",
 title = "Table: Comparison of RUM Specifications (2018 vs. 2023)",
 column.labels = c("2018", "2019","2020","2021","2022","2023"),
 column.separate = c(2, 2),
@@ -2284,7 +2287,7 @@ summary_wide <- final_comparison_master %>%
 
 stargazer(summary_wide, 
           type = "html", 
-          out = "Welfare_Comparison_Table.html",
+          out = "tables/Welfare_Comparison_Table.html",
           summary = FALSE, 
           rownames = FALSE,
           title = "Welfare Loss: Mean and 95% Confidence Intervals (2018 vs 2023)",
@@ -2332,7 +2335,7 @@ summary_wide <- final_comparison_master %>%
 #| eval: false
 stargazer(summary_wide, 
           type = "html", 
-          out = "Welfare_Comparison_Table_frequency.html",
+          out = "tables/Welfare_Comparison_Table_frequency.html",
           summary = FALSE, 
           rownames = FALSE,
           title = "Welfare Loss Frequency: Mean and 95% Confidence Intervals (2018 vs 2023)",
@@ -2387,7 +2390,7 @@ summary_wide <- final_comparison_master %>%
 
 stargazer(summary_wide, 
           type = "html", 
-          out = "Welfare_Comparison_Table_frequency_1920.html",
+          out = "tables/Welfare_Comparison_Table_frequency_1920.html",
           summary = FALSE, 
           rownames = FALSE,
           title = "Welfare Loss Frequency: Mean and 95% Confidence Intervals (2019 & 2020)",
@@ -2456,7 +2459,7 @@ summary_wide <- freq_wide %>%
 stargazer(
     summary_wide,
     type       = "html",
-    out        = "Welfare_Comparison_Table_frequency_2122.html",
+    out        = "tables/Welfare_Comparison_Table_frequency_2122.html",
     summary    = FALSE,
     rownames   = FALSE,
     title      = "Welfare Loss: Observed and Frequency RUM — Mean and 95% CI (2021 & 2022)",
@@ -2547,7 +2550,7 @@ scale_fill_manual(values = c(
   )
 
 p
-ggsave("comparision_perperson_2models.png", plot = p,width=12, height=10, dpi=300)
+ggsave("images/comparision_perperson_2models.png", plot = p,width=12, height=10, dpi=300)
 
 
 ```
@@ -2641,7 +2644,7 @@ participants=ggplot(plot_data_participants, aes(x = factor(year), y = Mean_Welfa
     panel.border = element_rect(colour = "black", fill = NA, size = 1)
   )
 
-ggsave("comparision_perparticipate.png",plot=participants, width=12, height=10, dpi=300)
+ggsave("images/comparision_perparticipate.png",plot=participants, width=12, height=10, dpi=300)
 
 participants
 
@@ -3076,7 +3079,7 @@ ggplot(all_avg,
     plot.title    = element_text(face = "bold", size = 20),
     panel.spacing = unit(1.2, "lines")
   )
-ggsave("social_vulnerabilities.png", width=12, height=10, dpi=300)
+ggsave("images/social_vulnerabilities.png", width=12, height=10, dpi=300)
 
 ```
 
@@ -3280,7 +3283,7 @@ appendix_b <- make_appendix_plot(
 
 
 ggsave(
-  "appendix_A_welfare_2018_2020.png",
+  "images/appendix_A_welfare_2018_2020.png",
   plot   = appendix_a,
   width  = 14,
   height = 12,
@@ -3289,7 +3292,7 @@ ggsave(
 )
 
 ggsave(
-  "appendix_B_welfare_2021_2023.png",
+  "images/appendix_B_welfare_2021_2023.png",
   plot   = appendix_b,
   width  = 14,
   height = 12,
@@ -3300,9 +3303,9 @@ print(appendix_a)
 
 ```
 
-# Low-income Welfare 
+# Low-income Welfare
 
-So low income individuals live further away and choose sites closer to them then higher income individuals. Thats whats explained by the gap. We know we value there time less 
+So low income individuals live further away and choose sites closer to them then higher income individuals. Thats whats explained by the gap. We know we value there time less
 
 ```{r}
 #| cache: true
@@ -3491,7 +3494,7 @@ distance_comparison %>%
     plot.margin   = margin(t = 10, r = 10, b = 30, l = 10)  # bottom space for arrows
   )
 
-ggsave("distance_sitesvisited.png", width=12, height=8, dpi=300)
+ggsave("images/distance_sitesvisited.png", width=12, height=8, dpi=300)
 ```
 
 ```{r}
@@ -3730,15 +3733,12 @@ combined <- (p1 + p2) / (p3 + p4) +
 
 print(combined)
 
-ggsave("geographic_constraint_tests.png",
+ggsave("images/geographic_constraint_tests.png",
        combined, width = 12, height = 10,
        dpi = 300, bg = "white")
 
 
 ```
-
-
-
 
 ```{r}
 #| cache: true
@@ -3869,7 +3869,7 @@ ggplot(plot_data_three_panel, aes(x = factor(year), y = Welfare_Loss, fill = EJ_
     panel.border = element_rect(colour = "black", fill = NA, size = 0.8)
   )
 
-ggsave("comparision_EJstatus.png", width=12, height=10, dpi=300)
+ggsave("images/comparision_EJstatus.png", width=12, height=10, dpi=300)
 
 ```
 
@@ -3943,7 +3943,7 @@ ggplot(plot_data_three_panel, aes(x = factor(year), y = Welfare_Loss, fill = EJ_
     panel.border = element_rect(colour = "black", fill = NA, size = 0.8)
   )
 
-ggsave("comparision_envir_status.png", width=12, height=10, dpi=300)
+ggsave("images/comparision_envir_status.png", width=12, height=10, dpi=300)
 
 # 1. Prepare data: Group by Park, Year, and EJ Status
 plot_data_three_panel <- final_comparison_master1 %>%
@@ -4011,7 +4011,7 @@ ggplot(plot_data_three_panel, aes(x = factor(year), y = Welfare_Loss, fill = EJ_
     panel.border = element_rect(colour = "black", fill = NA, size = 0.8)
   )
 
-ggsave("comparision_envir_observed.png", width=12, height=10, dpi=300)
+ggsave("images/comparision_envir_observed.png", width=12, height=10, dpi=300)
 
 
 ```
@@ -4085,7 +4085,7 @@ ggplot(plot_data_three_panel, aes(x = factor(year), y = Welfare_Loss, fill = EJ_
     legend.position = "bottom",
     panel.border = element_rect(colour = "black", fill = NA, size = 0.8)
   )
-ggsave("comparision_social_vulnerabilities.png", width=12, height=10, dpi=300)
+ggsave("images/comparision_social_vulnerabilities.png", width=12, height=10, dpi=300)
 
 
 
@@ -4154,11 +4154,15 @@ ggplot(plot_data_three_panel, aes(x = factor(year), y = Welfare_Loss, fill = EJ_
     legend.position = "bottom",
     panel.border = element_rect(colour = "black", fill = NA, size = 0.8)
   )
-ggsave("comparision_social_observed.png", width=12, height=10, dpi=300)
+ggsave("images/comparision_social_observed.png", width=12, height=10, dpi=300)
 
 
 
 ```
+
+# Map
+
+## Grey Map
 
 ```{r}
 #| cache: true
@@ -4368,7 +4372,7 @@ hawaii_map <- ggplot() +
   )
 
 ggsave(
-  filename = "hawaii_welfare_loss_map.png",
+  filename = "images/hawaii_welfare_loss_map.png",
   plot     = hawaii_map,
   width    = 12,
   height   = 10,
@@ -4378,7 +4382,7 @@ ggsave(
 )
 ```
 
-# Map
+## Color Map
 
 ```{r}
 #| cache: true
@@ -4583,7 +4587,7 @@ geom_sf_pattern(
   )
 
 ggsave(
-  filename = "hawaii_welfare_loss_map_color.png",
+  filename = "images/hawaii_welfare_loss_map_color.png",
   plot     = hawaii_map_color,
   width    = 12,
   height   = 10,
@@ -4597,7 +4601,7 @@ ggsave(
 
 ```
 
-# 
+## Color RUM
 
 ```{r}
 #| cache: true
@@ -4822,7 +4826,7 @@ geom_sf_pattern(
   )
 
 ggsave(
-  filename = "hawaii_welfare_loss_map_colorRUM.png",
+  filename = "images/hawaii_welfare_loss_map_colorRUM.png",
   plot     = hawaii_map_color,
   width    = 12,
   height   = 10,
@@ -4834,8 +4838,6 @@ ggsave(
 
 
 ```
-
-# 
 
 ```{r}
 #| cache: true
@@ -5101,9 +5103,10 @@ print(summary_ji)
 
 
 ```
+
 # What Years?
 
-Given those % pair stable years. What Years are stable across models? Is this just a covid issue? It does kind of look like it because its unstable for comparisons to 2020 then becomes more stable after 2021/2022 later comparsions. 
+Given those % pair stable years. What Years are stable across models? Is this just a covid issue? It does kind of look like it because its unstable for comparisons to 2020 then becomes more stable after 2021/2022 later comparsions.
 
 Interesting MDCEV 2019 to years excluding 2020 stable... thats were the 66% comes from.
 
@@ -5160,7 +5163,6 @@ stability_all %>%
 
 
 ```
-
 
 # By park site
 
@@ -5244,8 +5246,8 @@ pct_change_site %>%
   print(n = 22)
 ```
 
-
 This looks at the linear welfare stability, which actually shows that MDCEV is less like we mention in paper but if we look pairwise comarision (i.e. which gives us aa really clear covid examination) across all years broadly it does have more stable. That is also interesting...
+
 ```{r}
 
 #| cache: true
