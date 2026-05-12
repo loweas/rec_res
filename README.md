@@ -36,60 +36,29 @@ project/
 │   ├── appendix_B_welfare_2021_2023.png   ← Appendix B: years 2021–2023
 │   ├── option_value_gap_decomposition.png ← sensitivity analysis
 │   ├── geographic_constraint_tests.png    ← distance selection tests
-│   ├── ji_reliability_heatmap.png         ← Ji et al. stability heatmap
 │   ├── ji_reliability_dotplot.png         ← Ji et al. stability dotplot
-│   ├── stability_heatmap.png              ← sequential stability heatmap
-│   ├── stability_lineplot.png             ← sequential stability line
-│   └── stability_dotplot.png             ← sequential stability dots
+│   └── stability_lineplot.png             ← sequential stability line
+
 │
 ├── models/                            ← estimated model objects
 │   ├── model_list_obs.rds             ← observed RUM models (Year_2018:Year_2023)
 │   ├── model_list_52.rds              ← frequency RUM models (52wk_2018:52wk_2023)
-│   └── mdcev_models/                  ← MDCEV model objects by year
+│   └── mdcev_models/                 ← MDCEV model objects by year
 │
 └── qmd/                               ← Quarto analysis files (run in order)
-    ├── 01_data_cleaning.qmd
-    ├── 02_travel_cost.qmd
-    ├── 03_mdcev_estimation.qmd
-    ├── 04_rum_estimation.qmd
-    ├── 05_welfare_calculation.qmd
-    ├── 06_ejscreen_crosswalk.qmd
-    ├── 07_distributional_analysis.qmd
-    ├── 08_temporal_stability.qmd
-    └── 09_figures_tables.qmd
+    ├──index.qmd
+    ├──mdcev.qmd
+    └── rum.qmd
 ```
 
----
-
-## QMD Files — What Each Does
+## Main Files
 
 ### `index.qmd`
-Shows code to generate data but data is de-identified and cleaned for individual-level panel data. Key steps: parse check-in dates, create year variable, recode zip code 96812 → 96813, calculate average days visited per individual per year, build `final_data_YYYY` objects with visit counts per individual-campsite combination, assign campsites to islands via `island_park`, and flag inter-island visits.
-
-
-
-Constructs the individual and site-specific travel cost variable used as the price variable in all welfare models. Price has four components:
-
-| Component | Formula | Notes |
-|---|---|---|
-| Driving cost | `distance × cost_per_km / 3` | AAA per-km cost divided by avg party size 3 |
-| Value of time driving | `(income × 0.75 / 2080) × distance / 50` | 75% of wage rate, 50 km/h speed |
-| Inter-island flight cost | Fixed by route and year | AAA/BLS inflation-adjusted |
-| Value of time flying | `(income × 0.75 / 2080) × flight_hours × 2` | Round trip |
-
-Also adds car rental, parking, and permit fees by island-route combination. Travel cost is calculated separately for each year using AAA driving cost brochures (2018–2023).
-
-**Key outputs:** `price` column added to all `final_data_YYYY` objects
+In this main file we pull the data from MDCEV and RUM and do comparsion analysis. Firt we will consider the Welfare measurements across models, EJ distributions by examining income, social vulnerabilities and environmental burdens. We also include some temporal spatial stability. 
 
 ## Welfare Comparsion 
 
-Applies the log-sum welfare formula to each model's estimated coefficients:
-
-$$CV_{it} = \frac{\ln \sum_{j \neq k} \exp(V_{ijt}) - \ln \sum_{j} \exp(V_{ijt})}{-\hat{\beta}_p}$$
-
-Individual annual welfare = sum of per-trip CV across all observed trips. Welfare is calculated for each of the 22 campsite closures plus system closure. Results merged into `final_comparison_master` and `final_comparison_master1`.
-
-**Key outputs:** `final_comparison_master`, `final_comparison_master1`
+Comparision across all MDCEV and RUM.
 
 ## EJ Distribution
 
@@ -121,6 +90,23 @@ Implements two temporal stability tests following Ji, Keiser and Kling (2020):
 ---
 
 ### `mdcev.qmd`
+
+Shows code to generate data but data is de-identified and cleaned for individual-level panel data. Key steps: parse check-in dates, create year variable, recode zip code 96812 → 96813, calculate average days visited per individual per year, build `final_data_YYYY` objects with visit counts per individual-campsite combination, assign campsites to islands via `island_park`, and flag inter-island visits.
+
+### Notes on Travel Cost
+Constructs the individual and site-specific travel cost variable used as the price variable in all welfare models. Price has four components:
+
+| Component | Formula | Notes |
+|---|---|---|
+| Driving cost | `distance × cost_per_km / 3` | AAA per-km cost divided by avg party size 3 |
+| Value of time driving | `(income × 0.75 / 2080) × distance / 50` | 75% of wage rate, 50 km/h speed |
+| Inter-island flight cost | Fixed by route and year | AAA/BLS inflation-adjusted |
+| Value of time flying | `(income × 0.75 / 2080) × flight_hours × 2` | Round trip |
+
+Also adds car rental, parking, and permit fees by island-route combination. Travel cost is calculated separately for each year using AAA driving cost brochures (2018–2023).
+
+**Key outputs:** `price` column added to all `final_data_YYYY` objects
+
 Estimates the Multiple Discrete-Continuous Extreme Value (MDCEV) model for each year using the `rmdcev` package with gamma specification, MLE algorithm, and 100 simulation draws. System closure is modelled by setting all site prices to 999,999. Individual welfare is extracted from simulation draws and averaged across draws.
 
 **Key outputs:** `welfare_YYYY_ind` objects, `welfare_YYYY` site-level summaries
