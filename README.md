@@ -142,11 +142,11 @@ Individual annual welfare = sum of per-trip CV across all observed trips. Welfar
 
 | Source | Description | Access |
 |---|---|---|
-| DOFAW reservation records | Raw campsite reservation data 2018–2023 | DOFAW administrative data |
+| DOFAW reservation records | Campsite reservation data 2018–2023 | DOFAW administrative data d-identified |
 | HUD ZIP-TRACT crosswalk | `ZIP_TRACT_122025.xlsx` Dec 2025 release | [huduser.gov](https://www.huduser.gov/portal/datasets/usps_crosswalk.html) |
 | EJScreen | Census tract environmental justice indicators | [epa.gov/ejscreen](https://www.epa.gov/ejscreen) |
 | AAA Driving Costs | Annual per-mile cost brochures 2018–2023 | AAA newsroom |
-| OSRM Routing | Driving distance and duration zip → campsite |OSRM API |
+| OSRM Routing | Driving distance and duration zip → campsite |OSRM API https://project-osrm.org/ |
 
 ---
 
