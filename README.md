@@ -1,5 +1,6 @@
 # Unequal Recreational Losses? Revealed Preference Evidence of Campsite Closures in Hawaiʻi 
 ---
+Please find this [Github Page](https://loweas.github.io/rec_res/) to accompany the work in the following paper.
 
 ## Folder Structure
 
@@ -38,8 +39,11 @@ project/
 │   ├── geographic_constraint_tests.png    ← distance selection tests
 │   ├── ji_reliability_dotplot.png         ← Ji et al. stability dotplot
 │   └── stability_lineplot.png             ← sequential stability line
-
 │
+├── _site/                            ← File is set up to have a github page 
+│                                         There are many more files in this folder for the website
+│                                          https://loweas.github.io/rec_res/
+│   
 ├── models/                            ← estimated model objects
 │   ├── model_list_obs.rds             ← observed RUM models (Year_2018:Year_2023)
 │   ├── model_list_52.rds              ← frequency RUM models (52wk_2018:52wk_2023)
