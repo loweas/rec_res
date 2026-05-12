@@ -1,0 +1,216 @@
+[1] 0.8270602
+[1] 0.5139126
+[1] 0.8766447
+[1] 0.5447231
+[1] 0.8488741
+[1] 0.5274672
+[1] 0.802867
+[1] 0.4988796
+[1] 0.840469
+[1] 0.5222445
+[1] 0.8526783
+[1] 0.5298311
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+   4.605  120.078  579.509  458.082  678.901 1129.161 
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+   4.614  126.503  583.723  462.862  681.516 1084.563 
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+   4.609  103.739  518.297  412.739  641.826 1074.556 
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+   4.601   97.767  497.457  396.950  621.920 1041.604 
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+   4.607   99.921  499.110  398.745  620.341 1035.012 
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+   4.048  102.567  495.768  399.767  612.067 1027.917 
+[1mwrote[0m [32m31.32kB[0m in [36m 0s[0m, [32m5.25GB/s[0m[1mwrote[0m [32m1.00TB[0m in [36m 0s[0m, [32m43.80TB/s[0m                                                                                                [1mwrote[0m [32m30.65kB[0m in [36m 0s[0m, [32m16.07GB/s[0m                                                                                                [1mwrote[0m [32m1.00TB[0m in [36m 0s[0m, [32m47.76TB/s[0m                                                                                                [1mwrote[0m [32m19.60kB[0m in [36m 0s[0m, [32m6.32GB/s[0m[1mwrote[0m [32m1.00TB[0m in [36m 0s[0m, [32m55.47TB/s[0m                                                                                                [1mwrote[0m [32m37.57kB[0m in [36m 0s[0m, [32m12.12GB/s[0m                                                                                                [1mwrote[0m [32m1.00TB[0m in [36m 0s[0m, [32m43.96TB/s[0m                                                                                                [1mwrote[0m [32m34.01kB[0m in [36m 0s[0m, [32m10.97GB/s[0m                                                                                                [1mwrote[0m [32m1.00TB[0m in [36m 0s[0m, [32m49.67TB/s[0m                                                                                                [1mwrote[0m [32m31.12kB[0m in [36m 0s[0m, [32m6.22GB/s[0m[1mwrote[0m [32m1.00TB[0m in [36m 0s[0m, [32m54.38TB/s[0m                                                                                                [1mindexing[0m [34mfinal_data_2018.csv[0m [==============================================] [32m471.31GB/s[0m, eta: [36m 0s[0m                                                                                                                                     [1mindexing[0m [34mfinal_data_2019.csv[0m [==============================================] [32m534.93GB/s[0m, eta: [36m 0s[0m                                                                                                                                     [1mindexing[0m [34mfinal_data_2020.csv[0m [==============================================] [32m426.01GB/s[0m, eta: [36m 0s[0m                                                                                                                                     [1mindexing[0m [34mfinal_data_2021.csv[0m [==============================================] [32m680.46GB/s[0m, eta: [36m 0s[0m                                                                                                                                     [1mindexing[0m [34mfinal_data_2022.csv[0m [==============================================] [32m709.90GB/s[0m, eta: [36m 0s[0m                                                                                                                                     [1mindexing[0m [34mfinal_data_2023.csv[0m [==============================================] [32m547.41GB/s[0m, eta: [36m 0s[0m                                                                                                                                     
+<table style="text-align:center"><caption><strong>Welfare Loss: Mean and 95% Confidence Intervals (2018 vs 2023)</strong></caption>
+<tr><td colspan="7" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Park</td><td>Mean</td><td>Lower CI</td><td>Upper CI</td><td>Mean</td><td>Lower CI</td><td>Upper CI</td></tr>
+<tr><td colspan="7" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Ainapo Cabin</td><td>-3.78</td><td>-4.08</td><td>-3.48</td><td>-6.44</td><td>-7.42</td><td>-5.47</td></tr>
+<tr><td style="text-align:left">Hipalau</td><td>-3.31</td><td>-3.71</td><td>-2.91</td><td>-2.94</td><td>-3.19</td><td>-2.68</td></tr>
+<tr><td style="text-align:left">Kaluahaulu</td><td>-1.82</td><td>-2.03</td><td>-1.60</td><td>-1.77</td><td>-1.92</td><td>-1.62</td></tr>
+<tr><td style="text-align:left">Kamananui Trail</td><td>-1.80</td><td>-1.91</td><td>-1.69</td><td>-0.62</td><td>-0.65</td><td>-0.58</td></tr>
+<tr><td style="text-align:left">Kaunala Trail</td><td>-1.08</td><td>-1.14</td><td>-1.01</td><td>-2.81</td><td>-2.96</td><td>-2.65</td></tr>
+<tr><td style="text-align:left">Kawaikoi</td><td>-8.88</td><td>-9.98</td><td>-7.78</td><td>-17.47</td><td>-19.02</td><td>-15.93</td></tr>
+<tr><td style="text-align:left">Keanakolu Ranger</td><td>Bunkhouse Cabins</td><td>-19.64</td><td>-21.03</td><td>-18.25</td><td>-5.13</td><td>-5.84</td></tr>
+<tr><td style="text-align:left">Kuaokala Trail</td><td>-24.05</td><td>-25.45</td><td>-22.64</td><td>-26.42</td><td>-27.88</td><td>-24.95</td></tr>
+<tr><td style="text-align:left">Kulanaahane Trail</td><td>-0.60</td><td>-0.63</td><td>-0.56</td><td>-1.14</td><td>-1.20</td><td>-1.07</td></tr>
+<tr><td style="text-align:left">Kuliouou Trail</td><td>-3.02</td><td>-3.20</td><td>-2.83</td><td>-4.19</td><td>-4.45</td><td>-3.93</td></tr>
+<tr><td style="text-align:left">Lonomea</td><td>-6.42</td><td>-7.20</td><td>-5.64</td><td>-11.00</td><td>-11.95</td><td>-10.04</td></tr>
+<tr><td style="text-align:left">Manana Trail</td><td>-2.16</td><td>-2.29</td><td>-2.04</td><td>-6.00</td><td>-6.34</td><td>-5.66</td></tr>
+<tr><td style="text-align:left">Peacock Flats Campsite</td><td>-91.97</td><td>-97.37</td><td>-86.56</td><td>-99.22</td><td>-104.79</td><td>-93.64</td></tr>
+<tr><td style="text-align:left">Stay_Home</td><td>-0.0000</td><td>-0.0000</td><td>-0.0000</td><td>-0.0000</td><td>-0.0000</td><td>-0.0000</td></tr>
+<tr><td style="text-align:left">Sugi Grove</td><td>-9.16</td><td>-10.29</td><td>-8.03</td><td>-11.37</td><td>-12.36</td><td>-10.38</td></tr>
+<tr><td style="text-align:left">Waialae Cabin Campsite</td><td>-0.96</td><td>-1.08</td><td>-0.85</td><td>-1.66</td><td>-1.81</td><td>-1.52</td></tr>
+<tr><td style="text-align:left">Waikoali</td><td>-4.71</td><td>-5.29</td><td>-4.14</td><td>-8.87</td><td>-9.64</td><td>-8.10</td></tr>
+<tr><td style="text-align:left">Waikolu</td><td>-0.84</td><td>-0.90</td><td>-0.78</td><td>-1.58</td><td>-1.75</td><td>-1.40</td></tr>
+<tr><td style="text-align:left">Waimano Trail</td><td>-1.32</td><td>-1.39</td><td>-1.24</td><td>-1.97</td><td>-2.08</td><td>-1.86</td></tr>
+<tr><td style="text-align:left">Waimanu Campsite</td><td>-81.66</td><td>-87.92</td><td>-75.40</td><td>-13.89</td><td>-15.99</td><td>-11.79</td></tr>
+<tr><td style="text-align:left">Wiliwili</td><td>-3.68</td><td>-4.12</td><td>-3.25</td><td>-2.51</td><td>-2.72</td><td>-2.30</td></tr>
+<tr><td style="text-align:left">Wiliwilinui Ridge Trail</td><td>-1.32</td><td>-1.40</td><td>-1.24</td><td>-1.34</td><td>-1.42</td><td>-1.26</td></tr>
+<tr><td colspan="7" style="border-bottom: 1px solid black"></td></tr></table>
+
+<table style="text-align:center"><caption><strong>Welfare Loss Frequency: Mean and 95% Confidence Intervals (2018 vs 2023)</strong></caption>
+<tr><td colspan="7" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Park</td><td>Mean</td><td>Lower CI</td><td>Upper CI</td><td>Mean</td><td>Lower CI</td><td>Upper CI</td></tr>
+<tr><td colspan="7" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Ainapo Cabin</td><td>-5.38</td><td>-5.76</td><td>-5.01</td><td>-6.95</td><td>-7.71</td><td>-6.18</td></tr>
+<tr><td style="text-align:left">Hipalau</td><td>-4.69</td><td>-5.03</td><td>-4.34</td><td>-3.60</td><td>-3.88</td><td>-3.32</td></tr>
+<tr><td style="text-align:left">Kaluahaulu</td><td>-2.60</td><td>-2.79</td><td>-2.41</td><td>-2.18</td><td>-2.35</td><td>-2.01</td></tr>
+<tr><td style="text-align:left">Kamananui Trail</td><td>-2.60</td><td>-2.70</td><td>-2.51</td><td>-0.77</td><td>-0.80</td><td>-0.74</td></tr>
+<tr><td style="text-align:left">Kaunala Trail</td><td>-1.56</td><td>-1.62</td><td>-1.50</td><td>-3.47</td><td>-3.59</td><td>-3.34</td></tr>
+<tr><td style="text-align:left">Kawaikoi</td><td>-11.99</td><td>-12.85</td><td>-11.12</td><td>-19.32</td><td>-20.81</td><td>-17.82</td></tr>
+<tr><td style="text-align:left">Keanakolu Ranger</td><td>Bunkhouse Cabins</td><td>-25.75</td><td>-27.49</td><td>-24.00</td><td>-5.78</td><td>-6.39</td></tr>
+<tr><td style="text-align:left">Kuaokala Trail</td><td>-31.98</td><td>-33.17</td><td>-30.80</td><td>-29.85</td><td>-30.92</td><td>-28.77</td></tr>
+<tr><td style="text-align:left">Kulanaahane Trail</td><td>-0.87</td><td>-0.90</td><td>-0.84</td><td>-1.41</td><td>-1.46</td><td>-1.36</td></tr>
+<tr><td style="text-align:left">Kuliouou Trail</td><td>-4.34</td><td>-4.50</td><td>-4.18</td><td>-5.14</td><td>-5.32</td><td>-4.95</td></tr>
+<tr><td style="text-align:left">Lonomea</td><td>-8.86</td><td>-9.49</td><td>-8.22</td><td>-12.73</td><td>-13.72</td><td>-11.75</td></tr>
+<tr><td style="text-align:left">Manana Trail</td><td>-3.12</td><td>-3.24</td><td>-3.01</td><td>-7.32</td><td>-7.57</td><td>-7.07</td></tr>
+<tr><td style="text-align:left">Peacock Flats Campsite</td><td>-95.96</td><td>-99.52</td><td>-92.41</td><td>-86.33</td><td>-89.46</td><td>-83.21</td></tr>
+<tr><td style="text-align:left">Stay_Home</td><td>-46,428.31</td><td>-46,577.82</td><td>-46,278.81</td><td>-34,328.55</td><td>-34,466.21</td><td>-34,190.89</td></tr>
+<tr><td style="text-align:left">Sugi Grove</td><td>-12.33</td><td>-13.23</td><td>-11.44</td><td>-13.12</td><td>-14.14</td><td>-12.10</td></tr>
+<tr><td style="text-align:left">Waialae Cabin Campsite</td><td>-1.39</td><td>-1.49</td><td>-1.29</td><td>-2.05</td><td>-2.21</td><td>-1.90</td></tr>
+<tr><td style="text-align:left">Waikoali</td><td>-6.60</td><td>-7.07</td><td>-6.12</td><td>-10.42</td><td>-11.22</td><td>-9.61</td></tr>
+<tr><td style="text-align:left">Waikolu</td><td>-1.21</td><td>-1.25</td><td>-1.18</td><td>-1.93</td><td>-2.00</td><td>-1.85</td></tr>
+<tr><td style="text-align:left">Waimano Trail</td><td>-1.91</td><td>-1.98</td><td>-1.84</td><td>-2.44</td><td>-2.52</td><td>-2.35</td></tr>
+<tr><td style="text-align:left">Waimanu Campsite</td><td>-76.95</td><td>-82.11</td><td>-71.79</td><td>-13.14</td><td>-14.50</td><td>-11.78</td></tr>
+<tr><td style="text-align:left">Wiliwili</td><td>-5.21</td><td>-5.57</td><td>-4.84</td><td>-3.08</td><td>-3.32</td><td>-2.85</td></tr>
+<tr><td style="text-align:left">Wiliwilinui Ridge Trail</td><td>-1.91</td><td>-1.98</td><td>-1.84</td><td>-1.67</td><td>-1.73</td><td>-1.61</td></tr>
+<tr><td colspan="7" style="border-bottom: 1px solid black"></td></tr></table>
+
+<table style="text-align:center"><caption><strong>Welfare Loss Frequency: Mean and 95% Confidence Intervals (2019 & 2020)</strong></caption>
+<tr><td colspan="7" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Park</td><td>Mean</td><td>Lower CI</td><td>Upper CI</td><td>Mean</td><td>Lower CI</td><td>Upper CI</td></tr>
+<tr><td colspan="7" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Ainapo Cabin</td><td>-8.35</td><td>-8.93</td><td>-7.78</td><td>-2.84</td><td>-3.21</td><td>-2.47</td></tr>
+<tr><td style="text-align:left">Hipalau</td><td>-2.78</td><td>-2.99</td><td>-2.57</td><td>-6.14</td><td>-6.63</td><td>-5.66</td></tr>
+<tr><td style="text-align:left">Kaluahaulu</td><td>-2.43</td><td>-2.62</td><td>-2.25</td><td>-6.14</td><td>-6.63</td><td>-5.66</td></tr>
+<tr><td style="text-align:left">Kamananui Trail</td><td>-0.70</td><td>-0.72</td><td>-0.67</td><td>-0.94</td><td>-0.99</td><td>-0.90</td></tr>
+<tr><td style="text-align:left">Kaunala Trail</td><td>-1.57</td><td>-1.63</td><td>-1.50</td><td>-1.89</td><td>-1.98</td><td>-1.79</td></tr>
+<tr><td style="text-align:left">Kawaikoi</td><td>-12.01</td><td>-12.90</td><td>-11.12</td><td>-21.78</td><td>-23.49</td><td>-20.07</td></tr>
+<tr><td style="text-align:left">Keanakolu Ranger</td><td>Bunkhouse Cabins</td><td>-28.95</td><td>-30.88</td><td>-27.02</td><td>-4.73</td><td>-5.36</td></tr>
+<tr><td style="text-align:left">Kuaokala Trail</td><td>-24.90</td><td>-25.88</td><td>-23.92</td><td>-26.27</td><td>-27.58</td><td>-24.95</td></tr>
+<tr><td style="text-align:left">Kulanaahane Trail</td><td>-1.39</td><td>-1.45</td><td>-1.34</td><td>-1.42</td><td>-1.49</td><td>-1.35</td></tr>
+<tr><td style="text-align:left">Kuliouou Trail</td><td>-3.30</td><td>-3.44</td><td>-3.17</td><td>-4.25</td><td>-4.47</td><td>-4.04</td></tr>
+<tr><td style="text-align:left">Lonomea</td><td>-7.83</td><td>-8.41</td><td>-7.26</td><td>-19.41</td><td>-20.92</td><td>-17.89</td></tr>
+<tr><td style="text-align:left">Maakua Ridge Trail</td><td></td><td></td><td></td><td>-1.65</td><td>-1.74</td><td>-1.57</td></tr>
+<tr><td style="text-align:left">Manana Trail</td><td>-2.43</td><td>-2.53</td><td>-2.34</td><td>-3.78</td><td>-3.96</td><td>-3.60</td></tr>
+<tr><td style="text-align:left">Peacock Flats Campsite</td><td>-97.97</td><td>-101.83</td><td>-94.12</td><td>-79.34</td><td>-83.33</td><td>-75.36</td></tr>
+<tr><td style="text-align:left">Stay_Home</td><td>-45,706.81</td><td>-45,857.56</td><td>-45,556.05</td><td>-39,885.53</td><td>-40,089.04</td><td>-39,682.02</td></tr>
+<tr><td style="text-align:left">Sugi Grove</td><td>-10.97</td><td>-11.78</td><td>-10.16</td><td>-25.82</td><td>-27.84</td><td>-23.79</td></tr>
+<tr><td style="text-align:left">Waialae Cabin Campsite</td><td>-1.74</td><td>-1.87</td><td>-1.61</td><td>-2.83</td><td>-3.05</td><td>-2.62</td></tr>
+<tr><td style="text-align:left">Waikoali</td><td>-5.05</td><td>-5.42</td><td>-4.67</td><td>-17.99</td><td>-19.40</td><td>-16.57</td></tr>
+<tr><td style="text-align:left">Waikolu</td><td>-1.04</td><td>-1.07</td><td>-1.01</td><td>-3.31</td><td>-3.44</td><td>-3.17</td></tr>
+<tr><td style="text-align:left">Waimano Trail</td><td>-0.70</td><td>-0.72</td><td>-0.67</td><td>-1.18</td><td>-1.24</td><td>-1.12</td></tr>
+<tr><td style="text-align:left">Waimanu Campsite</td><td>-76.23</td><td>-81.24</td><td>-71.22</td><td>-17.07</td><td>-19.32</td><td>-14.82</td></tr>
+<tr><td style="text-align:left">Wiliwili</td><td>-4.17</td><td>-4.48</td><td>-3.87</td><td>-6.14</td><td>-6.62</td><td>-5.67</td></tr>
+<tr><td style="text-align:left">Wiliwilinui Ridge Trail</td><td>-0.52</td><td>-0.54</td><td>-0.50</td><td>-0.94</td><td>-0.99</td><td>-0.90</td></tr>
+<tr><td colspan="7" style="border-bottom: 1px solid black"></td></tr></table>
+
+<table style="text-align:center"><caption><strong>Welfare Loss: Observed and Frequency RUM — Mean and 95% CI (2021 & 2022)</strong></caption>
+<tr><td colspan="13" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Park</td><td>Mean</td><td>Lower CI</td><td>Upper CI</td><td>Mean</td><td>Lower CI</td><td>Upper CI</td><td>Mean</td><td>Lower CI</td><td>Upper CI</td><td>Mean</td><td>Lower CI</td><td>Upper CI</td></tr>
+<tr><td colspan="13" style="border-bottom: 1px solid black"></td></tr><tr><td style="text-align:left">Ainapo Cabin</td><td>-2.18</td><td>-2.45</td><td>-1.92</td><td>-2.57</td><td>-2.83</td><td>-2.30</td><td>-4.85</td><td>-5.67</td><td>-4.03</td><td>-5.39</td><td>-5.98</td><td>-4.80</td></tr>
+<tr><td style="text-align:left">Hipalau</td><td>-2.62</td><td>-2.85</td><td>-2.39</td><td>-3.13</td><td>-3.35</td><td>-2.90</td><td>-3.32</td><td>-3.61</td><td>-3.03</td><td>-4.07</td><td>-4.37</td><td>-3.77</td></tr>
+<tr><td style="text-align:left">Kaluahaulu</td><td>-3.39</td><td>-3.68</td><td>-3.09</td><td>-4.02</td><td>-4.31</td><td>-3.72</td><td>-3.00</td><td>-3.26</td><td>-2.74</td><td>-3.68</td><td>-3.95</td><td>-3.41</td></tr>
+<tr><td style="text-align:left">Kamananui Trail</td><td>-1.29</td><td>-1.36</td><td>-1.22</td><td>-1.56</td><td>-1.61</td><td>-1.52</td><td>-0.84</td><td>-0.89</td><td>-0.80</td><td>-1.05</td><td>-1.08</td><td>-1.02</td></tr>
+<tr><td style="text-align:left">Kaunala Trail</td><td>-3.06</td><td>-3.22</td><td>-2.90</td><td>-3.68</td><td>-3.80</td><td>-3.57</td><td>-2.65</td><td>-2.79</td><td>-2.51</td><td>-3.28</td><td>-3.39</td><td>-3.17</td></tr>
+<tr><td style="text-align:left">Kawaikoi</td><td>-12.55</td><td>-13.66</td><td>-11.44</td><td>-13.87</td><td>-14.88</td><td>-12.85</td><td>-17.47</td><td>-19.02</td><td>-15.91</td><td>-19.61</td><td>-21.06</td><td>-18.17</td></tr>
+<tr><td style="text-align:left">Keanakolu Ranger</td><td>Bunkhouse Cabins</td><td>-2.08</td><td>-2.30</td><td>-1.85</td><td>-2.46</td><td>-2.70</td><td>-2.21</td><td>-5.01</td><td>-5.72</td><td>-4.30</td><td>-5.65</td><td>-6.24</td></tr>
+<tr><td style="text-align:left">Kuaokala Trail</td><td>-35.34</td><td>-37.10</td><td>-33.58</td><td>-38.26</td><td>-39.42</td><td>-37.09</td><td>-28.93</td><td>-30.38</td><td>-27.48</td><td>-32.76</td><td>-33.85</td><td>-31.67</td></tr>
+<tr><td style="text-align:left">Kulanaahane Trail</td><td>-1.57</td><td>-1.65</td><td>-1.48</td><td>-1.90</td><td>-1.95</td><td>-1.84</td><td>-1.05</td><td>-1.11</td><td>-1.00</td><td>-1.31</td><td>-1.35</td><td>-1.27</td></tr>
+<tr><td style="text-align:left">Kuliouou Trail</td><td>-7.25</td><td>-7.66</td><td>-6.85</td><td>-8.59</td><td>-8.86</td><td>-8.33</td><td>-6.02</td><td>-6.35</td><td>-5.69</td><td>-7.35</td><td>-7.60</td><td>-7.11</td></tr>
+<tr><td style="text-align:left">Lonomea</td><td>-7.69</td><td>-8.36</td><td>-7.02</td><td>-8.83</td><td>-9.47</td><td>-8.19</td><td>-12.36</td><td>-13.45</td><td>-11.28</td><td>-14.34</td><td>-15.38</td><td>-13.29</td></tr>
+<tr><td style="text-align:left">Maakua Ridge Trail</td><td>-1.85</td><td>-1.95</td><td>-1.74</td><td>-2.23</td><td>-2.30</td><td>-2.16</td><td>-2.22</td><td>-2.35</td><td>-2.10</td><td>-2.76</td><td>-2.85</td><td>-2.67</td></tr>
+<tr><td style="text-align:left">Manana Trail</td><td>-5.04</td><td>-5.30</td><td>-4.78</td><td>-6.03</td><td>-6.20</td><td>-5.85</td><td>-5.46</td><td>-5.74</td><td>-5.18</td><td>-6.70</td><td>-6.91</td><td>-6.48</td></tr>
+<tr><td style="text-align:left">Peacock Flats Campsite</td><td>-98.03</td><td>-102.92</td><td>-93.13</td><td>-87.01</td><td>-89.67</td><td>-84.34</td><td>-106.41</td><td>-111.78</td><td>-101.04</td><td>-93.82</td><td>-96.96</td><td>-90.68</td></tr>
+<tr><td style="text-align:left">Sugi Grove</td><td>-10.13</td><td>-11.02</td><td>-9.24</td><td>-11.40</td><td>-12.23</td><td>-10.57</td><td>-11.27</td><td>-12.26</td><td>-10.28</td><td>-13.15</td><td>-14.12</td><td>-12.19</td></tr>
+<tr><td style="text-align:left">Waialae Cabin Campsite</td><td>-1.58</td><td>-1.71</td><td>-1.44</td><td>-1.90</td><td>-2.03</td><td>-1.76</td><td>-2.24</td><td>-2.43</td><td>-2.04</td><td>-2.76</td><td>-2.96</td><td>-2.56</td></tr>
+<tr><td style="text-align:left">Waikoali</td><td>-8.53</td><td>-9.28</td><td>-7.78</td><td>-9.72</td><td>-10.43</td><td>-9.01</td><td>-9.12</td><td>-9.92</td><td>-8.32</td><td>-10.78</td><td>-11.57</td><td>-9.99</td></tr>
+<tr><td style="text-align:left">Waikolu</td><td>-0.74</td><td>-0.80</td><td>-0.67</td><td>-0.89</td><td>-0.92</td><td>-0.86</td><td>-0.74</td><td>-0.80</td><td>-0.68</td><td>-0.92</td><td>-0.94</td><td>-0.89</td></tr>
+<tr><td style="text-align:left">Waimano Trail</td><td>-2.59</td><td>-2.72</td><td>-2.45</td><td>-3.12</td><td>-3.22</td><td>-3.03</td><td>-1.80</td><td>-1.89</td><td>-1.71</td><td>-2.23</td><td>-2.30</td><td>-2.16</td></tr>
+<tr><td style="text-align:left">Waimanu Campsite</td><td>-42.07</td><td>-47.35</td><td>-36.79</td><td>-28.33</td><td>-31.12</td><td>-25.53</td><td>-13.85</td><td>-15.96</td><td>-11.74</td><td>-13.04</td><td>-14.39</td><td>-11.69</td></tr>
+<tr><td style="text-align:left">Wiliwili</td><td>-3.87</td><td>-4.20</td><td>-3.54</td><td>-4.58</td><td>-4.90</td><td>-4.25</td><td>-4.64</td><td>-5.04</td><td>-4.25</td><td>-5.65</td><td>-6.06</td><td>-5.24</td></tr>
+<tr><td style="text-align:left">Wiliwilinui Ridge Trail</td><td>-1.20</td><td>-1.26</td><td>-1.13</td><td>-1.45</td><td>-1.49</td><td>-1.41</td><td>-1.58</td><td>-1.67</td><td>-1.50</td><td>-1.97</td><td>-2.03</td><td>-1.90</td></tr>
+<tr><td colspan="13" style="border-bottom: 1px solid black"></td></tr><tr><td colspan="13" style="text-align:left">95% confidence intervals. Observed RUM conditions welfare on observed trips. Frequency RUM uses 52 weekly choice occasions.</td></tr>
+</table>
+
+Call:
+mlogit(formula = choice ~ price | 1, data = df_rum, method = "nr")
+
+Frequencies of alternatives:choice
+                       Ainapo Cabin                             Hipalau 
+                          0.0175837                           0.0153148 
+                         Kaluahaulu                     Kamananui Trail 
+                          0.0085082                           0.0085082 
+                      Kaunala Trail                            Kawaikoi 
+                          0.0051049                           0.0391378 
+Keanakolu Ranger & Bunkhouse Cabins                      Kuaokala Trail 
+                          0.0839478                           0.1043676 
+                  Kulanaahane Trail                      Kuliouou Trail 
+                          0.0028361                           0.0141804 
+                            Lonomea                        Manana Trail 
+                          0.0289280                           0.0102099 
+             Peacock Flats Campsite                           Stay_Home 
+                          0.3119682                           0.0000000 
+                         Sugi Grove              Waialae Cabin Campsite 
+                          0.0402723                           0.0045377 
+                           Waikoali                             Waikolu 
+                          0.0215542                           0.0039705 
+                      Waimano Trail                    Waimanu Campsite 
+                          0.0062394                           0.2495746 
+                           Wiliwili             Wiliwilinui Ridge Trail 
+                          0.0170164                           0.0062394 
+
+nr method
+17 iterations, 0h:0m:2s 
+g'(-H)^-1g = 4.53E-07 
+gradient close to zero 
+
+Coefficients :
+                                                   Estimate  Std. Error
+(Intercept):Hipalau                             -8.4079e-01  2.8341e-01
+(Intercept):Kaluahaulu                          -1.4286e+00  3.3159e-01
+(Intercept):Kamananui Trail                     -3.7344e+00  3.7558e-01
+(Intercept):Kaunala Trail                       -3.9022e+00  4.2428e-01
+(Intercept):Kawaikoi                             2.6700e-01  2.3842e-01
+(Intercept):Keanakolu Ranger & Bunkhouse Cabins  1.4923e+00  1.9821e-01
+(Intercept):Kuaokala Trail                      -7.6384e-01  2.6822e-01
+(Intercept):Kulanaahane Trail                   -4.8350e+00  5.2386e-01
+(Intercept):Kuliouou Trail                      -3.1501e+00  3.3725e-01
+(Intercept):Lonomea                             -2.1999e-01  2.5061e-01
+(Intercept):Manana Trail                        -3.4956e+00  3.5895e-01
+(Intercept):Peacock Flats Campsite               4.5011e-01  2.5782e-01
+(Intercept):Stay_Home                           -2.2548e+01  2.4499e+03
+(Intercept):Sugi Grove                           2.1356e-01  2.3838e-01
+(Intercept):Waialae Cabin Campsite              -2.2160e+00  4.1108e-01
+(Intercept):Waikoali                            -3.9739e-01  2.6266e-01
+(Intercept):Waikolu                             -2.5417e+00  4.3444e-01
+(Intercept):Waimano Trail                       -3.9716e+00  4.0499e-01
+(Intercept):Waimanu Campsite                     2.4352e+00  1.8684e-01
+(Intercept):Wiliwili                            -7.6888e-01  2.7648e-01
+(Intercept):Wiliwilinui Ridge Trail             -3.9865e+00  4.0592e-01
+price                                           -6.0823e-03  2.7478e-04
+                                                 z-value  Pr(>|z|)    
+(Intercept):Hipalau                              -2.9666  0.003011 ** 
+(Intercept):Kaluahaulu                           -4.3082 1.646e-05 ***
+(Intercept):Kamananui Trail                      -9.9430 < 2.2e-16 ***
+(Intercept):Kaunala Trail                        -9.1972 < 2.2e-16 ***
+(Intercept):Kawaikoi                              1.1199  0.262760    
+(Intercept):Keanakolu Ranger & Bunkhouse Cabins   7.5288 5.129e-14 ***
+(Intercept):Kuaokala Trail                       -2.8478  0.004403 ** 
+(Intercept):Kulanaahane Trail                    -9.2296 < 2.2e-16 ***
+(Intercept):Kuliouou Trail                       -9.3405 < 2.2e-16 ***
+(Intercept):Lonomea                              -0.8778  0.380054    
+(Intercept):Manana Trail                         -9.7384 < 2.2e-16 ***
+(Intercept):Peacock Flats Campsite                1.7458  0.080845 .  
+(Intercept):Stay_Home                            -0.0092  0.992657    
+(Intercept):Sugi Grove                            0.8959  0.370312    
+(Intercept):Waialae Cabin Campsite               -5.3907 7.020e-08 ***
+(Intercept):Waikoali                             -1.5129  0.130299    
+(Intercept):Waikolu                              -5.8506 4.897e-09 ***
+(Intercept):Waimano Trail                        -9.8067 < 2.2e-16 ***
+(Intercept):Waimanu Campsite                     13.0335 < 2.2e-16 ***
+(Intercept):Wiliwili                             -2.7810  0.005419 ** 
+(Intercept):Wiliwilinui Ridge Trail              -9.8209 < 2.2e-16 ***
+price                                           -22.1353 < 2.2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Log-Likelihood: -2805.2
+McFadden R^2:  NaN 
+Likelihood ratio test : chisq = NaN (p.value = NA)

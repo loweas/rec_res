@@ -13,6 +13,8 @@ website:
     left:
       - href: index.qmd
         text: Home
+      - href: mdcev.qmd
+        text: MDCEV
       - href: rum.qmd
         text: Random Utility
 
