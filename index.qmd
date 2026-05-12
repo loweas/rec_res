@@ -11,7 +11,7 @@ format:
 editor: visual
 ---
 
-This site provides a walk through on the results from Unequal Recreational Losses? Revealed Preference Evidence of Campsite Closures in Hawaiʻi. This tab covers the comparison by loading the data from the models. Tabs MDCEV and RUM are the codes that will run each model. 
+This site provides a walk through on the results from Unequal Recreational Losses? Revealed Preference Evidence of Campsite Closures in Hawaiʻi. This tab covers the comparison by loading the data from the models. Tabs MDCEV and RUM are the codes that will run each model.
 
 # Data
 
@@ -56,8 +56,6 @@ model_list_obs <- readRDS("data/model_list_obs.rds")
 model_list_52 <- readRDS("data/model_list_52.rds")
 
 ```
-
-
 
 ## Welfare Table
 
@@ -464,7 +462,6 @@ participants
 
 Now that we have the per person welfare across individuals we can link the zip to a location with a higher EJ score and see how this spread spills over to EJ
 
-
 EJScreen, developed by the U.S. Environmental Protection Agency (EPA), is a screening tool that provides percentile rankings for environmental and demographic indicators, such as air pollution, proximity to hazardous sites, poverty, and limited English proficiency, across census tracts in the U.S. It is primarily used for identifying areas with potential environmental justice concerns, but it does not designate any community as "disadvantaged."
 
 Instead, it enables comparisons across regions and supports risk assessments, permitting decisions, and community advocacy. In contrast, the Climate and Economic Justice Screening Tool (CEJST), developed by the White House Council on Environmental Quality (CEQ), is designed specifically to identify disadvantaged communities (DACs) eligible for benefits under the Justice40 Initiative, which aims to direct 40% of federal climate and infrastructure investments to these communities. CEJST is a binary approach labeling each census tract as either disadvantaged or not. While EJScreen is more detailed and flexible for analysis, CEJST provides a clear policy designation to guide funding and investment.
@@ -477,88 +474,83 @@ The U.S. percentiles are computed based on the block groups nationwide. The stat
 
 Using EJScreen gives us flexibility where we can both examine the social factors and environmental factors. Here we will look at the social vulnerabilities of 90th percentiles within the state who are identified using :
 
--   Percentile for Demographic Index
+- Percentile for Demographic Index
 
--   Percentile for Supplemental Demographic Index
+- Percentile for Supplemental Demographic Index
 
--   Percentile for % people of color
+- Percentile for % people of color
 
--   Percentile for % low income
+- Percentile for % low income
 
--   Percentile for % unemployed
+- Percentile for % unemployed
 
--   Percentile for % persons with disabilities
+- Percentile for % persons with disabilities
 
--   Percentile for % limited English speaking
+- Percentile for % limited English speaking
 
--   Percentile for % less than high school education
+- Percentile for % less than high school education
 
--   Percentile for % under age 5
+- Percentile for % under age 5
 
--   Percentile for % over age 64
+- Percentile for % over age 64
 
--   Percentile for Low Life Expectancy
-
+- Percentile for Low Life Expectancy
 
 ### Environmental Vulnerabilities
 
 Here we will look at the environmental hazard of 90th percentiles within the state who are identified using :
 
--   -Percentile for Particulate Matter 2.5
+- -Percentile for Particulate Matter 2.5
 
--   Percentile for Ozone
+- Percentile for Ozone
 
--   Percentile for Diesel particulate matter
+- Percentile for Diesel particulate matter
 
--   Percentile for Toxic Releases to Air
+- Percentile for Toxic Releases to Air
 
--   Percentile for Traffic proximity
+- Percentile for Traffic proximity
 
--   Percentile for Lead paint
+- Percentile for Lead paint
 
--   Percentile for Superfund proximity
+- Percentile for Superfund proximity
 
--   Percentile for RMP facility proximity
+- Percentile for RMP facility proximity
 
--   Percentile for Hazardous waste proximity
+- Percentile for Hazardous waste proximity
 
--   Percentile for Underground storage tanks
+- Percentile for Underground storage tanks
 
--   Percentile for Wastewater discharge
+- Percentile for Wastewater discharge
 
--   Percentile for Nitrogen Dioxide (NO2)
+- Percentile for Nitrogen Dioxide (NO2)
 
--   Percentile for Drinking Water Non-Compliance
+- Percentile for Drinking Water Non-Compliance
 
--   Percentile for Particulate Matter 2.5
+- Percentile for Particulate Matter 2.5
 
--   Percentile for Ozone EJ Index
+- Percentile for Ozone EJ Index
 
--   Percentile for Diesel particulate matter EJ Index
+- Percentile for Diesel particulate matter EJ Index
 
--   Percentile for Toxic Releases to Air EJ Index
+- Percentile for Toxic Releases to Air EJ Index
 
--   Percentile for Traffic proximity EJ Index
+- Percentile for Traffic proximity EJ Index
 
--   Percentile for Lead paint EJ Index
+- Percentile for Lead paint EJ Index
 
--   Percentile for Superfund proximity EJ Index
+- Percentile for Superfund proximity EJ Index
 
--   Percentile for RMP Facility Proximity EJ Index
+- Percentile for RMP Facility Proximity EJ Index
 
--   Percentile for Hazardous waste proximity EJ Index
+- Percentile for Hazardous waste proximity EJ Index
 
--   Percentile for Underground storage tanks EJ Index
+- Percentile for Underground storage tanks EJ Index
 
--   Percentile for Wastewater discharge EJ Index
+- Percentile for Wastewater discharge EJ Index
 
--   Percentile for Nitrogen Dioxide (NO2) EJ Index
+- Percentile for Nitrogen Dioxide (NO2) EJ Index
 
--   Percentile for Drinking Water Non-Compliance EJ Index
-
-
-
-
+- Percentile for Drinking Water Non-Compliance EJ Index
 
 ```{r}
 #| cache: true
@@ -3244,5 +3236,3 @@ print(p_line)
 
 
 ```
-
-

@@ -10,7 +10,7 @@ set.seed(898989)
 ####################
 # MAKE long FORMAT #
 ####################
-setwd("C:/Users/andu/OneDrive - Norwegian University of Life Sciences/Desktop/KT data")
+
 
 #if (!require(devtools)) {
 #  install.packages("devtools")
