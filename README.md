@@ -98,7 +98,7 @@ Crosswalks EJScreen indicators from census tract to ZIP code level using the HUD
 - `env_composite`: mean of 11 environmental burden indicators (PM2.5 and ozone excluded — limited Hawaii data)
 - `soci_composite`: mean of 8 social vulnerability indicators
 - `env_block` / `soci_block`: percentile blocks (0–20th through 95–100th)
-- `is_disadvantaged_50`: ZIP flagged if ≥50% of population in DAC tracts
+- `is_disadvantaged_50`: ZIP flagged if 100% of population in DAC tracts. The matching process provides population weights.
 
 **Key outputs:** `dishawaii_zip`, updated `final_comparison_master1`
 
@@ -117,12 +117,6 @@ Implements two temporal stability tests following Ji, Keiser and Kling (2020):
 4. **Swait-Louviere (1993) test** — likelihood ratio test of parameter stability (2018 vs 2019 and 2018 vs 2023 only — 2020–2022 fail due to COVID balanced-parks requirement)
 
 **Key outputs:** `stability_all`, `transfer_errors`, `sl_results`, stability figures
-
-
-Produces all publication-ready figures and tables. Exports HTML tables via `stargazer` and PNG figures via `ggsave` at 300 dpi. Includes the Hawaii welfare map with DAC crosshatch overlay, island labels, north arrow, and scale bar.
-
-**Key outputs:** All files in `figures/` and `data/tables/`
-
 
 ---
 
