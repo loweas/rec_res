@@ -13,9 +13,7 @@ editor: visual
 
 This site provides a walk through on the results from Unequal Recreational Losses? Revealed Preference Evidence of Campsite Closures in Hawaiʻi. This tab covers the comparison by loading the data from the models. Tabs MDCEV and RUM are the codes that will run each model.
 
-# Data
-
-## Libraries
+# Libraries
 
 ```{r, message=FALSE}
 
@@ -52,12 +50,17 @@ final_data_2021 <- read_csv("data/final_data_2021.csv")
 final_data_2022 <- read_csv("data/final_data_2022.csv")
 final_data_2023 <- read_csv("data/final_data_2023.csv")
 
-model_list_obs <- readRDS("data/model_list_obs.rds")
+
 model_list_52 <- readRDS("data/model_list_52.rds")
+kr_list_52 <- readRDS("data/kr_list_52.rds")
+welfare_list <- readRDS("data/welfare_list.rds")
+mdcev_model_list <- readRDS("data/mdcev_model_list.rds")
+
+
 
 ```
 
-## Welfare Table
+# Welfare Table
 
 ```{r}
 #| cache: true
@@ -68,8 +71,8 @@ summary_wide <- final_comparison_master %>%
   group_by(parkname, year) %>%
   summarise(
     n = n(),
-    mean_val = mean(loss_rum_observed, na.rm = TRUE),
-    sd_val   = sd(loss_rum_observed, na.rm = TRUE),
+    mean_val = mean(annual_rum_loss, na.rm = TRUE),
+    sd_val   = sd(annual_rum_loss, na.rm = TRUE),
     # Calculate Standard Error and 95% CI bounds
     se_val   = sd_val / sqrt(n),
     LCI      = mean_val - (1.96 * se_val),
@@ -116,8 +119,8 @@ summary_wide <- final_comparison_master %>%
   group_by(parkname, year) %>%
   summarise(
     n = n(),
-    mean_val = mean(loss_rum_52wk, na.rm = TRUE),
-    sd_val   = sd(loss_rum_52wk, na.rm = TRUE),
+    mean_val = mean(annual_rum_loss, na.rm = TRUE),
+    sd_val   = sd(annual_rum_loss, na.rm = TRUE),
     # Calculate Standard Error and 95% CI bounds
     se_val   = sd_val / sqrt(n),
     LCI      = mean_val - (1.96 * se_val),
@@ -171,8 +174,8 @@ summary_wide <- final_comparison_master %>%
   group_by(parkname, year) %>%
   summarise(
     n = n(),
-    mean_val = mean(loss_rum_52wk, na.rm = TRUE),
-    sd_val   = sd(loss_rum_52wk, na.rm = TRUE),
+    mean_val = mean(annual_rum_loss, na.rm = TRUE),
+    sd_val   = sd(annual_rum_loss, na.rm = TRUE),
     # Calculate Standard Error and 95% CI bounds
     se_val   = sd_val / sqrt(n),
     LCI      = mean_val - (1.96 * se_val),
@@ -214,7 +217,7 @@ stargazer(summary_wide,
 
 ```{r}
 #| cache: true
-
+#| eval: false
 
 # ── Build summary for both models ─────────────────────────────────────────────
 calc_summary <- function(data, loss_col, years) {
@@ -234,81 +237,55 @@ calc_summary <- function(data, loss_col, years) {
 }
 
 # ── Frequency RUM ─────────────────────────────────────────────────────────────
-freq_wide <- calc_summary(final_comparison_master, "loss_rum_52wk", c(2021, 2022)) %>%
+freq_wide <- calc_summary(final_comparison_master, "annual_rum_loss", c(2021, 2022)) %>%
     pivot_wider(
         names_from  = year,
         values_from = c(mean_val, LCI, UCI),
         names_glue  = "{year}_freq_{.value}"
     )
 
-# ── Observed RUM ──────────────────────────────────────────────────────────────
-obs_wide <- calc_summary(final_comparison_master, "loss_rum_observed", c(2021, 2022)) %>%
-    pivot_wider(
-        names_from  = year,
-        values_from = c(mean_val, LCI, UCI),
-        names_glue  = "{year}_obs_{.value}"
-    )
-
-# ── Join both models ──────────────────────────────────────────────────────────
-summary_wide <- freq_wide %>%
-    left_join(obs_wide, by = "parkname") %>%
-    select(
-        parkname,
-        # 2019 — Observed then Frequency
-        `2021_obs_mean_val`, `2021_obs_LCI`, `2021_obs_UCI`,
-        `2021_freq_mean_val`, `2021_freq_LCI`, `2021_freq_UCI`,
-        # 2020 — Observed then Frequency
-        `2022_obs_mean_val`, `2022_obs_LCI`, `2022_obs_UCI`,
-        `2022_freq_mean_val`, `2022_freq_LCI`, `2022_freq_UCI`
-    ) %>%
-    arrange(parkname) %>%
-    as.data.frame()
-
-# ── Export ────────────────────────────────────────────────────────────────────
 stargazer(
     summary_wide,
     type       = "html",
     out        = "tables/Welfare_Comparison_Table_frequency_2122.html",
     summary    = FALSE,
     rownames   = FALSE,
-    title      = "Welfare Loss: Observed and Frequency RUM — Mean and 95% CI (2021 & 2022)",
+    title      = "Welfare Loss: Observed and Repeated RUM — Mean and 95% CI (2021 & 2022)",
     digits     = 2,
-    # 4 groups: 2020 Observed, 2020 Frequency, 2022 Observed, 2022 Frequency
+    # 4 groups: 2020 Observed, 2020 Repeated, 2022 Observed, 2022 Repeated
     column.labels    = c("Park Name",
-                         "2021 Observed", "2021 Frequency",
-                         "2022 Observed", "2022 Frequency"),
+                         "2021 Repeated","2022 Repeated"),
     column.separate  = c(1, 3, 3, 3, 3),
     covariate.labels = c("Park",
-                         "Mean", "Lower CI", "Upper CI",   # 2019 Observed
-                         "Mean", "Lower CI", "Upper CI",   # 2019 Frequency
-                         "Mean", "Lower CI", "Upper CI",   # 2020 Observed
-                         "Mean", "Lower CI", "Upper CI"),  # 2020 Frequency
-    notes       = "95% confidence intervals. Observed RUM conditions welfare on observed trips. Frequency RUM uses 52 weekly choice occasions.",
+                         "Mean", "Lower CI", "Upper CI",   # 2019 Repeated
+                         "Mean", "Lower CI", "Upper CI"),  # 2020 Repeated
+    notes       = "95% confidence intervals. Observed RUM conditions welfare on observed trips. Repeated RUM uses 52 weekly choice occasions.",
     notes.align = "l"
 )
 
-message("Saved to Welfare_Comparison_Table_frequency_2122.html")
+message("Saved to Welfare_Comparison_Table_Repeated_2122.html")
 ```
 
-#### Plot
+## Plot
+
+### Mean Per Park
 
 So this model takes the park mean of the welfare per person and shows the mean per park across years. The stability shows that will including a frequency trip in RUM shows the highest variation, the RUM opt out is more concise and then the MDCEV is always in the middle.
 
 ```{r}
 #| cache: true
-
+#| eval: false
 # Summarize and Reshape the data
 plot_data <- final_comparison_master %>%
   group_by(parkname, year) %>%
   filter(parkname!="Stay_Home")%>%
   summarise(
-    ObservedRUM = mean(loss_rum_observed, na.rm = TRUE),
-    FrequencyRUM = mean(loss_rum_52wk, na.rm = TRUE),
+    RepeatedRUM = mean(annual_rum_loss, na.rm = TRUE),
     MDCEV = mean(loss_mdcev, na.rm = TRUE),
     .groups = "drop"
   ) %>%
   pivot_longer(
-    cols = c(ObservedRUM, FrequencyRUM, MDCEV),
+    cols = c(ObservedRUM, RepeatedRUM, MDCEV),
     names_to = "Model_Type",
     values_to = "Mean_Welfare_Loss"
   )
@@ -364,29 +341,93 @@ ggsave("images/comparision_perperson_2models.png", plot = p,width=12, height=10,
 
 ```
 
-## Per participant
+### Mean Per Person
+
+This run will show you the average per person across the years. It pulls Krinsky-Robb errors
 
 ```{r}
-#| cache: true
-full_year_clean=rbind(final_data_2018,final_data_2019,final_data_2020,final_data_2021,final_data_2022,final_data_2023)
+library(dplyr); library(ggplot2)
+years <- 2018:2023
+
+##  RUM: Krinsky-Robb, average site closure (losses as positive values) ------------------
+rum <- do.call(rbind, lapply(years, function(y) {
+  s <- kr_list_52[[paste("52wk", y)]]$summary
+  r <- s[s$measure == "Average site closure", ]
+  stopifnot(nrow(r) == 1)
+  data.frame(model = "Repeated RUM", year = y, est = -r$mean, lo = -r$upper, hi = -r$lower)
+}))
+
+## MDCEV: rmdcev parameter draws (mdcev.sim), average over single-site closures
+## welfare_list[["YYYY"]]: list of per-person matrices, parameter draws x policies run from models
+
+md <- do.call(rbind, lapply(years, function(y) {
+  w <- welfare_list[[as.character(y)]]
+  J <- mdcev_model_list[[as.character(y)]]$stan_data$J
+  if (ncol(as.matrix(w[[1]])) < J + 1)
+    stop(y, ": welfare has fewer than J + 1 policies (check the policy loop for this year)")
+  draws <- Reduce(`+`, lapply(w, function(m) as.matrix(m)[, 1:J, drop = FALSE])) / length(w)
+  avg   <- -rowMeans(draws)  # each draw: mean per person, averaged over sites
+  data.frame(model = "MDCEV", year = y, est = mean(avg),
+             lo = unname(quantile(avg, 0.025)), hi = unname(quantile(avg, 0.975)))
+}))
+
+d <- rbind(rum, md) 
+d$model <- factor(d$model, levels = c("Repeated RUM", "MDCEV"))
+print(transform(d, est = round(est, 3), lo = round(lo, 3), hi = round(hi, 3)), row.names = FALSE)
+
+## Five  y-axis values in each panel
+nice_breaks <- function(lo, hi, n = 5) {
+  steps <- c(1, 2, 2.5, 5) * 10^rep(-3:3, each = 4)
+  for (s in steps) { b0 <- floor(lo / s) * s; if (b0 + (n - 1) * s >= hi) return(b0 + s * (0:(n - 1))) }
+}
+br   <- lapply(split(d, d$model), function(x) nice_breaks(min(x$lo), max(x$hi)))
+lims <- data.frame(model = factor(rep(names(br), each = 2), levels = levels(d$model)),
+                   y = unlist(lapply(br, range)))
+y_breaks <- function(l) br[[which.min(sapply(br, function(b) abs(mean(b) - mean(l))))]]
+
+p <- ggplot(d, aes(x = factor(year), y = est, group = model)) +
+  geom_line(linewidth = 0.5, linetype = "dashed", colour = "black") +
+  geom_errorbar(aes(ymin = lo, ymax = hi), width = 0.2, linewidth = 0.6, colour = "black") +
+  geom_point(shape = 16, size = 3.2, colour = "black") +
+  geom_blank(data = lims, aes(x = NULL, y = y, group = NULL), inherit.aes = FALSE) +
+  facet_wrap(~ model, nrow = 1, scales = "free_y") +
+  scale_y_continuous(breaks = y_breaks, labels = function(x) format(x, nsmall = 1, trim = TRUE)) +
+  labs(x = "Year", y = "Average welfare loss per person (USD)") +
+  theme_bw(base_size = 16, base_family = "serif") +
+  theme(panel.grid       = element_blank(),
+        strip.background = element_blank(),
+        strip.text       = element_text(size = 17, face = "bold"),
+        panel.border     = element_rect(colour = "black", linewidth = 0.8),
+        axis.ticks       = element_line(colour = "black", linewidth = 0.6),
+        axis.text        = element_text(colour = "black", size = 17),
+        axis.title       = element_text(size = 17))
+
+print(p)
+```
+
+### Participant
+
+This pulls just the participates of each trail and shows how each model treats those that participated at each site.
+
+```{r}
+full_year_clean <- rbind(final_data_2018, final_data_2019, final_data_2020, final_data_2021, final_data_2022, final_data_2023)
+
 # Identify participants by ensuring IDs match as characters
 participants_only_welfare <- final_comparison_master %>%
-    filter(parkname!="Stay_Home")%>%
+  filter(parkname != "All sites closed") %>%
+  mutate(id = as.character(id)) %>%  # <-- Convert left-side ID to character here
   left_join(
-    # Convert ID to character on the fly so the join works
     full_year_clean %>% 
+      mutate(id = as.character(id)) %>%
       select(id, parkname, year, VisitCount), 
     by = c("id", "parkname", "year")
-  ) %>%
-  # Filter for people who actually visited the park in question
-  filter(VisitCount > 0)
+  ) 
 
 # Summary for the "Participants Only" group
 participants_summary_table <- participants_only_welfare %>%
-  group_by(year, parkname) %>%
+  group_by(year, parkname) %>% filter(VisitCount>0) %>%
   summarise(
-    avg_loss_obs_participant   = mean(loss_rum_observed, na.rm = TRUE),
-    avg_loss_52wk_participant  = mean(loss_rum_52wk, na.rm = TRUE),
+    avg_loss_52wk_participant  = mean(annual_rum_loss, na.rm = TRUE),
     avg_loss_mdcev_participant = mean(loss_mdcev, na.rm = TRUE),
     num_participants           = n(),
     .groups = "drop"
@@ -395,17 +436,18 @@ participants_summary_table <- participants_only_welfare %>%
 
 #### Plot
 
+This plots out the per campsite average welfare across participates.
+
 ```{r}
 #| cache: true
 # Reshape the Participants Summary for plotting
 plot_data_participants <- participants_summary_table %>%
   # Select the three mean columns we created earlier
-  select(year, parkname, 
-         ObservedRUM = avg_loss_obs_participant, 
-         FrequencyRUM = avg_loss_52wk_participant, 
+  select(year, parkname,
+         RepeatedRUM = avg_loss_52wk_participant, 
          MDCEV = avg_loss_mdcev_participant) %>%
   pivot_longer(
-    cols = c(ObservedRUM, FrequencyRUM, MDCEV),
+    cols = c(RepeatedRUM, MDCEV),
     names_to = "Model_Type",
     values_to = "Mean_Welfare_Loss"
   )
@@ -426,8 +468,7 @@ participants=ggplot(plot_data_participants, aes(x = factor(year), y = Mean_Welfa
   
   # Shades of Grey
   scale_fill_manual(values = c(
-    "ObservedRUM"  = "#D9D9D9",   # Light Grey
-    "FrequencyRUM" = "#737373",   # Medium Grey
+    "RepeatedRUM" = "#737373",   # Medium Grey
     "MDCEV"        = "#252525"    # Dark Grey / Black
   )) +
   
@@ -453,2786 +494,1037 @@ participants=ggplot(plot_data_participants, aes(x = factor(year), y = Mean_Welfa
   )
 
 ggsave("images/comparision_perparticipate.png",plot=participants, width=12, height=10, dpi=300)
-
 participants
 
 ```
 
-### EJ
+## Satiation 2x & 4x
 
-Now that we have the per person welfare across individuals we can link the zip to a location with a higher EJ score and see how this spread spills over to EJ
-
-EJScreen, developed by the U.S. Environmental Protection Agency (EPA), is a screening tool that provides percentile rankings for environmental and demographic indicators, such as air pollution, proximity to hazardous sites, poverty, and limited English proficiency, across census tracts in the U.S. It is primarily used for identifying areas with potential environmental justice concerns, but it does not designate any community as "disadvantaged."
-
-Instead, it enables comparisons across regions and supports risk assessments, permitting decisions, and community advocacy. In contrast, the Climate and Economic Justice Screening Tool (CEJST), developed by the White House Council on Environmental Quality (CEQ), is designed specifically to identify disadvantaged communities (DACs) eligible for benefits under the Justice40 Initiative, which aims to direct 40% of federal climate and infrastructure investments to these communities. CEJST is a binary approach labeling each census tract as either disadvantaged or not. While EJScreen is more detailed and flexible for analysis, CEJST provides a clear policy designation to guide funding and investment.
-
-We use the [**State Percentiles**]{.underline} here.
-
-The U.S. percentiles are computed based on the block groups nationwide. The state percentiles are calculated within each individual state. EJScreen focuses on the U.S. percentiles as a way to visualize all results in common units. The U.S. percentile uses the U.S. block groups as the basis of comparison. The state percentile was also calculated based on the block groups of a given state (or the District of Columbia or Puerto Rico). The national or state mean value was calculated as the average of the block groups with data for that indicator, within the respective geographic scope.
-
-#### Social Vulnerabilities
-
-Using EJScreen gives us flexibility where we can both examine the social factors and environmental factors. Here we will look at the social vulnerabilities of 90th percentiles within the state who are identified using :
-
-- Percentile for Demographic Index
-
-- Percentile for Supplemental Demographic Index
-
-- Percentile for % people of color
-
-- Percentile for % low income
-
-- Percentile for % unemployed
-
-- Percentile for % persons with disabilities
-
-- Percentile for % limited English speaking
-
-- Percentile for % less than high school education
-
-- Percentile for % under age 5
-
-- Percentile for % over age 64
-
-- Percentile for Low Life Expectancy
-
-### Environmental Vulnerabilities
-
-Here we will look at the environmental hazard of 90th percentiles within the state who are identified using :
-
-- -Percentile for Particulate Matter 2.5
-
-- Percentile for Ozone
-
-- Percentile for Diesel particulate matter
-
-- Percentile for Toxic Releases to Air
-
-- Percentile for Traffic proximity
-
-- Percentile for Lead paint
-
-- Percentile for Superfund proximity
-
-- Percentile for RMP facility proximity
-
-- Percentile for Hazardous waste proximity
-
-- Percentile for Underground storage tanks
-
-- Percentile for Wastewater discharge
-
-- Percentile for Nitrogen Dioxide (NO2)
-
-- Percentile for Drinking Water Non-Compliance
-
-- Percentile for Particulate Matter 2.5
-
-- Percentile for Ozone EJ Index
-
-- Percentile for Diesel particulate matter EJ Index
-
-- Percentile for Toxic Releases to Air EJ Index
-
-- Percentile for Traffic proximity EJ Index
-
-- Percentile for Lead paint EJ Index
-
-- Percentile for Superfund proximity EJ Index
-
-- Percentile for RMP Facility Proximity EJ Index
-
-- Percentile for Hazardous waste proximity EJ Index
-
-- Percentile for Underground storage tanks EJ Index
-
-- Percentile for Wastewater discharge EJ Index
-
-- Percentile for Nitrogen Dioxide (NO2) EJ Index
-
-- Percentile for Drinking Water Non-Compliance EJ Index
+Here is the comparison of the satiation of the gamma by double and quadrupling.
 
 ```{r}
-#| cache: true
-# Hud data
+welfare_x4_ind=readRDS("data/welfare_x4_ind.rds")
+welfare_x2_ind=readRDS("data/welfare_x2_ind.rds")
+welfare_x2_ind <- welfare_x2_ind %>%
+  rename(loss_2x = loss)
+welfare_x4_ind <- welfare_x4_ind %>%
+  rename(loss_4x = loss)
 
-ZIP_TRACT_122025 <- read_excel("data/ZIP_TRACT_122025.xlsx")
+welfare_x4_ind$parkname[which(welfare_x4_ind$parkname=="Stay_Home")]="All sites closed"
 
-# only hawaii
+welfare_x2_ind$parkname[which(welfare_x2_ind$parkname=="Stay_Home")]="All sites closed"
 
-dishawaii <- readRDS("data/dishawaii.rds")
+final_comparison_master=merge(final_comparison_master, welfare_x2_ind, by.x=c("id","parkname","year"), by.y=c("id","parkname", "year"))
 
-# clean tract
-dishawaii <- dishawaii %>%
-    mutate(TRACT = str_pad(as.character(ID), 11, "left", "0"))
-
-# This taking the tact by zip code filtering hawaii  and making sure tract and zip in write order
-# THIS is where you need to make changes
-# It should be in an earlier chunk in your script
-
-dishawaii_tract <- dishawaii %>%
-  rowwise() %>%
-  mutate(
-    # ── CHANGE 1: threshold from >= 80 to >= 90 ───────────────────────────
-    env_burden = any(c_across(c(
-      P_PM25, P_OZONE, P_DSLPM, P_RSEI_AIR, P_PTRAF,
-      P_LDPNT, P_PNPL, P_PRMP, P_PTSDF, P_UST, P_PWDIS,
-      P_NO2, P_DWATER,
-      P_D2_PM25, P_D5_PM25, P_D2_OZONE, P_D5_OZONE,
-      P_D2_DSLPM, P_D5_DSLPM, P_D2_RSEI_AIR, P_D5_RSEI_AIR,
-      P_D2_PTRAF, P_D5_PTRAF, P_D2_LDPNT, P_D5_LDPNT,
-      P_D2_PNPL, P_D5_PNPL, P_D2_PRMP, P_D5_PRMP,
-      P_D2_PTSDF, P_D5_PTSDF, P_D2_UST, P_D5_UST,
-      P_D2_PWDIS, P_D5_PWDIS, P_D2_NO2, P_D5_NO2,
-      P_D2_DWATER, P_D5_DWATER
-    )) >= 90,   # <-- CHANGE THIS NUMBER (80 or 90)
-    na.rm = TRUE),
-
-    soc_vulnerable = any(c_across(c(
-      P_PEOPCOLORPCT, P_LOWINCPCT, P_UNEMPPCT, P_DISABILITYPCT,
-      P_LINGISOPCT, P_LESSHSPCT, P_UNDER5PCT, P_OVER64PCT, P_LIFEEXPPCT
-    )) >= 90,   # <-- CHANGE THIS NUMBER (80 or 90)
-    na.rm = TRUE),
-
-    # ── CHANGE 2: AND vs OR logic ─────────────────────────────────────────
-    DAC_flag = as.integer(env_burden | soc_vulnerable)
-    #                               ^ change & to | for OR logic
-  ) %>%
-  ungroup()
-
-
-hud_crosswalk <- ZIP_TRACT_122025 %>%
-    rename_with(toupper) %>% 
-    mutate(
-        # Ensure standard 11-digit Tract and 5-digit ZIP
-        TRACT = str_pad(as.character(TRACT), 11, "left", "0"),
-        ZIP   = str_pad(as.character(ZIP), 5, "left", "0")
-    ) %>%
-    # Filter for Hawaii only: 
-    # Either by ZIP prefix (967/968) OR Census Tract State prefix (15)
-    filter(str_starts(TRACT, "15"))
-
-
-#Define thursholds into the 90s
-dishawaii_zip <- hud_crosswalk %>%
-  left_join(dishawaii_tract, by = "TRACT") %>%
-  group_by(ZIP) %>%
-  summarise(
-    
-    # ── Binary population share flags ────────────────────────────────────────
-    pct_pop_in_DAC  = sum(TOT_RATIO[DAC_flag == 1],          na.rm = TRUE),
-    pct_pop_in_Envi = sum(TOT_RATIO[env_burden == TRUE],     na.rm = TRUE),
-    pct_pop_in_Soci = sum(TOT_RATIO[soc_vulnerable == TRUE], na.rm = TRUE),
-    
-    # ── Environmental composite ───────────────────────────────────────────────
-    # Use P_ columns — state percentiles, all on 0-100 scale
-    # Excludes PM25 and OZONE (limited Hawaii data)
-    env_composite = weighted.mean(
-      rowMeans(cbind(
-        P_DSLPM,    P_RSEI_AIR, P_PTRAF,  P_LDPNT,
-        P_PNPL,     P_PRMP,     P_PTSDF,  P_UST,
-        P_PWDIS,    P_NO2,      P_DWATER
-      ), na.rm = TRUE),
-      TOT_RATIO, na.rm = TRUE
-    ),
-    
-    # ── Social vulnerability composite ────────────────────────────────────────
-    # All 9 social P_ indicators — state percentiles
-    soci_composite = weighted.mean(
-      rowMeans(cbind(
-        P_PEOPCOLORPCT, P_LOWINCPCT,    P_UNEMPPCT,
-        P_DISABILITYPCT, P_LINGISOPCT,  P_LESSHSPCT,
-        P_UNDER5PCT,    P_OVER64PCT,    P_LIFEEXPPCT
-      ), na.rm = TRUE),
-      TOT_RATIO, na.rm = TRUE
-    ),
-    
-    # ── Also store the index scores EJScreen already computed ─────────────────
-    # DEMOGIDX_2 is EJScreen's own demographic index — useful as a check
-    demog_index = weighted.mean(P_DEMOGIDX_2, TOT_RATIO, na.rm = TRUE),
-    
-    total_ratio = sum(TOT_RATIO, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  mutate(
-    
-    # ── Binary flags ──────────────────────────────────────────────────────────
-    is_disadvantaged_50      = ifelse(pct_pop_in_DAC  >= 1, 1, 0),
-    is_disadvantaged_50_envi = ifelse(pct_pop_in_Envi >= 1, 1, 0),
-    is_disadvantaged_50_soci = ifelse(pct_pop_in_Soci >= 1, 1, 0),
-    
-    # ── Environmental percentile blocks ───────────────────────────────────────
-    # High env_pctile
-    env_pctile = ntile(env_composite, 100),
-    env_block  = cut(env_pctile,
-      breaks = c(0, 20, 40, 60, 80, 90, 95, 100),
-      labels = c(
-        "0-20th\n(Lowest)",  "20-40th", "40-60th",
-        "60-80th", "80-90th", "90-95th", "95-100th\n(Highest)"
-      ),
-      include.lowest = TRUE
-    ),
-    
-    # ── Social vulnerability percentile blocks ────────────────────────────────
-    # High soci_pctile = high vulnerability = most vulnerable
-    soci_pctile = ntile(soci_composite, 100),
-    soci_block  = cut(soci_pctile,
-      breaks = c(0, 20, 40, 60, 80, 90, 95, 100),
-      labels = c(
-        "0-20th\n(Lowest)",  "20-40th", "40-60th",
-        "60-80th", "80-90th", "90-95th", "95-100th\n(Highest)"
-      ),
-      include.lowest = TRUE
-    )
-  )
-
-# ── Verification checks ───────────────────────────────────────────────────────
-
-# 1. Composite scores should increase with block
-dishawaii_zip %>%
-  group_by(env_block) %>%
-  summarise(
-    mean_env  = round(mean(env_composite,  na.rm = TRUE), 1),
-    mean_flag = round(mean(pct_pop_in_Envi, na.rm = TRUE), 2),
-    n         = n()
-  ) %>% arrange(env_block)
-
-dishawaii_zip %>%
-  group_by(soci_block) %>%
-  summarise(
-    mean_soci = round(mean(soci_composite,  na.rm = TRUE), 1),
-    mean_flag = round(mean(pct_pop_in_Soci, na.rm = TRUE), 2),
-    n         = n()
-  ) %>% arrange(soci_block)
-
-# 2. Check coverage
-dishawaii_zip %>%
-  summarise(
-    total_zips      = n(),
-    env_complete    = sum(!is.na(env_composite)),
-    soci_complete   = sum(!is.na(soci_composite)),
-    total_ratio_avg = round(mean(total_ratio), 2)  # should be close to 1.0
-  )
-
-# ── Join to welfare data ──────────────────────────────────────────────────────
-final_comparison_master1 <- final_comparison_master %>%
-  left_join(
-    dishawaii_zip %>%
-      mutate(ZIP = as.numeric(ZIP)) %>%   # convert ZIP to numeric here
-      select(ZIP,
-             env_composite,  env_pctile,  env_block,
-             soci_composite, soci_pctile, soci_block,
-             demog_index,
-             pct_pop_in_DAC, pct_pop_in_Envi, pct_pop_in_Soci,
-             is_disadvantaged_50, is_disadvantaged_50_envi, is_disadvantaged_50_soci),
-    by = c("zip" = "ZIP")
-  )
-
+final_comparison_master=merge(final_comparison_master,welfare_x4_ind,by.x=c("id","parkname","year"), by.y=c("id","parkname", "year"))
 
 ```
 
-# Income
+### Plot
+
+Here is the plot of how it effects MDCEV
 
 ```{r}
-#| cache: true
-final_comparison_master1 <- final_comparison_master1 %>%
-  mutate(
-    income_pctile = 101 - ntile(income, 100),
-    
-    income_block = cut(income_pctile,
-      breaks = c(0, 20, 40, 60, 80, 90, 95, 100),
-      labels = c(
-        "0-20th\n(Lowest)",  "20-40th",  "40-60th",
-        "60-80th", "80-90th", "90-95th", "95-100th\n(Highest)"
-      ),
-      include.lowest = TRUE
-    )
-  )
 
-avg_data <- final_comparison_master1 %>%
-  filter(year %in% c(2018, 2023), parkname !="Stay_Home") %>%
-  pivot_longer(
-    cols      = c(loss_mdcev, loss_rum_observed,loss_rum_52wk),
-    names_to  = "model",
-    values_to = "loss"
-  ) %>%
-  mutate(
-    model = recode(model,
-      "loss_mdcev"        = "MDCEV",
-      "loss_rum_observed" = "Observed RUM",
-      "loss_rum_52wk" = "Frequency RUM"
-    )
-  ) %>%
-  group_by(income_block, model, year) %>%
-  summarise(
-    mean_loss = mean(loss,           na.rm = TRUE),
-    se        = sd(loss, na.rm = TRUE) / sqrt(n()),
-    p25       = quantile(loss, 0.25, na.rm = TRUE),
-    p75       = quantile(loss, 0.75, na.rm = TRUE),
-    n         = n(),
-    .groups   = "drop"
-  ) %>%
-  mutate(
-    ci_low  = mean_loss - 1.96 * se,
-    ci_high = mean_loss + 1.96 * se,
-    year    = factor(year, labels = c("2018", "2023"))
-  )
 
-
-avg_data %>% distinct(income_block) %>% arrange(income_block)
-
-# ── Shade the 90th+ blocks  ──────────────────
-vulnerable_positions <- avg_data %>%
-  filter(grepl("90-95th|95-100th", as.character(income_block))) %>%
-  mutate(block_num = as.numeric(income_block)) %>%
-  distinct(block_num) %>%
-  pull(block_num)
-
-shade_start <- min(vulnerable_positions) - 0.5
-shade_end   <- max(vulnerable_positions) + 0.5
-
-# ── Plot ──────────────────────────────────────────────────────────────────────
-# ── Step 1: Build each indicator separately with identical structure ──────────
-
-# Income — already built, just add indicator column
-income_avg <- final_comparison_master1 %>%
-    filter(year %in% c(2018, 2023), !is.na(income_block), parkname !="Stay_Home") %>%
-    pivot_longer(
-        cols      = c(loss_mdcev, loss_rum_observed,loss_rum_52wk ),
-        names_to  = "model",
-        values_to = "loss"
-    ) %>%
-    mutate(
-        model        = recode(model,
-                              "loss_mdcev"        = "MDCEV",
-                              "loss_rum_observed" = "Observed RUM",
-      "loss_rum_52wk" = "Frequency RUM"),
-        pctile_block = income_block,
-        indicator    = "Income\n(Least → Most Vulnerable)"
-    )
-
-# Environmental burden — high pctile = most vulnerable = already RIGHT
-env_avg <- final_comparison_master1 %>%
-    filter(year %in% c(2018, 2023), !is.na(env_block), parkname !="Stay_Home") %>%
-    pivot_longer(
-        cols      = c(loss_mdcev, loss_rum_observed,loss_rum_52wk),
-        names_to  = "model",
-        values_to = "loss"
-    ) %>%
-    mutate(
-        model        = recode(model,
-                              "loss_mdcev"        = "MDCEV",
-                              "loss_rum_observed" = "Observed RUM",
-      "loss_rum_52wk" = "Frequency RUM"),
-        pctile_block = env_block,
-        indicator    = "Environmental Burden\n(Least → Most Vulnerable)"
-    )
-
-# Social vulnerability — high pctile = most vulnerable = already RIGHT
-soci_avg <- final_comparison_master1 %>%
-    filter(year %in% c(2018, 2023), !is.na(soci_block), parkname !="Stay_Home") %>%
-    pivot_longer(
-        cols      = c(loss_mdcev, loss_rum_observed,loss_rum_52wk),
-        names_to  = "model",
-        values_to = "loss"
-    ) %>%
-    mutate(
-        model        = recode(model,
-                              "loss_mdcev"        = "MDCEV",
-                              "loss_rum_observed" = "Observed RUM",
-      "loss_rum_52wk" = "Frequency RUM"),
-        pctile_block = soci_block,
-        indicator    = "Social Vulnerability\n(Least → Most Vulnerable)"
-    )
-
-# ── Step 2: Combine and summarise ─────────────────────────────────────────────
-all_avg <- bind_rows(income_avg, env_avg, soci_avg) %>%
-    mutate(
-        year = factor(year, labels = c("2018", "2023")),
-        indicator = factor(indicator, levels = c(
-            "Income\n(Least → Most Vulnerable)",
-            "Social Vulnerability\n(Least → Most Vulnerable)",
-            "Environmental Burden\n(Least → Most Vulnerable)"
-        ))
-    ) %>%
-    group_by(indicator, pctile_block, model, year) %>%
-    summarise(
-        mean_loss = mean(loss,           na.rm = TRUE),
-        se        = sd(loss, na.rm = TRUE) / sqrt(n()),
-        p25       = quantile(loss, 0.25, na.rm = TRUE),
-        p75       = quantile(loss, 0.75, na.rm = TRUE),
-        n         = n(),
-        .groups   = "drop"
-    ) %>%
-    mutate(
-        ci_low  = mean_loss - 1.96 * se,
-        ci_high = mean_loss + 1.96 * se
-    )
-
-# ── Step 3: Shading positions — 90th+ blocks are RIGHT in all three ───────────
-vulnerable_positions <- all_avg %>%
-    filter(grepl("90-95th|95-100th", as.character(pctile_block))) %>%
-    mutate(block_num = as.numeric(pctile_block)) %>%
-    distinct(block_num) %>%
-    pull(block_num)
-
-shade_start <- min(vulnerable_positions) - 0.5
-shade_end   <- max(vulnerable_positions) + 0.5
-```
-
-```{r}
-#| cache: true
-# ── Step 4: Plot ──────────────────────────────────────────────────────────────
-ggplot(all_avg,
-       aes(x     = pctile_block,
-           y     = mean_loss,
-           color = model,
-           group = model)) +
-  
-  geom_rect(
-    data = tibble(xmin = shade_start, xmax = shade_end),
-    aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf),
-    fill        = "gray90",
-    alpha       = 0.5,
-    inherit.aes = FALSE
-  ) +
-  
-  geom_errorbar(
-    aes(ymin = ci_low, ymax = ci_high),
-    width     = 0.2,
-    linewidth = 0.4,
-    position  = position_dodge(0.4)   # slightly wider dodge for 3 models
-  ) +
-  
-  geom_line(linewidth = 0.8,  position = position_dodge(0.4)) +
-  geom_point(size = 2.5,      position = position_dodge(0.4)) +
-  
-  geom_hline(
-    yintercept = 0, linetype = "dashed",
-    color = "gray40", linewidth = 0.4
-  ) +
-  
-  geom_text(
-    data = tibble(
-      pctile_block = factor("90-95th",
-                            levels = levels(all_avg$pctile_block)),
-      mean_loss    = -2,
-      year         = factor("2018"),
-      indicator    = factor("Income\n(Least → Most Vulnerable)",
-                            levels = levels(all_avg$indicator))
-    ),
-    aes(x = pctile_block, y = mean_loss),
-    label       = "90th+\nVulnerable",
-    inherit.aes = FALSE,
-    size        = 3.5,
-    color       = "gray40",
-    hjust       = 0.5,
-    family      = "Times New Roman"
-  ) +
-  
-  facet_grid(indicator ~ year) +
-  
-  # ── Three model grayscale ─────────────────────────────────────────────────
-  scale_color_manual(
-    values = c(
-      "MDCEV"         = "gray10",
-      "Observed RUM"  = "gray55",
-      "Frequency RUM" = "gray80"    # lightest gray for third model
-    ),
-    name = "Model"
-  ) +
-  scale_linetype_manual(
-    values = c(
-      "MDCEV"         = "solid",
-      "Observed RUM"  = "solid",
-      "Frequency RUM" = "dashed"    # dashed helps distinguish in grayscale
-    ),
-    name = "Model"
-  ) +
-  aes(linetype = model) +           # add linetype aesthetic
-  
-  scale_y_continuous(
-    labels = scales::dollar_format(prefix = "$"),
-    name   = "Mean Welfare Loss"
-  ) +
-  
-  labs(
-    x     = "Percentile Block",
-    title = "Mean Welfare Loss Across Distributions"
-  ) +
-  
-  theme_minimal(base_family = "Times New Roman") +
-  theme(
-    panel.grid.minor   = element_blank(),
-    panel.grid.major.x = element_blank(),
-    axis.text.x   = element_text(size = 16, angle = 20,
-                                 hjust = 1, lineheight = 0.8),
-    axis.text.y   = element_text(size = 20),
-    strip.text.x  = element_text(face = "bold", size = 16),
-    strip.text.y  = element_text(face = "bold", size = 20,
-                                 angle = 0, hjust = 0),
-    legend.position = "bottom",
-    legend.title  = element_text(face = "bold", size = 20),
-    legend.text   = element_text(size = 20),
-    plot.title    = element_text(face = "bold", size = 20),
-    panel.spacing = unit(1.2, "lines")
-  )
-ggsave("images/social_vulnerabilities.png", width=12, height=10, dpi=300)
-
-```
-
-```{r}
-#| cache: true
-income_lookup <- final_comparison_master1 %>%
-mutate(id = as.character(id)) %>%
-distinct(id, income_block, income) %>%
-group_by(id) %>%
-slice(1) %>%   # keep one row per person if duplicates exist
-ungroup()
-
-# ── Rebuild all_avg_appendix with three models ────────────────────────────────
-
-income_avg_all <- final_comparison_master1 %>%
-  filter(!is.na(income_block), parkname!="Stay_Home") %>%
-  pivot_longer(
-    cols      = c(loss_mdcev, loss_rum_observed, loss_rum_52wk),  # <-- added
-    names_to  = "model",
-    values_to = "loss"
-  ) %>%
-  mutate(
-    model = recode(model,
-      "loss_mdcev"        = "MDCEV",
-      "loss_rum_observed" = "Observed RUM",
-      "loss_rum_52wk"     = "Frequency RUM"   # <-- added
-    ),
-    pctile_block = income_block,
-    indicator    = "Income\n(Least → Most Vulnerable)"
-  )
-
-env_avg_all <- final_comparison_master1 %>%
-  filter(!is.na(env_block), parkname!="Stay_Home") %>%
-  pivot_longer(
-    cols      = c(loss_mdcev, loss_rum_observed, loss_rum_52wk),
-    names_to  = "model",
-    values_to = "loss"
-  ) %>%
-  mutate(
-    model = recode(model,
-      "loss_mdcev"        = "MDCEV",
-      "loss_rum_observed" = "Observed RUM",
-      "loss_rum_52wk"     = "Frequency RUM"
-    ),
-    pctile_block = env_block,
-    indicator    = "Environmental Burden\n(Least → Most Vulnerable)"
-  )
-
-soci_avg_all <- final_comparison_master1 %>%
-  filter(!is.na(soci_block), parkname!="Stay_Home") %>%
-  pivot_longer(
-    cols      = c(loss_mdcev, loss_rum_observed, loss_rum_52wk),
-    names_to  = "model",
-    values_to = "loss"
-  ) %>%
-  mutate(
-    model = recode(model,
-      "loss_mdcev"        = "MDCEV",
-      "loss_rum_observed" = "Observed RUM",
-      "loss_rum_52wk"     = "Frequency RUM"
-    ),
-    pctile_block = soci_block,
-    indicator    = "Social Vulnerability\n(Least → Most Vulnerable)"
-  )
-
-all_avg_appendix <- bind_rows(income_avg_all, env_avg_all, soci_avg_all) %>%
-  mutate(
-    year      = factor(year),
-    model     = factor(model, levels = c("MDCEV", "Observed RUM", "Frequency RUM")),
-    indicator = factor(indicator, levels = c(
-      "Income\n(Least → Most Vulnerable)",
-      "Social Vulnerability\n(Least → Most Vulnerable)",
-      "Environmental Burden\n(Least → Most Vulnerable)"
-    ))
-  ) %>%
-  group_by(indicator, pctile_block, model, year) %>%
-  summarise(
-    mean_loss = mean(loss,           na.rm = TRUE),
-    se        = sd(loss, na.rm = TRUE) / sqrt(n()),
-    p25       = quantile(loss, 0.25, na.rm = TRUE),
-    p75       = quantile(loss, 0.75, na.rm = TRUE),
-    n         = n(),
-    .groups   = "drop"
-  ) %>%
-  mutate(
-    ci_low  = mean_loss - 1.96 * se,
-    ci_high = mean_loss + 1.96 * se
-  )
-
-# ── Updated helper function with three models ─────────────────────────────────
-make_appendix_plot <- function(data, years, title_suffix) {
-  
-  plot_data <- data %>% filter(year %in% years)
-  
-  vulnerable_positions <- plot_data %>%
-    filter(grepl("90-95th|95-100th", as.character(pctile_block))) %>%
-    mutate(block_num = as.numeric(pctile_block)) %>%
-    distinct(block_num) %>%
-    pull(block_num)
-  
-  shade_start <- min(vulnerable_positions) - 0.5
-  shade_end   <- max(vulnerable_positions) + 0.5
-  
-  ggplot(plot_data,
-         aes(x        = pctile_block,
-             y        = mean_loss,
-             color    = model,
-             linetype = model,        # <-- added for readability
-             group    = model)) +
-    
-    geom_rect(
-      data = tibble(xmin = shade_start, xmax = shade_end),
-      aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf),
-      fill        = "gray90",
-      alpha       = 0.5,
-      inherit.aes = FALSE
-    ) +
-    
-    geom_errorbar(
-      aes(ymin = ci_low, ymax = ci_high),
-      width     = 0.2,
-      linewidth = 0.35,
-      position  = position_dodge(0.4)   # slightly wider for 3 models
-    ) +
-    
-    geom_line(linewidth = 0.7,  position = position_dodge(0.4)) +
-    geom_point(size = 1.8,      position = position_dodge(0.4)) +
-    
-    geom_hline(
-      yintercept = 0, linetype = "dashed",
-      color = "gray40", linewidth = 0.4
-    ) +
-    
-    facet_grid(indicator ~ year) +
-    
-    # ── Three model color and linetype scales ─────────────────────────────────
-    scale_color_manual(
-      values = c(
-        "MDCEV"         = "gray10",
-        "Observed RUM"  = "gray55",
-        "Frequency RUM" = "gray75"    # <-- added
-      ),
-      name = "Model"
-    ) +
-    scale_linetype_manual(
-      values = c(
-        "MDCEV"         = "solid",
-        "Observed RUM"  = "solid",
-        "Frequency RUM" = "dashed"    # <-- dashed to distinguish from Observed RUM
-      ),
-      name = "Model"
-    ) +
-    scale_fill_manual(
-      values = c(
-        "MDCEV"         = "gray10",
-        "Observed RUM"  = "gray55",
-        "Frequency RUM" = "gray75"
-      ),
-      guide  = "none"
-    ) +
-    scale_y_continuous(
-      labels = scales::dollar_format(prefix = "$"),
-      name   = "Mean Welfare Loss"
-    ) +
-    
-    labs(
-      x     = "Percentile Block",
-      title = paste("Mean Welfare Loss Across Distributions —", title_suffix)
-    ) +
-    
-    theme_minimal(base_family = "Times New Roman") +
-    theme(
-      panel.grid.minor   = element_blank(),
-      panel.grid.major.x = element_blank(),
-      axis.text.x   = element_text(size = 12, angle = 30,
-                                   hjust = 1, lineheight = 0.8),
-      axis.text.y   = element_text(size = 20),
-      strip.text.x  = element_text(face = "bold", size = 12),
-      strip.text.y  = element_text(face = "bold", size = 14,
-                                   angle = 0, hjust = 0),
-      legend.position  = "bottom",
-      legend.title     = element_text(face = "bold", size = 20),
-      legend.text      = element_text(size = 20),
-      plot.title       = element_text(face = "bold", size = 20),
-      panel.spacing    = unit(0.8, "lines")
-    )
-}
-
-# ── Build and save ────────────────────────────────────────────────────────────
-appendix_a <- make_appendix_plot(
-  all_avg_appendix,
-  years        = c(2018, 2019, 2020),
-  title_suffix = "2018–2020"
-)
-
-appendix_b <- make_appendix_plot(
-  all_avg_appendix,
-  years        = c(2021, 2022, 2023),
-  title_suffix = "2021–2023"
-)
-
-
-ggsave(
-  "images/appendix_A_welfare_2018_2020.png",
-  plot   = appendix_a,
-  width  = 14,
-  height = 12,
-  dpi    = 300,
-  bg     = "white"
-)
-
-ggsave(
-  "images/appendix_B_welfare_2021_2023.png",
-  plot   = appendix_b,
-  width  = 14,
-  height = 12,
-  dpi    = 300,
-  bg     = "white"
-)
-print(appendix_a)
-
-```
-
-# Low-income Welfare
-
-So low income individuals live further away and choose sites closer to them then higher income individuals. Thats whats explained by the gap. We know we value there time less
-
-```{r}
-#| cache: true
-
-# COMPARE: Average distance to all sites vs distance to actually visited sites
-
-
-# Distance to ALL sites (potential distance) 
-# This is the average distance each income block's zip codes are from
-# every campsite regardless of whether they visited
-
-distance_all_sites <- full_year_clean %>%
-  filter(parkname != "Stay_Home") %>%
-  mutate(id = as.character(id)) %>%
-  left_join(income_lookup, by = "id") %>%
-  filter(!is.na(income_block)) %>%
-  group_by(income_block, id) %>%
-  summarise(
-    mean_dist_all_sites = mean(travel_distance_km, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  group_by(income_block) %>%
-  summarise(
-    mean_dist_potential  = round(mean(mean_dist_all_sites, na.rm = TRUE), 1),
-    median_dist_potential= round(median(mean_dist_all_sites, na.rm = TRUE), 1),
-    n_individuals        = n_distinct(id),
-    .groups = "drop"
-  )
-
-# Distance to VISITED sites only ────────────────────────────────────
-# Average distance to sites that were actually visited (VisitCount > 0)
-
-distance_visited_sites <- full_year_clean %>%
-  filter(parkname != "Stay_Home", VisitCount > 0) %>%
-  mutate(id = as.character(id)) %>%
-  left_join(income_lookup, by = "id") %>%
-  filter(!is.na(income_block)) %>%
-  group_by(income_block, id) %>%
-  summarise(
-    mean_dist_visited = mean(travel_distance_km, na.rm = TRUE),
-    n_sites_visited   = n_distinct(parkname),
-    total_trips       = sum(VisitCount,          na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  group_by(income_block) %>%
-  summarise(
-    mean_dist_visited   = round(mean(mean_dist_visited, na.rm = TRUE), 1),
-    median_dist_visited = round(median(mean_dist_visited, na.rm = TRUE), 1),
-    mean_sites_visited  = round(mean(n_sites_visited,   na.rm = TRUE), 2),
-    mean_trips          = round(mean(total_trips,       na.rm = TRUE), 2),
-    n_individuals       = n_distinct(id),
-    .groups = "drop"
-  )
-
-# Combine and compare ───────────────────────────────────────────────
-distance_comparison <- distance_all_sites %>%
-  left_join(distance_visited_sites, by = "income_block",
-            suffix = c("_all", "_visited")) %>%
-  mutate(
-    # Selection effect: do people choose closer sites?
-    distance_gap    = round(mean_dist_visited - mean_dist_potential, 1),
-    selection_ratio = round(mean_dist_visited / mean_dist_potential, 3)
-  ) %>%
-  arrange(income_block)
-
-message("\n── Distance: potential vs visited by income block ──")
-print(distance_comparison %>%
-  select(income_block, mean_dist_potential, mean_dist_visited,
-         distance_gap, selection_ratio, mean_sites_visited))
-
-# ── Site-level distance by income block 
-# Which sites does each income block actually visit
-# and how far are they from those sites?
-
-site_distance_by_income <- full_year_clean %>%
-  filter(parkname != "Stay_Home", VisitCount > 0) %>%
-  mutate(id = as.character(id)) %>%
-  left_join(income_lookup, by = "id") %>%
-  filter(!is.na(income_block)) %>%
-  group_by(income_block, parkname, island_park) %>%
-  summarise(
-    mean_distance = round(mean(travel_distance_km, na.rm = TRUE), 1),
-    total_trips   = sum(VisitCount, na.rm = TRUE),
-    n_visitors    = n_distinct(id),
-    .groups       = "drop"
-  ) %>%
-  group_by(income_block) %>%
-  mutate(
-    pct_trips = round(total_trips / sum(total_trips) * 100, 1)
-  ) %>%
-  ungroup() %>%
-  arrange(income_block, desc(pct_trips))
-
-message("\n── Top 3 sites by income block with distances ──")
-site_distance_by_income %>%
-  group_by(income_block) %>%
-  slice_max(pct_trips, n = 3) %>%
-  print(n = 30)
-
-# ── Plot comparison ───────────────────────────────────────────────────
-distance_comparison %>%
-  pivot_longer(
-    cols      = c(mean_dist_potential, mean_dist_visited),
-    names_to  = "type",
-    values_to = "distance"
-  ) %>%
-  mutate(
-    type = case_when(
-      type == "mean_dist_potential" ~ "Average Distance to All Sites\n(Potential)",
-      type == "mean_dist_visited"   ~ "Average Distance to Visited Sites\n(Actual)"
-    ),
-    # ── Clean x-axis labels with income ranges ────────────────────────────────
-    income_label = case_when(
-      income_block == "0-20th\n(Lowest)"    ~ "> $102k",
-      income_block == "20-40th"             ~ "$90k–$102k",
-      income_block == "40-60th"             ~ "$79k–$90k",
-      income_block == "60-80th"             ~ "$67k–$79k",
-      income_block == "80-90th"             ~ "$63k–$67k",
-      income_block == "90-95th"             ~ "$57k–$63k",
-      income_block == "95-100th\n(Highest)" ~ "< $57k",
-      TRUE ~ as.character(income_block)
-    ),
-    income_label = factor(income_label, levels = c(
-      "< $57k", "$57k–$63k", "$63k–$67k", "$67k–$79k",
-      "$79k–$90k", "$90k–$102k", "> $102k"
-    ))
-  ) %>%
-  ggplot(aes(x     = income_label,
-             y     = distance,
-             color = type,
-             group = type)) +
-
-  geom_line(linewidth = 0.9) +
-  geom_point(size = 3) +
-
-  # ── High / Low income arrows on x axis ────────────────────────────────────
-  annotate("segment",
-           x = 0.5, xend = 1.8, y = -30, yend = -30,
-           arrow = arrow(length = unit(0.2, "cm"), ends = "first"),
-           color = "gray30", linewidth = 0.6) +
-  annotate("text",
-           x = 1.0, y = -45,
-           label = "Lower Income",
-           size = 4.5, color = "gray30",
-           family = "Times New Roman",
-           hjust = 0.5, fontface = "bold") +
-
-  annotate("segment",
-           x = 5.2, xend = 6.5, y = -30, yend = -30,
-           arrow = arrow(length = unit(0.2, "cm"), ends = "last"),
-           color = "gray30", linewidth = 0.6) +
-  annotate("text",
-           x = 6.0, y = -45,
-           label = "Higher Income",
-           size = 4.5, color = "gray30",
-           family = "Times New Roman",
-           hjust = 0.5, fontface = "bold") +
-
-  scale_color_manual(
-    values = c(
-      "Average Distance to All Sites\n(Potential)"  = "gray70",
-      "Average Distance to Visited Sites\n(Actual)" = "gray10"
-    ),
-    name = ""
-  ) +
-  scale_y_continuous(
-    name   = "Mean Distance (km)",
-    labels = scales::number_format(suffix = " km"),
-    expand = expansion(mult = c(0.15, 0.05))  # extra space at bottom for arrows
-  ) +
-  labs(
-    x     = "Household Income Range",
-    title = "Potential vs Actual Distance by Income Block"
-  ) +
-  coord_cartesian(clip = "off") +   # allow annotations outside plot area
-  theme_minimal(base_family = "Times New Roman") +
-  theme(
-    panel.grid.minor   = element_blank(),
-    panel.grid.major.x = element_blank(),
-    axis.text.x   = element_text(size = 14, angle = 20, hjust = 1),
-    axis.text.y   = element_text(size = 16),
-    axis.title    = element_text(size = 16),
-    legend.position  = "bottom",
-    legend.text   = element_text(size = 16),
-    plot.title    = element_text(face = "bold", size = 20),
-    plot.margin   = margin(t = 10, r = 10, b = 30, l = 10)  # bottom space for arrows
-  )
-
-ggsave("images/distance_sitesvisited.png", width=12, height=8, dpi=300)
-```
-
-```{r}
-#| cache: true
-
-
-# Test 1: Rank-based selection 
-# For each person: rank all 22 sites by distance (1 = closest)
-# Then check which rank sites they actually visited
-# If constrained -> visit low-rank (nearby) sites disproportionately
-
-rank_selection <- full_year_clean %>%
-  filter(parkname != "Stay_Home") %>%
-  mutate(id = as.character(id)) %>%
-  left_join(income_lookup, by = "id") %>%
-  filter(!is.na(income_block)) %>%
-  group_by(id) %>%
-  mutate(
-    # Rank sites by distance for each individual — 1 = closest
-    distance_rank = rank(travel_distance_km, ties.method = "first"),
-    n_sites       = n()
-  ) %>%
-  ungroup()
-
-# For visited sites: what is their average distance rank?
-rank_visited <- rank_selection %>%
-  filter(VisitCount > 0) %>%
-  group_by(id, income_block) %>%
-  summarise(
-    mean_rank_visited    = mean(distance_rank, na.rm = TRUE),
-    min_rank_visited     = min(distance_rank,  na.rm = TRUE),
-    median_rank_visited  = median(distance_rank, na.rm = TRUE),
-    n_sites_visited      = n(),
-    .groups = "drop"
-  )
-
-rank_summary <- rank_visited %>%
-  group_by(income_block) %>%
-  summarise(
-    mean_rank_of_visited   = round(mean(mean_rank_visited),   2),
-    median_rank_of_visited = round(median(median_rank_visited), 2),
-    mean_closest_visited   = round(mean(min_rank_visited),    2),
-    pct_visit_top5_closest = round(mean(min_rank_visited <= 5) * 100, 1),
-    pct_visit_top3_closest = round(mean(min_rank_visited <= 3) * 100, 1),
-    .groups = "drop"
-  ) %>%
-  arrange(income_block)
-
-message("── Test 1: Distance rank of visited sites ──")
-message("Lower rank = visits closer sites | Higher rank = travels further")
-print(rank_summary)
-
-#Test 2: Probability of visiting top-N closest sites 
-# Does low income visit their N closest sites more often?
-
-visit_probability <- rank_selection %>%
-  mutate(
-    visited    = VisitCount > 0,
-    top3       = distance_rank <= 3,
-    top5       = distance_rank <= 5,
-    top10      = distance_rank <= 10,
-    bottom5    = distance_rank > 17   # furthest 5 sites
-  ) %>%
-  group_by(income_block) %>%
-  summarise(
-    prob_visit_top3    = round(mean(visited[top3],    na.rm = TRUE) * 100, 1),
-    prob_visit_top5    = round(mean(visited[top5],    na.rm = TRUE) * 100, 1),
-    prob_visit_top10   = round(mean(visited[top10],   na.rm = TRUE) * 100, 1),
-    prob_visit_bottom5 = round(mean(visited[bottom5], na.rm = TRUE) * 100, 1),
-    # Ratio: how much more likely to visit nearby vs far sites?
-    near_far_ratio     = round(
-      mean(visited[top5],    na.rm = TRUE) /
-      mean(visited[bottom5], na.rm = TRUE), 2),
-    .groups = "drop"
-  ) %>%
-  arrange(income_block)
-
-message("\n── Test 2: Probability of visiting near vs far sites ──")
-message("Higher near_far_ratio = stronger geographic constraint")
-print(visit_probability)
-
-# Test 3: Individual-level regression 
-# Does distance predict visit probability differently across income groups?
-# If low income is more constrained:
-# β_distance should be more negative for low income
-
-
-regression_by_income <- rank_selection %>%
-  mutate(visited = as.integer(VisitCount > 0)) %>%
-  group_by(income_block) %>%
-  do(
-    tidy(glm(visited ~ travel_distance_km,
-             data   = .,
-             family = binomial(link = "logit")))
-  ) %>%
-  filter(term == "travel_distance_km") %>%
-  mutate(
-    estimate  = round(estimate,   5),
-    std.error = round(std.error,  5),
-    p.value   = round(p.value,    4)
-  ) %>%
-  select(income_block, estimate, std.error, p.value) %>%
-  arrange(income_block)
-
-message("\n── Test 3: Logit coefficient on distance by income block ──")
-message("More negative estimate = distance matters MORE for that income group")
-message("= stronger geographic constraint on site selection")
-print(regression_by_income)
-
-# Test 4: Substitution range 
-# How spread out are the sites each person visits?
-# Constrained campers visit a narrow geographic range
-# Unconstrained campers visit sites spread across islands
-
-substitution_range <- final_data_2018 %>%
-  filter(parkname != "Stay_Home", VisitCount > 0) %>%
-  mutate(id = as.character(id)) %>%
-  left_join(income_lookup, by = "id") %>%
-  filter(!is.na(income_block)) %>%
-  group_by(id, income_block) %>%
-  summarise(
-    n_islands_visited   = n_distinct(island_park),
-    n_sites_visited     = n_distinct(parkname),
-    range_km            = max(travel_distance_km) - min(travel_distance_km),
-    max_dist            = max(travel_distance_km),
-    min_dist            = min(travel_distance_km),
-    .groups = "drop"
-  ) %>%
-  group_by(income_block) %>%
-  summarise(
-    mean_islands_visited = round(mean(n_islands_visited),  2),
-    pct_visit_own_island = round(mean(n_islands_visited == 1) * 100, 1),
-    mean_range_km        = round(mean(range_km,            na.rm = TRUE), 1),
-    mean_max_dist        = round(mean(max_dist,            na.rm = TRUE), 1),
-    mean_min_dist        = round(mean(min_dist,            na.rm = TRUE), 1),
-    .groups = "drop"
-  ) %>%
-  arrange(income_block)
-
-message("\n── Test 4: Geographic substitution range ──")
-message("pct_visit_own_island: % who only visit sites on their home island")
-message("mean_range_km: spread between closest and furthest site visited")
-print(substitution_range)
-
-# Test 5: Gravity model 
-# Classic spatial interaction: visits ~ 1/distance
-# If constrained: stronger distance decay for low income
-
-gravity_by_income <- rank_selection %>%
-  mutate(
-    visited       = as.integer(VisitCount > 0),
-    log_distance  = log(travel_distance_km + 1)
-  ) %>%
-  group_by(income_block) %>%
-  do(
-    tidy(glm(visited ~ log_distance,
-             data   = .,
-             family = binomial(link = "logit")))
-  ) %>%
-  filter(term == "log_distance") %>%
-  mutate(
-    estimate  = round(estimate,  3),
-    std.error = round(std.error, 3),
-    p.value   = round(p.value,   4)
-  ) %>%
-  select(income_block, estimate, std.error, p.value) %>%
-  rename(log_distance_coef = estimate) %>%
-  arrange(income_block)
-
-message("\n── Test 5: Gravity model — log distance effect by income ──")
-message("More negative coefficient = stronger distance decay = more constrained")
-print(gravity_by_income)
-
-# ── Plot all four measures together 
-
-p1 <- rank_summary %>%
-  ggplot(aes(x = income_block, y = mean_rank_of_visited, group = 1)) +
-  geom_line(linewidth = 0.8, color = "gray10") +
-  geom_point(size = 3,       color = "gray10") +
-  labs(x = "", y = "Mean Distance Rank\nof Visited Sites",
-       title = "Test 1: Distance Rank") +
-  theme_minimal(base_family = "Times New Roman") +
-  theme(axis.text.x = element_text(angle = 20, hjust = 1, size = 9),
-        panel.grid.minor = element_blank(),
-        plot.title = element_text(face = "bold", size = 11))
-
-p2 <- visit_probability %>%
-  ggplot(aes(x = income_block, y = near_far_ratio, group = 1)) +
-  geom_line(linewidth = 0.8, color = "gray10") +
-  geom_point(size = 3,       color = "gray10") +
-  geom_hline(yintercept = 1, linetype = "dashed",
-             color = "gray50", linewidth = 0.4) +
-  labs(x = "", y = "Near/Far Visit Ratio\n(top 5 / bottom 5)",
-       title = "Test 2: Near/Far Ratio") +
-  theme_minimal(base_family = "Times New Roman") +
-  theme(axis.text.x = element_text(angle = 20, hjust = 1, size = 9),
-        panel.grid.minor = element_blank(),
-        plot.title = element_text(face = "bold", size = 11))
-
-p3 <- regression_by_income %>%
-  ggplot(aes(x = income_block, y = estimate, group = 1)) +
-  geom_col(fill = "gray30", alpha = 0.8, width = 0.6) +
-  geom_errorbar(aes(ymin = estimate - 1.96 * std.error,
-                    ymax = estimate + 1.96 * std.error),
-                width = 0.2, color = "gray10") +
-  labs(x = "", y = "Distance Coefficient\n(logit)",
-       title = "Test 3: Distance Sensitivity") +
-  theme_minimal(base_family = "Times New Roman") +
-  theme(axis.text.x = element_text(angle = 20, hjust = 1, size = 9),
-        panel.grid.minor = element_blank(),
-        plot.title = element_text(face = "bold", size = 11))
-
-p4 <- substitution_range %>%
-  ggplot(aes(x = income_block, y = pct_visit_own_island, group = 1)) +
-  geom_line(linewidth = 0.8, color = "gray10") +
-  geom_point(size = 3,       color = "gray10") +
-  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
-  labs(x = "", y = "% Visiting Own\nIsland Sites Only",
-       title = "Test 4:  Remain on Home Island") +
-  theme_minimal(base_family = "Times New Roman") +
-  theme(axis.text.x = element_text(angle = 20, hjust = 1, size = 9),
-        panel.grid.minor = element_blank(),
-        plot.title = element_text(face = "bold", size = 11))
-
-combined <- (p1 + p2) / (p3 + p4) +
-  plot_annotation(
-    title   = "Four Tests of Geographic Selection Constraint by Income Block",
-    caption = "All four tests ask: does distance matter more for lower income communities?",
-    theme   = theme(
-      plot.title   = element_text(family = "Times New Roman",
-                                  face = "bold", size = 14),
-      plot.caption = element_text(family = "Times New Roman",
-                                  size = 10, color = "gray40")
-    )
-  )
-
-print(combined)
-
-ggsave("images/geographic_constraint_tests.png",
-       combined, width = 12, height = 10,
-       dpi = 300, bg = "white")
-
-
-```
-
-```{r}
-#| cache: true
-
-all_years_raw <- map_df(2018:2023, function(yr) {
-  get(paste0("final_data_", yr)) %>%
-    mutate(year = yr, id = as.character(id))
-})
-
-site_by_income <- all_years_raw %>%
-  filter(parkname != "Stay_Home", VisitCount > 0) %>%
-  mutate(id = as.character(id)) %>%
-  left_join(income_lookup, by = "id") %>%
-  filter(!is.na(income_block)) %>%
-  group_by(income_block, parkname) %>%
-  summarise(
-    total_trips = sum(VisitCount, na.rm = TRUE),
-    .groups     = "drop"
-  ) %>%
-  group_by(income_block) %>%
-  mutate(
-    pct_trips = round(total_trips / sum(total_trips) * 100, 1)
-  ) %>%
-  ungroup() %>%
-  arrange(income_block, desc(pct_trips))
-
-
-# Check if high income disproportionately visits Peacock and Waimanu
-site_by_income %>%
-  filter(parkname %in% c("Peacock Flats Campsite", 
-                          "Waimanu Campsite")) %>%
-  select(income_block, parkname, total_trips, pct_trips) %>%
-  arrange(parkname, income_block) %>%
-  print(n = 20)
-
-# What share of each income group's trips go to these two sites?
-site_by_income %>%
-  mutate(
-    high_value_site = parkname %in% c("Peacock Flats Campsite",
-                                       "Waimanu Campsite")
-  ) %>%
-  group_by(income_block, high_value_site) %>%
-  summarise(
-    pct_trips = sum(pct_trips),
-    .groups   = "drop"
-  ) %>%
-  filter(high_value_site) %>%
-  arrange(income_block)
-
-```
-
-# Spread Across Models & DCA
-
-The spread here show the value of park based on whether or not the person comes from a disadvantage community.
-
-The MDCEV is fairly stable compared to the RUM and the spread is larger whe nconsidering each trip occasion.
-
-For DCA are consistently less in Observed RUM and MDCEV but is greater in Frequency 52.
-
-```{r}
-#| cache: true
-
-
-# 1. Prepare data: Group by Park, Year, and EJ Status
-plot_data_three_panel <- final_comparison_master1 %>%
-  filter(parkname!="Stay_Home") %>%
-  group_by(year, parkname, is_disadvantaged_50) %>%
-  summarise(
-    Observed_RUM = mean(loss_rum_observed, na.rm = TRUE),
-    Frequency_RUM = mean(loss_rum_52wk, na.rm = TRUE),
-    MDCEV = mean(loss_mdcev, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  # Pivot to long format
-  pivot_longer(
-    cols = c(Observed_RUM, Frequency_RUM, MDCEV),
-    names_to = "Model_Type",
-    values_to = "Welfare_Loss"
-  ) %>%
-  # Clean up factor labels for the legend and facets
-  mutate(
-    Model_Type = factor(Model_Type, 
-                        levels = c("Observed_RUM", "Frequency_RUM", "MDCEV"),
-                        labels = c("Observed RUM", "Frequency RUM (52-Wk)", "MDCEV")),
-    EJ_Group = factor(is_disadvantaged_50, 
-                      levels = c(0, 1), 
-                      labels = c("Non-Disadvantaged", "Disadvantaged (EJ)"))
-  )
-
-# 2. Create the Three-Panel Plot
-ggplot(plot_data_three_panel, aes(x = factor(year), y = Welfare_Loss, fill = EJ_Group)) +
-  # Boxplot with black outlines
-  geom_boxplot(outlier.shape = 21, outlier.size = 1, color = "black", alpha = 0.8) +
-  
-  # CREATE THREE PANELS (One for each Model)
-  facet_wrap(~ Model_Type, scales = "free_y") + 
-  
-  # Grayscale for the EJ Comparison
-  scale_fill_manual(values = c(
-    "Non-Disadvantaged" = "#F0F0F0", # Very Light Grey
-    "Disadvantaged (EJ)" = "#636363"  # Dark Grey
-  )) +
-  
-  # Labels
-  labs(
-    title = "Annual Welfare Loss by Model Type and EJ Status",
-    subtitle = "Comparing Disadvantaged vs. Non-Disadvantaged ZIP Codes across Hawaii Parks",
-    x = "Year",
-    y = "Average Annual Welfare Loss ($/Park)",
-    fill = "Community Status"
-  ) +
-  
-  # Academic Theme
-  theme_bw() +
-  theme(
-    text = element_text(family = "serif", size = 16),
-    plot.title = element_text(face = "bold", size = 20, hjust = 0.5),
-    plot.subtitle = element_text(hjust = 0.5, size = 16),
-    
-    # Grid and Panel styling
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    strip.background = element_rect(fill = "white", color = "black"),
-    strip.text = element_text(face = "bold", size = 16),
-    
-    # Legend at bottom
-    legend.position = "bottom",
-    panel.border = element_rect(colour = "black", fill = NA, size = 0.8)
-  )
-
-ggsave("images/comparision_EJstatus.png", width=12, height=10, dpi=300)
-
-```
-
-```{r}
-
-#| cache: true
-# 1. Prepare data: Group by Park, Year, and EJ Status
-plot_data_three_panel <- final_comparison_master1 %>%
-  filter(parkname!="Stay_Home") %>%
-  group_by(year, parkname, is_disadvantaged_50_envi) %>%
-  summarise(
-    Observed_RUM = mean(loss_rum_observed, na.rm = TRUE),
-    Frequency_RUM = mean(loss_rum_52wk, na.rm = TRUE),
-    MDCEV = mean(loss_mdcev, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  # Pivot to long format
-  pivot_longer(
-    cols = c(Observed_RUM, Frequency_RUM, MDCEV),
-    names_to = "Model_Type",
-    values_to = "Welfare_Loss"
-  ) %>%
-  # Clean up factor labels for the legend and facets
-  mutate(
-    Model_Type = factor(Model_Type, 
-                        levels = c("Observed_RUM", "Frequency_RUM", "MDCEV"),
-                        labels = c("Observed RUM", "Frequency RUM (52-Wk)", "MDCEV")),
-    EJ_Group = factor(is_disadvantaged_50_envi, 
-                      levels = c(0, 1), 
-                      labels = c("Non-Disadvantaged", "Disadvantaged (EJ)"))
-  )
-
-# 2. Create the Three-Panel Plot
-ggplot(plot_data_three_panel, aes(x = factor(year), y = Welfare_Loss, fill = EJ_Group)) +
-  # Boxplot with black outlines
-  geom_boxplot(outlier.shape = 21, outlier.size = 1, color = "black", alpha = 0.8) +
-  
-  # CREATE THREE PANELS (One for each Model)
-  facet_wrap(~ Model_Type, scales = "free_y") + 
-  
-  # Grayscale for the EJ Comparison
-  scale_fill_manual(values = c(
-    "Non-Disadvantaged" = "#F0F0F0", # Very Light Grey
-    "Disadvantaged (EJ)" = "#636363"  # Dark Grey
-  )) +
-  
-  # Labels
-  labs(
-    title = "Annual Welfare Loss by Model Type and Environmental Burdens Status",
-    subtitle = "Comparing Disadvantaged vs. Non-Disadvantaged ZIP Codes across Hawaii Parks",
-    x = "Year",
-    y = "Average Annual Welfare Loss ($/Park)",
-    fill = "Community Status"
-  ) +
-  
-  # Academic Theme
-  theme_bw() +
-  theme(
-    text = element_text(family = "serif", size = 12),
-    plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
-    plot.subtitle = element_text(hjust = 0.5, size = 11),
-    
-    # Grid and Panel styling
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    strip.background = element_rect(fill = "white", color = "black"),
-    strip.text = element_text(face = "bold", size = 11),
-    
-    # Legend at bottom
-    legend.position = "bottom",
-    panel.border = element_rect(colour = "black", fill = NA, size = 0.8)
-  )
-
-ggsave("images/comparision_envir_status.png", width=12, height=10, dpi=300)
-
-# 1. Prepare data: Group by Park, Year, and EJ Status
-plot_data_three_panel <- final_comparison_master1 %>%
-  filter(parkname!="Stay_Home") %>%
-  group_by(year, parkname, is_disadvantaged_50_envi) %>%
-  summarise(
-    Observed_RUM = mean(loss_rum_observed, na.rm = TRUE),
-    MDCEV = mean(loss_mdcev, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  # Pivot to long format
-  pivot_longer(
-    cols = c(Observed_RUM, MDCEV),
-    names_to = "Model_Type",
-    values_to = "Welfare_Loss"
-  ) %>%
-  # Clean up factor labels for the legend and facets
-  mutate(
-    Model_Type = factor(Model_Type, 
-                        levels = c("Observed_RUM",  "MDCEV"),
-                        labels = c("Observed RUM", "MDCEV")),
-    EJ_Group = factor(is_disadvantaged_50_envi, 
-                      levels = c(0, 1), 
-                      labels = c("Non-Disadvantaged", "Disadvantaged"))
-  )
-
-# 2. Create the Three-Panel Plot
-ggplot(plot_data_three_panel, aes(x = factor(year), y = Welfare_Loss, fill = EJ_Group)) +
-  # Boxplot with black outlines
-  geom_boxplot(outlier.shape = 21, outlier.size = 1, color = "black", alpha = 0.8) +
-  
-  # CREATE THREE PANELS (One for each Model)
-  facet_wrap(~ Model_Type, scales = "free_y") + 
-  
-  # Grayscale for the EJ Comparison
-  scale_fill_manual(values = c(
-    "Non-Disadvantaged" = "#F0F0F0", # Very Light Grey
-    "Disadvantaged" = "#636363"  # Dark Grey
-  )) +
-  
-  # Labels
-  labs(
-    title = "Annual Welfare Loss by Model Type and Environmental Burdens Status",
-    subtitle = "Comparing Disadvantaged vs. Non-Disadvantaged ZIP Codes across Hawaii Parks",
-    x = "Year",
-    y = "Average Annual Welfare Loss ($/Park)",
-    fill = "Community Status"
-  ) +
-  
-  # Academic Theme
-  theme_bw() +
-  theme(
-    text = element_text(family = "serif", size = 20),
-    plot.title = element_text(face = "bold", size =20, hjust = 0.5),
-    plot.subtitle = element_text(hjust = 0.5, size = 20),
-    
-    # Grid and Panel styling
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    strip.background = element_rect(fill = "white", color = "black"),
-    strip.text = element_text(face = "bold", size = 20),
-    
-    # Legend at bottom
-    legend.position = "bottom",
-    panel.border = element_rect(colour = "black", fill = NA, size = 0.8)
-  )
-
-ggsave("images/comparision_envir_observed.png", width=12, height=10, dpi=300)
-
-
-```
-
-```{r}
-#| cache: true
-
-# 1. Prepare data: Group by Park, Year, and EJ Status
-plot_data_three_panel <- final_comparison_master1 %>%
-  filter(parkname!="Stay_Home") %>%
-  group_by(year, parkname, is_disadvantaged_50_soci) %>%
-  summarise(
-    Observed_RUM = mean(loss_rum_observed, na.rm = TRUE),
-    Frequency_RUM = mean(loss_rum_52wk, na.rm = TRUE),
-    MDCEV = mean(loss_mdcev, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  # Pivot to long format
-  pivot_longer(
-    cols = c(Observed_RUM, Frequency_RUM, MDCEV),
-    names_to = "Model_Type",
-    values_to = "Welfare_Loss"
-  ) %>%
-  # Clean up factor labels for the legend and facets
-  mutate(
-    Model_Type = factor(Model_Type, 
-                        levels = c("Observed_RUM", "Frequency_RUM", "MDCEV"),
-                        labels = c("Observed RUM", "Frequency RUM (52-Wk)", "MDCEV")),
-    EJ_Group = factor(is_disadvantaged_50_soci, 
-                      levels = c(0, 1), 
-                      labels = c("Non-Disadvantaged", "Disadvantaged (EJ)"))
-  )
-
-# 2. Create the Three-Panel Plot
-ggplot(plot_data_three_panel, aes(x = factor(year), y = Welfare_Loss, fill = EJ_Group)) +
-  # Boxplot with black outlines
-  geom_boxplot(outlier.shape = 21, outlier.size = 1, color = "black", alpha = 0.8) +
-  
-  # CREATE THREE PANELS (One for each Model)
-  facet_wrap(~ Model_Type, scales = "free_y") + 
-  
-  # Grayscale for the EJ Comparison
-  scale_fill_manual(values = c(
-    "Non-Disadvantaged" = "#F0F0F0", # Very Light Grey
-    "Disadvantaged (EJ)" = "#636363"  # Dark Grey
-  )) +
-  
-  # Labels
-  labs(
-    title = "Annual Welfare Loss by Model Type and Social Vulnerabilities Status",
-    subtitle = "Comparing Disadvantaged vs. Non-Disadvantaged ZIP Codes across Hawaii Parks",
-    x = "Year",
-    y = "Average Annual Welfare Loss ($/Park)",
-    fill = "Community Status"
-  ) +
-  
-  # Academic Theme
-  theme_bw() +
-  theme(
-    text = element_text(family = "serif", size = 12),
-    plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
-    plot.subtitle = element_text(hjust = 0.5, size = 11),
-    
-    # Grid and Panel styling
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    strip.background = element_rect(fill = "white", color = "black"),
-    strip.text = element_text(face = "bold", size = 11),
-    
-    # Legend at bottom
-    legend.position = "bottom",
-    panel.border = element_rect(colour = "black", fill = NA, size = 0.8)
-  )
-ggsave("images/comparision_social_vulnerabilities.png", width=12, height=10, dpi=300)
-
-
-
-# 1. Prepare data: Group by Park, Year, and EJ Status
-plot_data_three_panel <- final_comparison_master1 %>%
-  filter(parkname!="Stay_Home") %>%
-  group_by(year, parkname, is_disadvantaged_50_soci) %>%
-  summarise(
-    Observed_RUM = mean(loss_rum_observed, na.rm = TRUE),
-    MDCEV = mean(loss_mdcev, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  # Pivot to long format
-  pivot_longer(
-    cols = c(Observed_RUM, MDCEV),
-    names_to = "Model_Type",
-    values_to = "Welfare_Loss"
-  ) %>%
-  # Clean up factor labels for the legend and facets
-  mutate(
-    Model_Type = factor(Model_Type, 
-                        levels = c("Observed_RUM", "MDCEV"),
-                        labels = c("Observed RUM", "MDCEV")),
-    EJ_Group = factor(is_disadvantaged_50_soci, 
-                      levels = c(0, 1), 
-                      labels = c("Non-Disadvantaged", "Disadvantaged"))
-  )
-
-# 2. Create the Three-Panel Plot
-ggplot(plot_data_three_panel, aes(x = factor(year), y = Welfare_Loss, fill = EJ_Group)) +
-  # Boxplot with black outlines
-  geom_boxplot(outlier.shape = 21, outlier.size = 1, color = "black", alpha = 0.8) +
-  
-  # CREATE THREE PANELS (One for each Model)
-  facet_wrap(~ Model_Type, scales = "free_y") + 
-  
-  # Grayscale for the EJ Comparison
-  scale_fill_manual(values = c(
-    "Non-Disadvantaged" = "#F0F0F0", # Very Light Grey
-    "Disadvantaged" = "#636363"  # Dark Grey
-  )) +
-  
-  # Labels
-  labs(
-    title = "Annual Welfare Loss by Model Type and Social Vulnerabilities Status",
-    subtitle = "Comparing Disadvantaged vs. Non-Disadvantaged ZIP Codes across Hawaii Parks",
-    x = "Year",
-    y = "Average Annual Welfare Loss ($/Park)",
-    fill = "Community Status"
-  ) +
-  
-  # Academic Theme
-  theme_bw() +
-  theme(
-    text = element_text(family = "serif", size = 20),
-    plot.title = element_text(face = "bold", size = 20, hjust = 0.5),
-    plot.subtitle = element_text(hjust = 0.5, size = 20),
-    
-    # Grid and Panel styling
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    strip.background = element_rect(fill = "white", color = "black"),
-    strip.text = element_text(face = "bold", size = 20),
-    
-    # Legend at bottom
-    legend.position = "bottom",
-    panel.border = element_rect(colour = "black", fill = NA, size = 0.8)
-  )
-ggsave("images/comparision_social_observed.png", width=12, height=10, dpi=300)
-
-
-
-```
-
-# Map
-
-## Grey Map
-
-```{r}
-#| cache: true
-
-
-options(tigris_use_cache = TRUE)
-# 1. Get Hawaii Outlines
-islands_outline <- states(cb = TRUE) %>%
-  filter(STUSPS == "HI")
-
-# 2. Get ZCTAs
-zip_shapes <- zctas(cb = TRUE, year = 2020) %>%
-  filter(str_starts(ZCTA5CE20, "967") | str_starts(ZCTA5CE20, "968"))
-
-# 3. Zip averages — fix zip type here
-zip_averages <- final_comparison_master1 %>%
-  filter(parkname == "Stay_Home") %>%
-  group_by(zip) %>%
-  summarise(
-    loss_mdcev       = mean(loss_mdcev,        na.rm = TRUE),
-    is_disadvantaged = ifelse(
-      mean(is_disadvantaged_50, na.rm = TRUE) > 0.5, "Yes", "No"
-    ),
-    .groups = "drop"
-  ) %>%
-  mutate(zip = as.character(zip))   # <-- KEY FIX
-
-# Quick check before join
-message(paste("Zip averages rows:", nrow(zip_averages)))
-message(paste("Zip type:", class(zip_averages$zip)))
-message(paste("ZCTA5CE20 type:", class(zip_shapes$ZCTA5CE20)))
-
-# 4. Join
-map_data <- zip_shapes %>%
-  inner_join(zip_averages, by = c("ZCTA5CE20" = "zip"))
-
-message(paste("Map data rows after join:", nrow(map_data)))
-
-# 5. Bins
-map_data <- map_data %>%
-  mutate(
-    loss_mdcev = ifelse(is.na(loss_mdcev) | loss_mdcev > 0, 0, loss_mdcev),
-    loss_bin   = cut(loss_mdcev,
-      breaks = c(-Inf, -46.03, -30.09, -17.94, 0),
-      labels = c(">-$100",
-                 "-$100 to -$50",
-                 "-$50 to -$20",
-                 "0 to -$20"),
-      include.lowest = TRUE,
-      right          = TRUE
-    )
-  )
-
-# 6. Island labels
-island_labels <- tibble(
-  name     = c("Oʻahu", "Maui", "Hawaiʻi", "Kauaʻi", "Molokaʻi", "Lānaʻi"),
-  x_anchor = c(-157.98, -156.33, -155.55, -159.52, -157.02, -156.92),
-  y_anchor = c( 21.47,   20.80,   19.60,   22.06,   21.13,   20.83),
-  x_label  = c(-158.60, -155.10, -157.20, -160.50, -156.60, -157.60),
-  y_label  = c( 20.90,   21.50,   19.60,   22.20,   21.60,   20.15)
-) %>%
-  mutate(
-    shrink      = 0.4,
-    x_seg_start = x_label + shrink * (x_anchor - x_label),
-    y_seg_start = y_label + shrink * (y_anchor - y_label)
-  )
-
-# 7. Plot
-hawaii_map <- ggplot() +
-  geom_sf(data = islands_outline, fill = "gray95", color = "gray60", size = 0.4) +
-  
-  geom_sf_pattern(
-    data             = filter(map_data, is_disadvantaged == "No"),
-    aes(fill = loss_bin, pattern = is_disadvantaged),
-    pattern_color    = NA,
-    pattern_fill     = NA,
-    pattern_density  = 0.01,
-    color            = "black",
-    size             = 0.1
-  ) +
-  
-  geom_sf_pattern(
-    data             = filter(map_data, is_disadvantaged == "Yes"),
-    aes(fill = loss_bin, pattern = is_disadvantaged),
-    pattern_color    = "grey60",
-    pattern_fill     = NA,
-    pattern_density  = 0.4,
-    pattern_spacing  = 0.03,
-    pattern_angle    = 45,
-    pattern_size     = 0.6,
-    color            = "grey60",
-    size             = 0.2
-  ) +
-  
-  geom_segment(
-    data      = island_labels,
-    aes(x = x_seg_start, y = y_seg_start, xend = x_anchor, yend = y_anchor),
-    color     = "gray50",
-    linewidth = 0.3
-  ) +
-  
-  geom_point(
-    data  = island_labels,
-    aes(x = x_anchor, y = y_anchor),
-    color = "gray30",
-    size  = 1.0
-  ) +
-  
-  # White halo
-  geom_text(
-    data   = island_labels,
-    aes(x = x_label, y = y_label, label = name),
-    size   = 12, fontface = "bold", color = "white",
-    family = "Times New Roman", hjust = 0.5, vjust = 0.5
-  ) +
-  # Actual text
-  geom_text(
-    data   = island_labels,
-    aes(x = x_label, y = y_label, label = name),
-    size   = 12, fontface = "bold", color = "gray10",
-    family = "Times New Roman", hjust = 0.5, vjust = 0.5
-  ) +
-  
-  annotation_north_arrow(
-    location    = "bl",
-    which_north = "true",
-    height = unit(2.0, "cm"),
-    width  = unit(1.5, "cm"),
-    style  = north_arrow_fancy_orienteering(
-      fill        = c("gray10", "white"),
-      line_col    = "gray10",
-      text_col    = "gray10",
-      text_family = "Times New Roman",
-      text_size   = 16
-    ),
-    pad_x = unit(1.0, "cm"),
-    pad_y = unit(0.9, "cm")
-  ) +
-  
-  annotation_scale(
-    location      = "bl",
-    unit_category = "imperial",
-    text_family   = "Times New Roman",
-    text_cex      = 1,
-    style         = "bar",
-    bar_cols      = c("gray10", "white"),
-    line_col      = "gray10",
-    text_col      = "gray10",
-    pad_x = unit(1.0, "cm"),
-    pad_y = unit(0.3, "cm")
-  ) +
-  
-  scale_fill_manual(
-    values = c(
-      ">-$100"        = "gray10",
-      "-$100 to -$50" = "gray40",
-      "-$50 to -$20"  = "gray70",
-      "0 to -$20"     = "gray92"
-    ),
-    name     = "Avg Welfare Loss",
-    na.value = "transparent",
-    guide    = guide_legend(
-      override.aes   = list(pattern = "none"),
-      reverse        = FALSE,
-      keyheight      = unit(5, "mm"),
-      keywidth       = unit(5, "mm"),
-      label.position = "right"
-    )
-  ) +
-  
-  scale_pattern_manual(
-    values = c("No" = "none", "Yes" = "crosshatch"),
-    name   = "Community Type",
-    labels = c("No" = "Non-Disadvantaged", "Yes" = "Disadvantaged"),
-    guide  = guide_legend(
-      override.aes = list(
-        fill            = c("white", "white"),
-        color           = c("black", "black"),
-        pattern_color   = c(NA, "black"),
-        pattern_fill    = c(NA, NA),
-        pattern_density = c(0.01, 0.4),
-        pattern_spacing = c(0.03, 0.02),
-        pattern_angle   = c(45, 45)
-      ),
-      keyheight      = unit(7, "mm"),
-      keywidth       = unit(7, "mm"),
-      label.position = "right"
-    )
-  ) +
-  
-  coord_sf(xlim = c(-161.5, -154.0), ylim = c(18.7, 22.5), expand = FALSE) +
-  theme_minimal() +
-  theme(
-    panel.grid           = element_blank(),
-    axis.text            = element_blank(),
-    axis.title           = element_blank(),
-    axis.ticks           = element_blank(),
-    legend.position      = c(0.1, 0.15),
-    legend.justification = c("left", "bottom"),
-    legend.box           = "vertical",
-    legend.background    = element_rect(fill = "white", color = NA),
-    text                 = element_text(family = "Times New Roman"),
-    plot.title           = element_text(family = "Times New Roman", face = "bold"),
-    legend.title         = element_text(family = "Times New Roman",
-                                        face = "bold", size = 14),
-    legend.text          = element_text(family = "Times New Roman", size = 14)
-  )
-
-ggsave(
-  filename = "images/hawaii_welfare_loss_map.png",
-  plot     = hawaii_map,
-  width    = 12,
-  height   = 10,
-  dpi      = 300,
-  units    = "in",
-  bg       = "white"
-)
-```
-
-## Color Map
-
-```{r}
-#| cache: true
-
-
-# 1. Get Hawaii Outlines
-islands_outline <- states(cb = TRUE) %>%
-  filter(STUSPS == "HI")
-
-# 2. Get ZCTAs
-zip_shapes <- zctas(cb = TRUE, year = 2020) %>%
-  filter(str_starts(ZCTA5CE20, "967") | str_starts(ZCTA5CE20, "968"))
-
-# 3. Zip averages
-zip_averages <- final_comparison_master1 %>%
-  filter(parkname == "Stay_Home") %>%
-  group_by(zip) %>%
-  summarise(
-    loss_mdcev       = mean(loss_mdcev,        na.rm = TRUE),
-    is_disadvantaged = ifelse(
-      mean(is_disadvantaged_50, na.rm = TRUE) > 0.5, "Yes", "No"
-    ),
-    .groups = "drop"
-  ) %>%
-  mutate(zip = as.character(zip))
-
-# 4. Join
-map_data <- zip_shapes %>%
-  inner_join(zip_averages, by = c("ZCTA5CE20" = "zip"))
-
-# 5. Bins
-map_data <- map_data %>%
-  mutate(
-    loss_mdcev = ifelse(is.na(loss_mdcev) | loss_mdcev > 0, 0, loss_mdcev),
-    loss_bin   = cut(loss_mdcev,
-      breaks = c(-Inf, -46.03, -30.09, -17.94, 0),
-      labels = c(">-$100",
-                 "-$100 to -$50",
-                 "-$50 to -$20",
-                 "0 to -$20"),
-      include.lowest = TRUE,
-      right          = TRUE
-    )
-  )
-
-# 6. Island labels
-island_labels <- tibble(
-  name     = c("Oʻahu", "Maui", "Hawaiʻi", "Kauaʻi", "Molokaʻi", "Lānaʻi"),
-  x_anchor = c(-157.98, -156.33, -155.55, -159.52, -157.02, -156.92),
-  y_anchor = c( 21.47,   20.80,   19.60,   22.06,   21.13,   20.83),
-  x_label  = c(-158.60, -155.10, -157.20, -160.50, -156.60, -157.60),
-  y_label  = c( 20.90,   21.50,   19.60,   22.20,   21.60,   20.15)
-) %>%
-  mutate(
-    shrink      = 0.4,
-    x_seg_start = x_label + shrink * (x_anchor - x_label),
-    y_seg_start = y_label + shrink * (y_anchor - y_label)
-  )
-
-# 7. Color map — white to dark red
-hawaii_map_color <- ggplot() +
-  geom_sf(data = islands_outline, fill = "gray95", color = "gray60", size = 0.4) +
-  
-# Non-DAC layer
-geom_sf_pattern(
-    data             = filter(map_data, is_disadvantaged == "No"),
-    aes(fill = loss_bin, pattern = is_disadvantaged),
-    pattern_color    = NA,
-    pattern_fill     = "transparent",   # <-- change from NA
-    pattern_density  = 0.01,
-    color            = "white",
-    size             = 0.1
-) +
-
-# DAC layer
-geom_sf_pattern(
-    data             = filter(map_data, is_disadvantaged == "Yes"),
-    aes(fill = loss_bin, pattern = is_disadvantaged),
-    pattern_color    = "black",
-    pattern_fill     = "transparent",   # <-- change from NA
-    pattern_density  = 0.4,
-    pattern_spacing  = 0.03,
-    pattern_angle    = 45,
-    pattern_size     = 0.6,
-    color            = "white",
-    size             = 0.2
-) +
-  
-  geom_segment(
-    data      = island_labels,
-    aes(x = x_seg_start, y = y_seg_start, xend = x_anchor, yend = y_anchor),
-    color     = "gray30",
-    linewidth = 0.3
-  ) +
-  
-  geom_point(
-    data  = island_labels,
-    aes(x = x_anchor, y = y_anchor),
-    color = "gray20",
-    size  = 1.0
-  ) +
-  
-  # White halo
-  geom_text(
-    data   = island_labels,
-    aes(x = x_label, y = y_label, label = name),
-    size   = 12, fontface = "bold", color = "white",
-    family = "Times New Roman", hjust = 0.5, vjust = 0.5
-  ) +
-  # Actual text
-  geom_text(
-    data   = island_labels,
-    aes(x = x_label, y = y_label, label = name),
-    size   = 11, fontface = "bold", color = "gray10",
-    family = "Times New Roman", hjust = 0.5, vjust = 0.5
-  ) +
-  
-  annotation_north_arrow(
-    location    = "bl",
-    which_north = "true",
-    height = unit(2.0, "cm"),
-    width  = unit(1.5, "cm"),
-    style  = north_arrow_fancy_orienteering(
-      fill        = c("gray10", "white"),
-      line_col    = "gray10",
-      text_col    = "gray10",
-      text_family = "Times New Roman",
-      text_size   = 16
-    ),
-    pad_x = unit(1.0, "cm"),
-    pad_y = unit(0.9, "cm")
-  ) +
-  
-  annotation_scale(
-    location      = "bl",
-    unit_category = "imperial",
-    text_family   = "Times New Roman",
-    text_cex      = 1,
-    style         = "bar",
-    bar_cols      = c("gray10", "white"),
-    line_col      = "gray10",
-    text_col      = "gray10",
-    pad_x = unit(1.0, "cm"),
-    pad_y = unit(0.3, "cm")
-  ) +
-  
-  # ── COLOR SCALE: white (low loss) to dark red (high loss) ─────────────────
-  scale_fill_manual(
-    values = c(
-      ">-$100"        = "#67000d",   # darkest red   — highest loss
-      "-$100 to -$50" = "#cb181d",   # medium red
-      "-$50 to -$20"  = "#fc8d59",   # light orange-red
-      "0 to -$20"     = "#fff5f0"    # near white    — lowest loss
-    ),
-    name     = "Avg Welfare Loss",
-    na.value = "transparent",
-    guide    = guide_legend(
-      override.aes   = list(pattern = "none"),
-      reverse        = FALSE,
-      keyheight      = unit(6, "mm"),
-      keywidth       = unit(6, "mm"),
-      label.position = "right"
-    )
-  ) +
-  
-  scale_pattern_manual(
-    values = c("No" = "none", "Yes" = "crosshatch"),
-    name   = "Community Type",
-    labels = c("No" = "Non-Disadvantaged", "Yes" = "Disadvantaged"),
-    guide  = guide_legend(
-      override.aes = list(
-        fill            = c("white", "white"),
-        color           = c("black", "black"),
-        pattern_color   = c(NA, "black"),
-        pattern_fill    = c(NA, NA),
-        pattern_density = c(0.01, 0.4),
-        pattern_spacing = c(0.03, 0.02),
-        pattern_angle   = c(45, 45)
-      ),
-      keyheight      = unit(7, "mm"),
-      keywidth       = unit(7, "mm"),
-      label.position = "right"
-    )
-  ) +
-  
-  coord_sf(xlim = c(-161.5, -154.0), ylim = c(18.7, 22.5), expand = FALSE) +
-  theme_minimal() +
-  theme(
-    panel.grid           = element_blank(),
-    axis.text            = element_blank(),
-    axis.title           = element_blank(),
-    axis.ticks           = element_blank(),
-    legend.position      = c(0.1, 0.15),
-    legend.justification = c("left", "bottom"),
-    legend.box           = "vertical",
-    legend.background    = element_rect(fill = "white", color = NA),
-    text                 = element_text(family = "Times New Roman"),
-    plot.title           = element_text(family = "Times New Roman", face = "bold"),
-    legend.title         = element_text(family = "Times New Roman",
-                                        face = "bold", size = 14),
-    legend.text          = element_text(family = "Times New Roman", size = 14)
-  )
-
-ggsave(
-  filename = "images/hawaii_welfare_loss_map_color.png",
-  plot     = hawaii_map_color,
-  width    = 12,
-  height   = 10,
-  dpi      = 300,
-  units    = "in",
-  bg       = "white"
-)
-
-
-
-
-```
-
-## Color RUM
-
-```{r}
-#| cache: true
-
-
-# 1. Get Hawaii Outlines
-islands_outline <- states(cb = TRUE) %>%
-  filter(STUSPS == "HI")
-
-# 2. Get ZCTAs
-zip_shapes <- zctas(cb = TRUE, year = 2020) %>%
-  filter(str_starts(ZCTA5CE20, "967") | str_starts(ZCTA5CE20, "968"))
-
-plot_data <- final_comparison_master1 %>%
-  group_by(zip, parkname, year,is_disadvantaged_50) %>%
-  filter(parkname!="Stay_Home")%>%
-  summarise(
-    ObservedRUM = mean(loss_rum_observed, na.rm = TRUE),
-    FrequencyRUM = mean(loss_rum_52wk, na.rm = TRUE),
-    .groups = "drop"
-  )
-
-
-# 3. Zip averages
-zip_averages <- plot_data %>%
-  # Step 1: Sum welfare across all sites within each zip and year
-  group_by(zip, year) %>%
-  summarise(
-    loss_rum_observed = sum(ObservedRUM, na.rm = TRUE),
-    is_disadvantaged  = ifelse(
-      mean(is_disadvantaged_50, na.rm = TRUE) > 0.5, "Yes", "No"
-    ),
-    .groups = "drop"
-  ) %>%
-  
-  # Step 2: Average the yearly sums across all years
-  group_by(zip) %>%
-  summarise(
-    loss_rum_observed = mean(loss_rum_observed, na.rm = TRUE),
-    is_disadvantaged  = ifelse(          # <-- uses is_disadvantaged not is_disadvantaged_50
-      mean(is_disadvantaged == "Yes", na.rm = TRUE) > 0.5, "Yes", "No"
-    ),
-    .groups = "drop"
-  ) %>%
-  mutate(zip = as.character(zip))
-
-# 4. Join
-map_data <- zip_shapes %>%
-  inner_join(zip_averages, by = c("ZCTA5CE20" = "zip"))
-
-# 5. Bins
-map_data <- map_data %>%
-  mutate(
-    loss_rum_observed = ifelse(is.na(loss_rum_observed) | loss_rum_observed > 0, 0, loss_rum_observed),
-    loss_bin   = cut(loss_rum_observed,
-      breaks = c(-Inf, -400, -300, -200, -100),
-      labels = c(">-$400",
-                 "-$400 to -$300",
-                 "-$300 to -$200",
-                 "-$100 to -$200"),
-      include.lowest = TRUE,
-      right          = TRUE
-    )
-  )
-
-# 6. Island labels
-island_labels <- tibble(
-  name     = c("Oʻahu", "Maui", "Hawaiʻi", "Kauaʻi", "Molokaʻi", "Lānaʻi"),
-  x_anchor = c(-157.98, -156.33, -155.55, -159.52, -157.02, -156.92),
-  y_anchor = c( 21.47,   20.80,   19.60,   22.06,   21.13,   20.83),
-  x_label  = c(-158.60, -155.10, -157.20, -160.50, -156.60, -157.60),
-  y_label  = c( 20.90,   21.50,   19.60,   22.20,   21.60,   20.15)
-) %>%
-  mutate(
-    shrink      = 0.4,
-    x_seg_start = x_label + shrink * (x_anchor - x_label),
-    y_seg_start = y_label + shrink * (y_anchor - y_label)
-  )
-
-# 7. Color map — white to dark red
-hawaii_map_color <- ggplot() +
-  geom_sf(data = islands_outline, fill = "gray95", color = "gray60", size = 0.4) +
-  
-# Non-DAC layer
-geom_sf_pattern(
-    data             = filter(map_data, is_disadvantaged == "No"),
-    aes(fill = loss_bin, pattern = is_disadvantaged),
-    pattern_color    = NA,
-    pattern_fill     = "transparent",   # <-- change from NA
-    pattern_density  = 0.01,
-    color            = "white",
-    size             = 0.1
-) +
-
-# DAC layer
-geom_sf_pattern(
-    data             = filter(map_data, is_disadvantaged == "Yes"),
-    aes(fill = loss_bin, pattern = is_disadvantaged),
-    pattern_color    = "black",
-    pattern_fill     = "transparent",   # <-- change from NA
-    pattern_density  = 0.4,
-    pattern_spacing  = 0.03,
-    pattern_angle    = 45,
-    pattern_size     = 0.6,
-    color            = "white",
-    size             = 0.2
-) +
-  
-  geom_segment(
-    data      = island_labels,
-    aes(x = x_seg_start, y = y_seg_start, xend = x_anchor, yend = y_anchor),
-    color     = "gray30",
-    linewidth = 0.3
-  ) +
-  
-  geom_point(
-    data  = island_labels,
-    aes(x = x_anchor, y = y_anchor),
-    color = "gray20",
-    size  = 1.0
-  ) +
-  
-  # White halo
-  geom_text(
-    data   = island_labels,
-    aes(x = x_label, y = y_label, label = name),
-    size   = 12, fontface = "bold", color = "white",
-    family = "Times New Roman", hjust = 0.5, vjust = 0.5
-  ) +
-  # Actual text
-  geom_text(
-    data   = island_labels,
-    aes(x = x_label, y = y_label, label = name),
-    size   = 11, fontface = "bold", color = "gray10",
-    family = "Times New Roman", hjust = 0.5, vjust = 0.5
-  ) +
-  
-  annotation_north_arrow(
-    location    = "bl",
-    which_north = "true",
-    height = unit(2.0, "cm"),
-    width  = unit(1.5, "cm"),
-    style  = north_arrow_fancy_orienteering(
-      fill        = c("gray10", "white"),
-      line_col    = "gray10",
-      text_col    = "gray10",
-      text_family = "Times New Roman",
-      text_size   = 16
-    ),
-    pad_x = unit(1.0, "cm"),
-    pad_y = unit(0.9, "cm")
-  ) +
-  
-  annotation_scale(
-    location      = "bl",
-    unit_category = "imperial",
-    text_family   = "Times New Roman",
-    text_cex      = 1,
-    style         = "bar",
-    bar_cols      = c("gray10", "white"),
-    line_col      = "gray10",
-    text_col      = "gray10",
-    pad_x = unit(1.0, "cm"),
-    pad_y = unit(0.3, "cm")
-  ) +
-  
-  # ── COLOR SCALE: white (low loss) to dark red (high loss) ─────────────────
-  scale_fill_manual(
-    values = c(
-      ">-$400"        = "#67000d",   # darkest red   — highest loss
-      "-$400 to -$300" = "#cb181d",   # medium red
-      "-$300 to -$200"  = "#fc8d59",   # light orange-red
-      "-$100 to -$200"     = "#fff5f0"    # near white    — lowest loss
-    ),
-    name     = "Avg Welfare Loss",
-    na.value = "transparent",
-    guide    = guide_legend(
-      override.aes   = list(pattern = "none"),
-      reverse        = FALSE,
-      keyheight      = unit(6, "mm"),
-      keywidth       = unit(6, "mm"),
-      label.position = "right"
-    )
-  ) +
-  
-  scale_pattern_manual(
-    values = c("No" = "none", "Yes" = "crosshatch"),
-    name   = "Community Type",
-    labels = c("No" = "Non-Disadvantaged", "Yes" = "Disadvantaged"),
-    guide  = guide_legend(
-      override.aes = list(
-        fill            = c("white", "white"),
-        color           = c("black", "black"),
-        pattern_color   = c(NA, "black"),
-        pattern_fill    = c(NA, NA),
-        pattern_density = c(0.01, 0.4),
-        pattern_spacing = c(0.03, 0.02),
-        pattern_angle   = c(45, 45)
-      ),
-      keyheight      = unit(7, "mm"),
-      keywidth       = unit(7, "mm"),
-      label.position = "right"
-    )
-  ) +
-  
-  coord_sf(xlim = c(-161.5, -154.0), ylim = c(18.7, 22.5), expand = FALSE) +
-  theme_minimal() +
-  theme(
-    panel.grid           = element_blank(),
-    axis.text            = element_blank(),
-    axis.title           = element_blank(),
-    axis.ticks           = element_blank(),
-    legend.position      = c(0.1, 0.15),
-    legend.justification = c("left", "bottom"),
-    legend.box           = "vertical",
-    legend.background    = element_rect(fill = "white", color = NA),
-    text                 = element_text(family = "Times New Roman"),
-    plot.title           = element_text(family = "Times New Roman", face = "bold"),
-    legend.title         = element_text(family = "Times New Roman",
-                                        face = "bold", size = 14),
-    legend.text          = element_text(family = "Times New Roman", size = 14)
-  )
-
-ggsave(
-  filename = "images/hawaii_welfare_loss_map_colorRUM.png",
-  plot     = hawaii_map_color,
-  width    = 12,
-  height   = 10,
-  dpi      = 300,
-  units    = "in",
-  bg       = "white"
-)
-
-
-
-```
-
-```{r}
-#| cache: true
-print(hawaii_map_color)
-
-
-print(hawaii_map)
-```
-
-# Sensitivity Test
-
-```{r}
-#| cache: true
-
-
-get_price_coef <- function(mle, yr, model_name) {
-  
-  tryCatch({
-    # mlogit coefficients
-    beta  <- coef(mle)["price"]
-    
-    # variance-covariance matrix
-    se    <- sqrt(vcov(mle)["price", "price"])
-    tibble(
-      year       = yr,
-      model      = model_name,
-      beta_price = beta,
-      se_price   = se,
-      ci_low     = beta - 1.96 * se,
-      ci_high    = beta + 1.96 * se
-    )
-  }, error = function(e) {
-    message(paste("Failed for", model_name, yr, ":", e$message))
-    tibble(
-      year       = yr,
-      model      = model_name,
-      beta_price = NA_real_,
-      se_price   = NA_real_,
-      ci_low     = NA_real_,
-      ci_high    = NA_real_
-    )
-  })
-}
-
-
-
-# PRice Stability
-price_stability_all <- map_df(2018:2023, function(yr) {
-  
-  obs_key  <- paste0("Year_", yr)   
-  freq_key <- paste0("52wk_", yr)   
-  
-  obs_mle  <- model_list_obs[[obs_key]]
-  freq_mle <- model_list_52[[freq_key]]
-  
-  bind_rows(
-    if (!is.null(obs_mle))
-      get_price_coef(obs_mle,  yr, "Observed RUM"),
-    if (!is.null(freq_mle))
-      get_price_coef(freq_mle, yr, "Frequency RUM")
-  )
-})
-
-print(price_stability_all)
-year_pairs <- combn(2018:2023, 2, simplify = FALSE)
-# Pairwise welfare stability — all three models 
-test_year_pairs_model <- function(yr1, yr2, loss_col) {
-  
-  d1 <- final_comparison_master %>%
-    filter(year == yr1, parkname != "Stay_Home") %>%
-    pull({{ loss_col }})
-  
-  d2 <- final_comparison_master %>%
-    filter(year == yr2, parkname != "Stay_Home") %>%
-    pull({{ loss_col }})
-  
-  t_result <- t.test(d1, d2)
-  
-  tibble(
-    year1   = yr1,
-    year2   = yr2,
-    mean1   = round(mean(d1, na.rm = TRUE), 2),
-    mean2   = round(mean(d2, na.rm = TRUE), 2),
-    t_stat  = round(t_result$statistic, 3),
-    p_value = round(t_result$p.value,   4),
-    stable  = t_result$p.value > 0.05
-  )
-}
-
-stability_all <- bind_rows(
-  map_df(year_pairs, ~test_year_pairs_model(.x[1], .x[2], loss_mdcev)) %>%
-    mutate(model = "MDCEV"),
-  map_df(year_pairs, ~test_year_pairs_model(.x[1], .x[2], loss_rum_observed)) %>%
-    mutate(model = "Observed RUM"),
-  map_df(year_pairs, ~test_year_pairs_model(.x[1], .x[2], loss_rum_52wk)) %>%
-    mutate(model = "Frequency RUM")
-)
-
-
-# Test  Convergent validity across models — do they agree on rankings? 
-site_welfare <- final_comparison_master %>%
-    filter(parkname != "Stay_Home") %>%
-    group_by(parkname) %>%
-    summarise(
-        mean_mdcev = mean(loss_mdcev,        na.rm = TRUE),
-        mean_obs   = mean(loss_rum_observed, na.rm = TRUE),
-        mean_52wk  = mean(loss_rum_52wk,     na.rm = TRUE),
-        .groups    = "drop"
-    )
-
-# Spearman rank correlations across models
-cross_model_cor <- site_welfare %>%
-    select(mean_mdcev, mean_obs, mean_52wk) %>%
-    cor(method = "spearman", use = "complete.obs")
-
-colnames(cross_model_cor) <- c("MDCEV", "Observed RUM", "Frequency RUM")
-rownames(cross_model_cor) <- c("MDCEV", "Observed RUM", "Frequency RUM")
-
-print(round(cross_model_cor, 3))
-
-# Transfer error across models 
-# Ji et al. transfer error as:
-# TE = |predicted - actual| / |actual| × 100
-
-cross_model_te <- site_welfare %>%
-    mutate(
-        # Use MDCEV to predict each RUM
-        te_mdcev_to_obs  = abs((mean_mdcev - mean_obs)   / mean_obs)  * 100,
-        te_mdcev_to_52wk = abs((mean_mdcev - mean_52wk)  / mean_52wk) * 100,
-        # Use observed RUM to predict frequency RUM
-        te_obs_to_52wk   = abs((mean_obs   - mean_52wk)  / mean_52wk) * 100
-    ) %>%
-    summarise(
-        # Mean transfer error across sites
-        mean_te_mdcev_obs  = round(mean(te_mdcev_to_obs,  na.rm = TRUE), 1),
-        mean_te_mdcev_52wk = round(mean(te_mdcev_to_52wk, na.rm = TRUE), 1),
-        mean_te_obs_52wk   = round(mean(te_obs_to_52wk,   na.rm = TRUE), 1),
-        # Median transfer error
-        med_te_mdcev_obs   = round(median(te_mdcev_to_obs,  na.rm = TRUE), 1),
-        med_te_mdcev_52wk  = round(median(te_mdcev_to_52wk, na.rm = TRUE), 1),
-        med_te_obs_52wk    = round(median(te_obs_to_52wk,   na.rm = TRUE), 1)
-    )
-
-print(cross_model_te)
-
-# Equality tests — are model welfare estimates significantly different from each other? 
-# (Ji et al. Section 4)
-
-# Paired t-test: MDCEV vs Observed RUM
-t_mdcev_obs <- t.test(
-    final_comparison_master$loss_mdcev,
-    final_comparison_master$loss_rum_observed,
-    paired = TRUE
-)
-
-# Paired t-test: MDCEV vs Frequency RUM
-t_mdcev_52wk <- t.test(
-    final_comparison_master$loss_mdcev,
-    final_comparison_master$loss_rum_52wk,
-    paired = TRUE
-)
-
-# Paired t-test: Observed RUM vs Frequency RUM
-t_obs_52wk <- t.test(
-    final_comparison_master$loss_rum_observed,
-    final_comparison_master$loss_rum_52wk,
-    paired = TRUE
-)
-
-equality_tests <- tibble(
-    comparison     = c("MDCEV vs Observed RUM",
-                       "MDCEV vs Frequency RUM",
-                       "Observed RUM vs Frequency RUM"),
-    mean_diff      = c(round(t_mdcev_obs$estimate,  2),
-                       round(t_mdcev_52wk$estimate, 2),
-                       round(t_obs_52wk$estimate,   2)),
-    t_stat         = c(round(t_mdcev_obs$statistic,  3),
-                       round(t_mdcev_52wk$statistic, 3),
-                       round(t_obs_52wk$statistic,   3)),
-    p_value        = c(round(t_mdcev_obs$p.value,  4),
-                       round(t_mdcev_52wk$p.value, 4),
-                       round(t_obs_52wk$p.value,   4)),
-    significantly_different = c(
-        t_mdcev_obs$p.value  < 0.05,
-        t_mdcev_52wk$p.value < 0.05,
-        t_obs_52wk$p.value   < 0.05
-    )
-)
-
-print(equality_tests)
-
-# Transfer error by year pair AND model pair 
-# Ji et al.'s most comprehensive test — applies both dimensions
-
-te_full <- final_comparison_master %>%
-    filter(parkname != "Stay_Home", year!=2020, year!=2021) %>%
-    group_by(parkname, year) %>%
-    summarise(
-        mean_mdcev = mean(loss_mdcev,        na.rm = TRUE),
-        mean_obs   = mean(loss_rum_observed, na.rm = TRUE),
-        mean_52wk  = mean(loss_rum_52wk,     na.rm = TRUE),
-        .groups    = "drop"
-    ) %>%
-    full_join(
-        final_comparison_master %>%
-        
-            filter(parkname != "Stay_Home") %>%
-            group_by(parkname, year) %>%
-            summarise(
-                pred_mdcev = mean(loss_mdcev,        na.rm = TRUE),
-                pred_obs   = mean(loss_rum_observed, na.rm = TRUE),
-                pred_52wk  = mean(loss_rum_52wk,     na.rm = TRUE),
-                .groups    = "drop"
-            ) %>%
-            rename(year2 = year),
-        by = "parkname"
-    ) %>%
-    filter(year != year2) %>%
-    mutate(
-        # Within model temporal transfer error
-        te_mdcev_time = abs((pred_mdcev - mean_mdcev) / mean_mdcev) * 100,
-        te_obs_time   = abs((pred_obs   - mean_obs)   / mean_obs)   * 100,
-        te_52wk_time  = abs((pred_52wk  - mean_52wk)  / mean_52wk)  * 100,
-        # Cross model transfer error (use MDCEV from year1 to predict RUM in year2)
-        te_mdcev_to_obs_cross  = abs((pred_mdcev - mean_obs)   / mean_obs)   * 100,
-        te_mdcev_to_52wk_cross = abs((pred_mdcev - mean_52wk)  / mean_52wk)  * 100
-    ) %>%
-    group_by(year, year2) %>%
-    summarise(
-        te_mdcev       = round(mean(te_mdcev_time,na.rm = TRUE), 1),
-        te_obs         = round(mean(te_obs_time,na.rm = TRUE), 1),
-        te_52wk        = round(mean(te_52wk_time,na.rm = TRUE), 1),
-        te_cross_mdcev_obs  = round(mean(te_mdcev_to_obs_cross,  na.rm = TRUE), 1),
-        te_cross_mdcev_52wk = round(mean(te_mdcev_to_52wk_cross, na.rm = TRUE), 1),
-        .groups        = "drop"
-    )
-
-print(te_full, n = 30)
-
-# Summary table matching Ji et al. Table format
-summary_ji <- tibble(
-    Test               = c(
-        "Mean Spearman Rank Correlation",
-        "Mean Transfer Error — MDCEV",
-        "Mean Transfer Error — Observed RUM",
-        "Mean Transfer Error — Frequency RUM",
-        "% Year Pairs Stable — MDCEV",
-        "% Year Pairs Stable — Observed RUM",
-        "% Year Pairs Stable — Frequency RUM"
-    ),
-    Value = c(
-        round(mean(c(cross_model_cor[1,2],
-                     cross_model_cor[1,3],
-                     cross_model_cor[2,3])), 3),
-        round(mean(te_full$te_mdcev,  na.rm = TRUE), 1),
-        round(mean(te_full$te_obs,    na.rm = TRUE), 1),
-        round(mean(te_full$te_52wk,   na.rm = TRUE), 1),
-        round(mean(stability_all$stable[stability_all$model == "MDCEV"])         * 100, 1),
-        round(mean(stability_all$stable[stability_all$model == "Observed RUM"])  * 100, 1),
-        round(mean(stability_all$stable[stability_all$model == "Frequency RUM"]) * 100, 1)
-    )
-)
-
-print(summary_ji)
-
-
-```
-
-# What Years?
-
-Given those % pair stable years. What Years are stable across models? Is this just a covid issue? It does kind of look like it because its unstable for comparisons to 2020 then becomes more stable after 2021/2022 later comparsions.
-
-Interesting MDCEV 2019 to years excluding 2020 stable... thats were the 66% comes from.
-
-```{r}
-#| cache: true
-
-site_welfare <- final_comparison_master %>%
-    filter(parkname != "Stay_Home") %>%
-    group_by(parkname) %>%
-    summarise(
-        mean_mdcev = mean(loss_mdcev,        na.rm = TRUE),
-        mean_obs   = mean(loss_rum_observed, na.rm = TRUE),
-        mean_52wk  = mean(loss_rum_52wk,     na.rm = TRUE),
-        .groups    = "drop"
-    )
-# Which year pairs are NOT significantly different (stable) by model 
-stability_all %>%
-  filter(stable == TRUE) %>%
-  select(model, year1, year2, mean1, mean2, t_stat, p_value) %>%
-  arrange(model, year1, year2) %>%
-  print(n = 50)
-
-# ── Summary count of stable pairs per model 
-stability_all %>%
-  group_by(model) %>%
-  summarise(
-    n_pairs        = n(),
-    n_stable       = sum(stable),
-    n_unstable     = sum(!stable),
-    pct_stable     = round(mean(stable) * 100, 1),
-    stable_pairs   = paste(
-      paste0(year1[stable], "–", year2[stable]),
-      collapse = ", "
-    ),
-    .groups = "drop"
-  ) %>%
-  print()
-
-# ── Full table showing stable vs unstable clearly 
-stability_all %>%
-  mutate(
-    year_pair  = paste0(year1, "–", year2),
-    stability  = ifelse(stable, "Stable", "Unstable"),
-    sig_stars  = case_when(
-      p_value < 0.001 ~ "***",
-      p_value < 0.01  ~ "**",
-      p_value < 0.05  ~ "*",
-      TRUE            ~ "n.s."
-    )
-  ) %>%
-  select(model, year_pair, mean1, mean2, t_stat, p_value, sig_stars, stability) %>%
-  arrange(model, year_pair) %>%
-  print(n = 50)
-
-
-```
-
-# By park site
-
-```{r}
-#| cache: true
-welfare_by_year <- final_comparison_master %>%
-  filter(parkname != "Stay_Home") %>%
+plot_data <- final_comparison_master %>%
+  filter(parkname != "All sites closed") %>%
   group_by(parkname, year) %>%
   summarise(
-    mean_mdcev = mean(loss_mdcev,        na.rm = TRUE),
-    mean_obs   = mean(loss_rum_observed, na.rm = TRUE),
-    mean_52wk  = mean(loss_rum_52wk,     na.rm = TRUE),
-    .groups    = "drop"
-  )
-
-sequential_stability <- welfare_by_year %>%
-  arrange(parkname, year) %>%
-  group_by(parkname) %>%
-  mutate(
-    pct_change_mdcev = (mean_mdcev - lag(mean_mdcev)) / abs(lag(mean_mdcev)) * 100,
-    pct_change_obs   = (mean_obs   - lag(mean_obs))   / abs(lag(mean_obs))   * 100,
-    pct_change_52wk  = (mean_52wk  - lag(mean_52wk))  / abs(lag(mean_52wk))  * 100,
-    year_pair        = paste0(lag(year), "→", year)
-  ) %>%
-  filter(!is.na(pct_change_mdcev)) %>%
-  ungroup()
-
-#Sequential year agfter year examination
-sequential_pairs <- list(
-  c(2018, 2019), c(2019, 2020), c(2020, 2021),
-  c(2021, 2022), c(2022, 2023)
-)
-
-# Pct change by site 
-pct_change_site <- welfare_by_year %>%
-  arrange(parkname, year) %>%
-  group_by(parkname) %>%
-  mutate(
-    pct_change_mdcev = (mean_mdcev - lag(mean_mdcev)) / abs(lag(mean_mdcev)) * 100,
-    pct_change_obs   = (mean_obs   - lag(mean_obs))   / abs(lag(mean_obs))   * 100,
-    pct_change_52wk  = (mean_52wk  - lag(mean_52wk))  / abs(lag(mean_52wk))  * 100
-  ) %>%
-  filter(!is.na(pct_change_mdcev))
-
-# Average pct change across all sites and year pairs
-pct_change_summary <- pct_change_site %>%
-  group_by(parkname) %>%
-  summarise(
-    model = "MDCEV",
-    mean_pct_change   = round(mean(abs(pct_change_mdcev), na.rm = TRUE), 1),
-    median_pct_change = round(median(abs(pct_change_mdcev), na.rm = TRUE), 1),
+    RepeatedRUM = mean(annual_rum_loss,    na.rm = TRUE),
+    MDCEV        = mean(loss_mdcev,         na.rm = TRUE),
+    MDCEVx2  = mean(loss_2x,  na.rm = TRUE),
+    MDCEVx4     = mean(loss_4x,    na.rm = TRUE),
     .groups = "drop"
   ) %>%
-  bind_rows(
-    pct_change_site %>%
-      summarise(
-        model             = "Observed RUM",
-        mean_pct_change   = round(mean(abs(pct_change_obs),  na.rm = TRUE), 1),
-        median_pct_change = round(median(abs(pct_change_obs), na.rm = TRUE), 1)
-      ),
-    pct_change_site %>%
-      summarise(
-        model             = "Frequency RUM",
-        mean_pct_change   = round(mean(abs(pct_change_52wk), na.rm = TRUE), 1),
-        median_pct_change = round(median(abs(pct_change_52wk), na.rm = TRUE), 1)
-      )
+  pivot_longer(cols = c(RepeatedRUM, MDCEV, MDCEVx2, MDCEVx4),
+               names_to = "Model_Type", values_to = "Mean_Welfare_Loss") %>%
+  mutate(Model_Type = factor(Model_Type, levels = c("RepeatedRUM", "MDCEV", "MDCEVx2", "MDCEVx4")))
+ 
+#  Boxplot 
+p <- ggplot(plot_data, aes(x = factor(year), y = Mean_Welfare_Loss, fill = Model_Type)) +
+  geom_boxplot(outlier.shape = 21, outlier.fill = "white", color = "black", alpha = 0.8,
+               position = position_dodge(width = 0.85), width = 0.75) +
+  labs(
+    title    = "Distribution of Mean Park Welfare Loss from Site Closures by Year",
+    subtitle = "Comparing MDCEV Models and Seasonal RUM",
+    x = "Year",
+    y = "Average Welfare Loss Across sites ($)",
+    fill = "Model Type"
+  ) +
+  scale_fill_manual(values = c(
+    "RepeatedRUM" = "#D9D9D9",   # light grey
+    "MDCEV"        = "grey70",
+    "MDCEVx2"  = "grey40",
+    "MDCEVx4"     = "grey10"
+  )) +
+  theme_bw() +
+  theme(
+    text = element_text(family = "serif", size = 20),
+    plot.title    = element_text(face = "bold", size = 26, hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5),
+    axis.title = element_text(face = "bold"),
+    axis.text  = element_text(color = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.position = "bottom",
+    legend.background = element_blank(),
+    panel.border = element_rect(colour = "black", fill = NA, size = 1)
   )
+ 
 
-print(pct_change_summary)
-
-# Site level pct change table
-pct_change_site %>%
-  group_by(parkname) %>%
-  summarise(
-    mean_pct_mdcev = round(mean(abs(pct_change_mdcev), na.rm = TRUE), 1),
-    mean_pct_obs   = round(mean(abs(pct_change_obs),   na.rm = TRUE), 1),
-    mean_pct_52wk  = round(mean(abs(pct_change_52wk),  na.rm = TRUE), 1),
-    .groups        = "drop"
-  ) %>%
-  arrange(mean_pct_mdcev) %>%
-  print(n = 22)
+ggsave("images/comparision_perperson_2modelsappendix.png", plot = p, width = 12, height = 10, dpi = 300)
+p 
 ```
 
-This looks at the linear welfare stability, which actually shows that MDCEV is less like we mention in paper but if we look pairwise comarision (i.e. which gives us aa really clear covid examination) across all years broadly it does have more stable. That is also interesting...
+## Elasticity
+
+Figure 3. Total-trip price elasticities by year, repeated RUM and MDCEV, 2018--2023
+
+```{r}
+library(ggplot2)
+years <- 2018:2023
+incs  <- c(1, 10, 20, 50)
+s_vec <- incs / 100
+
+## ---- Repeated RUM: change in expected trips (52 x site probabilities), Krinsky-Robb CI ----
+rum_el <- function(m, seed, R = 1000) {
+  X    <- model.matrix(m)[grepl("_w1$", idx(m, 1)), ]       # week 1 only: all 52 weeks are identical
+  alts <- unique(as.character(idx(m, 2))); site <- alts != "Stay_Home"
+  trips <- function(b, s) {                                  # expected trips with costs x (1 + s)
+    Xs <- X; Xs[, "price"] <- (1 + s) * Xs[, "price"]
+    E  <- exp(matrix(Xs %*% b[colnames(X)], ncol = length(alts), byrow = TRUE))
+    sum((E / rowSums(E))[, site])
+  }
+  el <- function(b) sapply(s_vec, function(s) (trips(b, s) / trips(b, 0) - 1) / s)
+  set.seed(seed)
+  kr <- t(apply(MASS::mvrnorm(R, coef(m), vcov(m)), 1, el))
+  data.frame(est = el(coef(m)), lo = apply(kr, 2, quantile, .025), hi = apply(kr, 2, quantile, .975))
+}
+
+## ---- MDCEV: conditional demand, budget holds (numeraire solved by bisection) --------------
+md_el <- function(mod) {
+  sd <- mod$stan_data; x <- sd$quant_j; p <- sd$price_j; y <- as.numeric(sd$income)
+  k  <- rowSums(x) > 0; x <- x[k, ]; p <- p[k, ]; y <- y[k]  # campers with trips
+  z0 <- y - rowSums(p * x)
+  el <- function(g, a1, s) {
+    G   <- matrix(g, nrow(x), ncol(x), byrow = TRUE)
+    dem <- function(z) pmax(0, (G + x) / (1 + s) * (z / z0)^(1 - a1) - G) * (x > 0)
+    lo <- 0 * y; hi <- y
+    for (i in 1:60) {                                        # numeraire z that exhausts income
+      z <- (lo + hi) / 2; up <- y - z - (1 + s) * rowSums(p * dem(z)) > 0
+      lo[up] <- z[up]; hi[!up] <- z[!up]
+    }
+    (sum(dem(z)) / sum(x) - 1) / s
+  }
+  th <- as.matrix(mod$stan_fit$theta_tilde)
+  gc <- grep("^gamma", colnames(th)); ac <- grep("^alpha", colnames(th))[1]
+  E  <- t(apply(th, 1, function(r) sapply(s_vec, function(s) el(r[gc], r[ac], s))))
+  data.frame(est = colMeans(E), lo = apply(E, 2, quantile, .025), hi = apply(E, 2, quantile, .975))
+}
+
+rum <- do.call(rbind, lapply(years, function(y)
+  data.frame(model = "Repeated RUM", year = y, inc = incs,
+             rum_el(model_list_52[[paste("52wk", y)]], seed = 898989 + y))))
+md  <- do.call(rbind, lapply(years, function(y)
+  data.frame(model = "MDCEV", year = y, inc = incs,
+             md_el(mdcev_model_list[[as.character(y)]]))))
+
+```
+
+### Plot
+
+```{r}
+d <- rbind(rum, md)
+d$model <- factor(d$model, levels = c("Repeated RUM", "MDCEV"))
+d$inc   <- factor(d$inc, levels = incs, labels = paste0("+", incs, "%"))
+print(transform(d, est = round(est, 3), lo = round(lo, 3), hi = round(hi, 3)), row.names = FALSE)
+
+## ---- Plot
+## y-axis values in each panel
+nice_breaks <- function(lo, hi, n = 5) {
+  steps <- c(1, 2, 2.5, 5) * 10^rep(-3:3, each = 4)
+  for (s in steps) { b0 <- floor(lo / s) * s; if (b0 + (n - 1) * s >= hi) return(b0 + s * (0:(n - 1))) }
+}
+br   <- lapply(split(d, d$model), function(x) nice_breaks(min(x$lo), max(x$hi)))
+lims <- data.frame(model = factor(rep(names(br), each = 2), levels = levels(d$model)),
+                   y = unlist(lapply(br, range)))
+y_breaks <- function(l) br[[which.min(sapply(br, function(b) abs(mean(b) - mean(l))))]]
+
+pd <- position_dodge(width = 0.55)
+
+p <- ggplot(d, aes(x = factor(year), y = est, group = inc, shape = inc, linetype = inc)) +
+  geom_line(position = pd, linewidth = 0.6, colour = "black") +
+  geom_errorbar(aes(ymin = lo, ymax = hi), position = pd, width = 0.3, linewidth = 0.6,
+                linetype = "solid", colour = "black") +
+  geom_point(position = pd, size = 3.2, fill = "white", colour = "black", stroke = 0.8) +
+  geom_blank(data = lims, aes(x = NULL, y = y, group = NULL, shape = NULL, linetype = NULL),
+             inherit.aes = FALSE) +
+  facet_wrap(~ model, nrow = 1, scales = "free_y") +
+  scale_y_continuous(breaks = y_breaks, labels = function(x) format(x, nsmall = 1, trim = TRUE)) +
+  scale_shape_manual(values = c(21, 24, 22, 23)) +             # open circle, triangle, square, diamond
+  scale_linetype_manual(values = c("solid", "dashed", "dotted", "dotdash")) +
+  labs(x = "Year", y = "Total-trip price elasticity",
+       shape = "Travel cost increase", linetype = "Travel cost increase") +
+  theme_bw(base_size = 16, base_family = "serif") +
+  theme(panel.grid        = element_blank(),
+        strip.background  = element_blank(),
+        strip.text        = element_text(size = 17, face = "bold"),
+        panel.border      = element_rect(colour = "black", linewidth = 0.8),
+        axis.ticks        = element_line(colour = "black", linewidth = 0.6),
+        axis.text         = element_text(colour = "black", size = 15),
+        axis.title        = element_text(size = 17),
+        legend.text       = element_text(size = 15),
+        legend.title      = element_text(size = 16),
+        legend.position   = "bottom",
+        legend.key.width  = unit(2.4, "lines"),
+        legend.box.margin = margin(-6, 0, 0, 0))
+
+print(p)
+
+ggsave("images/elasticities_RUM_MDCEV.png", p, width = 11, height = 6, dpi = 600)
+```
+
+# Distributional Analysis
+
+Here we are breaking up the income assumption by zip code and showing how individuals by income braket are valued in the WTP estimates of MDCEV and RUM
 
 ```{r}
 
-#| cache: true
+## One row per camper and model: average loss over single-site closures 
+## Losses as positive values; system-closure rows left out. Income deciles within each year.
+person <- final_comparison_master %>%
+  filter(year %in% c(2018, 2023),
+         !parkname %in% c("All sites closed", "System closure", "Close_All", "Stay_Home"),
+         !is.na(income), income > 0) %>%
+  group_by(year, id, zip, income) %>%
+  summarise(`RUM` = -mean(annual_rum_loss, na.rm = TRUE),
+            `MDCEV` = -mean(loss_mdcev,      na.rm = TRUE), .groups = "drop") %>%
+  group_by(year) %>% mutate(dec = ntile(income, 10)) %>% ungroup() %>%
+  pivot_longer(c(`RUM`, `MDCEV`), names_to = "model", values_to = "loss") %>%
+  filter(!is.na(loss))
 
-site_change_ci <- sequential_stability %>%
-  pivot_longer(
-    cols      = c(pct_change_mdcev, pct_change_obs, pct_change_52wk),
-    names_to  = "model",
-    values_to = "pct_change"
-  ) %>%
-  mutate(
-    model = case_when(
-      model == "pct_change_mdcev" ~ "MDCEV",
-      model == "pct_change_obs"   ~ "Observed RUM",
-      model == "pct_change_52wk"  ~ "Frequency RUM"
-    ),
-    model = factor(model, levels = c("MDCEV", "Observed RUM", "Frequency RUM"))
-  ) %>%
-  group_by(model, year_pair) %>%
-  summarise(
-    mean_change = mean(pct_change,  na.rm = TRUE),
-    sd_change   = sd(pct_change,    na.rm = TRUE),
-    n           = n(),
-    se          = sd_change / sqrt(n),
-    ci_low      = mean_change - 1.96 * se,
-    ci_high     = mean_change + 1.96 * se,
-    .groups     = "drop"
-  )
+## Decile statistics: $ loss, % of income, % above/below the model's average 
+dec_stats <- function(df) df %>%
+  group_by(year, model) %>% mutate(avg = mean(loss)) %>%
+  group_by(year, model, dec) %>%
+  summarise(usd = mean(loss), pct = mean(100 * loss / income),
+            rel = 100 * mean(loss) / first(avg) - 100, .groups = "drop")
 
-p_line <- ggplot(site_change_ci,
-       aes(x     = year_pair,
-           y     = mean_change,
-           color = model,
-           group = model)) +
-  
-  geom_hline(yintercept =  0,  linetype = "dashed",
-             color = "gray40", linewidth = 0.4) +
-  geom_hline(yintercept =  30, linetype = "dotted",
-             color = "gray60", linewidth = 0.4) +
-  geom_hline(yintercept = -30, linetype = "dotted",
-             color = "gray60", linewidth = 0.4) +
+## 95% cluster bootstrap: resample zip codes within each year 
+set.seed(898989)
+boot <- map_df(1:500, function(b) {
+  z <- person %>% distinct(year, zip) %>% group_by(year) %>%
+    slice_sample(prop = 1, replace = TRUE) %>% ungroup()
+  dec_stats(inner_join(z, person, by = c("year", "zip"), relationship = "many-to-many"))
+})
 
-  
-  geom_ribbon(
-    aes(ymin = ci_low, ymax = ci_high, fill = model),
-    alpha = 0.15, color = NA
-  ) +
-  geom_line(linewidth = 0.9) +
-  geom_point(size = 2.5) +
-  
-  scale_color_manual(
-    values = c("MDCEV"         = "gray10",
-               "Observed RUM"  = "gray50",
-               "Frequency RUM" = "gray75"),
-    name = "Model"
-  ) +
-  scale_fill_manual(
-    values = c("MDCEV"         = "gray10",
-               "Observed RUM"  = "gray50",
-               "Frequency RUM" = "gray75"),
-    guide  = "none"
-  ) +
-  scale_x_discrete(name = "Year Pair") +    # <-- fix here
-  scale_y_continuous(
-    name   = "Mean % Change Across Sites",
-    labels = scales::percent_format(scale = 1)
-  ) +
-  labs(
-    title    = "Sequential Welfare Stability Across Models",
-    subtitle = "Mean % change across all sites | 95% CI "
-  ) +
-  theme_minimal(base_family = "Times New Roman") +
-  theme(
-    panel.grid.minor   = element_blank(),
-    panel.grid.major.x = element_blank(),
-    axis.text.x  = element_text(size = 11, angle = 20, hjust = 1),
-    axis.text.y  = element_text(size = 11),
-    legend.position  = "bottom",
-    legend.title = element_text(face = "bold", size = 12),
-    legend.text  = element_text(size = 11),
-    plot.title   = element_text(face = "bold", size = 14),
-    plot.subtitle = element_text(size = 11, color = "gray40")
-  )
+d <- dec_stats(person) %>%
+  pivot_longer(c(usd, pct, rel), names_to = "unit", values_to = "est") %>%
+  left_join(boot %>% pivot_longer(c(usd, pct, rel), names_to = "unit") %>%
+              group_by(year, model, dec, unit) %>%
+              summarise(lo = quantile(value, .025), hi = quantile(value, .975), .groups = "drop"),
+            by = c("year", "model", "dec", "unit")) %>%
+  mutate(unit  = factor(unit, c("pct", "usd", "rel"),
+                        c("Mean loss as % of income", "Mean loss per person ($)",
+                          "% above (+) or below (-)\nthe model's average loss")),
+         model = factor(model, c("RUM", "MDCEV")))
 
-print(p_line)
+## Figure 
+pd <- position_dodge(width = 0.55)
+
+p <- ggplot(d, aes(dec, est, colour = model, shape = model, linetype = model, group = model)) +
+  geom_hline(data = data.frame(unit = factor(levels(d$unit)[3], levels(d$unit))),
+             aes(yintercept = 0), colour = "grey40", linewidth = 0.4) +
+  geom_errorbar(aes(ymin = lo, ymax = hi), width = 0.25, linewidth = 0.3, position = pd, linetype = "solid") +
+  geom_line(position = pd, linewidth = 0.6) +
+  geom_point(position = pd, size = 2, fill = "white") +
+  facet_grid(unit ~ year, scales = "free_y") +
+  scale_x_continuous(breaks = 1:10) +
+  scale_colour_manual(values = c("RUM" = "grey60", "MDCEV" = "black"), name = "Model") +
+  scale_shape_manual(values = c("RUM" = 1, "MDCEV" = 17), name = "Model") +
+  scale_linetype_manual(values = c("RUM" = "dashed", "MDCEV" = "solid"), name = "Model") +
+  labs(x = "Income decile (1 = lowest income)", y = NULL,
+       title = "Distributional Analysis across Income: average single-campsite closure",
+       caption = "95% cluster-bootstrap intervals (zip codes resampled)") +
+  theme_bw(base_size = 18, base_family = "serif") +
+  theme(panel.grid.minor = element_blank(), panel.grid.major.x = element_blank(),
+        strip.background = element_rect(fill = "white", colour = "black"),
+        strip.text = element_text(face = "bold"), legend.position = "bottom",
+        panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.7))
+
+print(p)
 
 
+```
+
+### All Years
+
+```{r}
+
+KM_TO_MILES <- 0.621371
+
+
+## Step 1. The inputs your travel-cost code used 
+# vehicle cost per km (AAA brochure, 25 mpg, 15,000 miles a year), shared by 3 people, exactly as in your code
+aaa <- tribble(~year, ~gas, ~maintenance, ~inflation, ~ownership,
+               2018, 4.68, 0.0858, 1.2816,  6202,
+               2019, 4.49, 0.0960, 1.262,   6845,
+               2020, 4.09, 0.1011, 1.2314,  6831,
+               2021, 4.75, 0.1043, 1.12144, 6633,
+               2022, 5.81, 0.1064, 1.113,   6599,
+               2023, 5.09, 0.1085, 1.0618,  7542) %>%
+  mutate(cost_per_mile  = (gas / 25 * 15000 + maintenance * inflation * 15000 + ownership * inflation) / 15000,
+         vehicle_per_km = cost_per_mile / 1.60934 / 3)
+
+# hours of travel time for the flight, one way (the same numbers as in your code; the trip is counted twice)
+air_hours <- tribble(~island_park, ~island_live, ~air_hours,
+  "Hawaii", "Oahu", 2.33,  "Hawaii", "Kauai", 2.42,  "Hawaii", "Molokai", 3.5,  "Hawaii", "Maui", 2.17,  "Hawaii", "Lanai", 4.34,
+  "Oahu",   "Hawaii", 2.33, "Oahu",  "Kauai", 2.17,  "Oahu",   "Molokai", 2.17, "Oahu",   "Maui", 2.17,  "Oahu",   "Lanai", 2.17,
+  "Kauai",  "Hawaii", 2.42, "Kauai", "Oahu",  2.17,  "Kauai",  "Molokai", 3.5,  "Kauai",  "Maui", 2.33,  "Kauai",  "Lanai", 4.34,
+  "Molokai","Hawaii", 3.5,  "Molokai","Oahu", 2.17,  "Molokai","Kauai",  3.5,  "Molokai","Maui", 2,     "Molokai","Lanai", 2)
+
+
+##Put the six years in one table and split the price into its pieces ------------------------------
+final_data <- bind_rows(
+  mutate(final_data_2018, year = 2018), mutate(final_data_2019, year = 2019),
+  mutate(final_data_2020, year = 2020), mutate(final_data_2021, year = 2021),
+  mutate(final_data_2022, year = 2022), mutate(final_data_2023, year = 2023))
+
+camp <- final_data %>%
+  left_join(select(aaa, year, vehicle_per_km), by = "year") %>%
+  left_join(air_hours, by = c("island_park", "island_live")) %>%
+  transmute(id = as.character(id), year, parkname, island_park, island_live,
+            trips  = VisitCount,
+            price  = price,
+            km     = travel_distance_km,
+            miles  = travel_distance_km * KM_TO_MILES,
+            income = income,
+            vehicle_per_km,
+            air_hours = coalesce(air_hours, 0)) %>%                  # 0 hours when the camper lives on the campsite's island
+  mutate(wage_hr    = income * 0.75 / 2080,                          # hourly value of time
+         vehicle    = km * vehicle_per_km,
+         drive_time = wage_hr * km / 50,
+         air_time   = wage_hr * air_hours * 2,
+         other      = price - vehicle - drive_time - air_time)       # entry fees, flights, rental car, parking
+
+
+cat("Smallest 'everything else' value:", round(min(camp$other, na.rm = TRUE), 4), "(should be >= 0)\n")
+cat("Rows that are on another island than the camper:", sum(camp$air_hours > 0), "of", nrow(camp), "\n")
+cat("Distance (km), campsite on the camper's island vs another island:\n")
+print(tapply(camp$km, camp$air_hours > 0, summary))
+
+# Constants for the counterfactuals (all within the year)
+avg_wage <- camp %>% distinct(id, year, wage_hr) %>% group_by(year) %>% summarise(avg_wage = mean(wage_hr), .groups = "drop")
+avg_km   <- camp %>% group_by(year, parkname) %>% summarise(avg_km = mean(km), .groups = "drop")
+
+camp <- camp %>%
+  left_join(avg_wage, by = "year") %>%
+  left_join(avg_km,   by = c("year", "parkname")) %>%
+  mutate(# value of time OFF: the average wage in both time terms; own distance, own fees and flights
+         equal_vot      = vehicle + avg_wage * (km / 50 + air_hours * 2) + other,
+         # distance OFF: the average distance to the campsite; own wage, own fees and flights
+         equal_distance = avg_km * vehicle_per_km + wage_hr * (avg_km / 50 + air_hours * 2) + other,
+         # both OFF
+         both_equal     = avg_km * vehicle_per_km + avg_wage * (avg_km / 50 + air_hours * 2) + other)
+
+
+## One row per camper, with an income decile (1 = lowest income, within each year) 
+campers <- camp %>%
+  group_by(id, year) %>%
+  summarise(income        = first(income),
+            nearest_miles = min(miles),
+            median_miles  = median(miles),
+            median_price  = median(price),
+            time_share    = mean((drive_time + air_time) / price),     # share of the price that is value of time
+            .groups = "drop") %>%
+  filter(income > 0) %>%
+  group_by(year) %>%
+  mutate(decile = ntile(income, 10)) %>%
+  ungroup()
+
+
+## ---- Figure A: what differs across income deciles? ------------------------------------------------------
+what_varies <- campers %>%
+  group_by(decile) %>%
+  summarise(campers                   = n(),
+            mean_income               = mean(income),
+            nearest_campsite_miles    = mean(nearest_miles),
+            median_distance_miles     = mean(median_miles),
+            median_price_per_campsite = mean(median_price),
+            time_cost_share_of_price  = mean(time_share))
+
+write.csv(what_varies, "data/rum_what_varies_with_income.csv", row.names = FALSE)
+
+fig_a <- what_varies %>%
+  select(decile,
+         `A. Distance to nearest campsite (miles)`  = nearest_campsite_miles,
+         `B. Median distance to campsites (miles)`  = median_distance_miles,
+         `C. Median price per campsite ($)`         = median_price_per_campsite,
+         `D. Value of time as share of price`       = time_cost_share_of_price) %>%
+  pivot_longer(-decile) %>%
+  ggplot(aes(decile, value)) +
+  geom_line(linewidth = 0.7) +
+  geom_point(size = 2) +
+  facet_wrap(~ name, scales = "free_y") +
+  scale_x_continuous(breaks = 1:10) +
+  labs(x = "Income decile (1 lowest income - 10 highest income)", y = NULL,
+       title = "Differences in distance and share of value of time") +
+  theme_bw(base_size = 12, base_family = "serif") +
+  theme(panel.grid.minor = element_blank(), panel.grid.major.x = element_blank(),
+        strip.background = element_rect(fill = "white", colour = "black"),
+        strip.text = element_text(face = "bold"),
+        panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.7))
+
+ggsave("figure/rum_what_varies_with_income.png", fig_a, width = 9, height = 6.5, dpi = 300, bg = "white")
+
+
+# average price per camper-campsite, split into its pieces (all six years, deciles are within each year)
+components <- camp %>%
+  inner_join(select(campers, id, year, decile), by = c("id", "year")) %>%
+  group_by(decile) %>%
+  summarise(`vehicle cost`          = mean(vehicle),
+            `driving time`          = mean(drive_time),
+            `flight time`           = mean(air_time),
+            `fees, flights, rental` = mean(other),
+            .groups = "drop")
+
+write.csv(components, "data/price_components_by_decile.csv", row.names = FALSE)
+
+fig_a2 <- components %>%
+  pivot_longer(-decile, names_to = "piece", values_to = "dollars") %>%
+  mutate(piece = factor(piece, levels = c("fees, flights, rental", "vehicle cost", "driving time", "flight time"))) %>%
+  ggplot(aes(factor(decile), dollars, fill = piece)) +
+  geom_col(colour = "black", linewidth = 0.3) +
+  scale_fill_manual(values = c("grey90", "grey70", "grey40", "black"), name = NULL) +
+  labs(x = "Income decile (1 = lowest income)", y = "Average price per campsite ($)",
+       title = "What the travel cost is made of") +
+  theme_bw(base_size = 12, base_family = "serif") +
+  theme(panel.grid.minor = element_blank(), panel.grid.major.x = element_blank(), legend.position = "bottom",
+        panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.7))
+
+ggsave("figure/price_components_by_decile.png", fig_a2, width = 8, height = 5.5, dpi = 300, bg = "white")
+
+
+## Re-estimate the RUM (one year at a time) and recompute the losses under four price scenarios
+# RUM:  utility of campsite j = kappa_j - lambda * price_j,  staying home = 0,  52 weekly choices.
+# The loss from closing campsite j is  52 * ( -log(1 - P_j) ) / lambda,  where P_j is the weekly choice probability.
+
+rum_losses <- function(d) {
+
+  ids   <- sort(unique(d$id))
+  sites <- sort(unique(d$parkname))
+  put   <- function(v) { m <- matrix(NA_real_, length(ids), length(sites))     # camper x campsite table
+                         m[cbind(match(d$id, ids), match(d$parkname, sites))] <- v; m }
+  price <- put(d$price)
+  trips <- put(d$trips)
+
+  # --- estimate kappa (one per campsite) and lambda by maximum likelihood ---
+  log_lik <- function(theta) {
+    kappa <- theta[seq_along(sites)];  beta <- theta[length(sites) + 1]
+    V     <- sweep(beta * price, 2, kappa, "+")                                  # utility of each campsite
+    denom <- 1 + rowSums(exp(V))                                                 # 1 = stay home
+    sum(trips * V) - 52 * sum(log(denom))
+  }
+  start <- c(log((colSums(trips) + 0.5) / (52 * length(ids))), -0.01)
+  fit   <- optim(start, function(th) -log_lik(th), method = "BFGS", control = list(maxit = 2000, reltol = 1e-12))
+  kappa <- fit$par[seq_along(sites)]
+  beta  <- fit$par[length(sites) + 1]
+  lambda <- -beta                                                               # marginal utility of income
+
+  #  loss per campsite closure, averaged over the campsites, for a given price table ---
+  average_loss <- function(price_table) {
+    V     <- sweep(beta * price_table, 2, kappa, "+")
+    P     <- exp(V) / (1 + rowSums(exp(V)))                                      # weekly probability of each campsite
+    rowMeans(-52 * log(1 - P) / lambda)
+  }
+
+  # 4 price scenarios (built in Step 2) ---
+  tibble(id = ids,
+         baseline       = average_loss(price),
+         equal_vot      = average_loss(pmax(put(d$equal_vot), 0)),
+         equal_distance = average_loss(pmax(put(d$equal_distance), 0)),
+         both_equal     = average_loss(pmax(put(d$both_equal), 0)))
+}
+
+losses <- camp %>%
+  group_by(year) %>%
+  group_modify(~ rum_losses(.x)) %>%                                            # runs rum_losses once per year
+  ungroup()
+
+
+## ---- Figure B: the counterfactual gradients ---------------------------------------------------------------
+by_decile <- campers %>%
+  inner_join(losses, by = c("id", "year")) %>%
+  group_by(year, decile) %>%                                        # deciles are within each year, so one panel per year
+  summarise(campers = n(),
+            baseline                                  = mean(baseline),
+            `equal value of time (value of time off)` = mean(equal_vot),
+            `equal distance (distance off)`           = mean(equal_distance),
+            `both off`                                = mean(both_equal),
+            .groups = "drop")
+
+write.csv(by_decile, "data/rum_counterfactual_gradient.csv", row.names = FALSE)
+
+fig_b <- by_decile %>%
+  select(-campers) %>%
+  pivot_longer(-c(year, decile), names_to = "scenario", values_to = "loss") %>%
+  mutate(scenario = factor(scenario, levels = c("baseline", "equal value of time (value of time off)",
+                                                "equal distance (distance off)", "both off"))) %>%
+  ggplot(aes(decile, loss, colour = scenario, linetype = scenario, shape = scenario)) +
+  geom_line(linewidth = 0.7) +
+  geom_point(size = 2, fill = "white") +
+  scale_colour_manual(values = c("black", "grey30", "grey55", "grey75"), name = NULL) +
+  scale_linetype_manual(values = c("solid", "dashed", "dotdash", "dotted"), name = NULL) +
+  scale_shape_manual(values = c(16, 1, 2, 4), name = NULL) +
+  facet_wrap(~ year, ncol = 3) +
+  scale_x_continuous(breaks = 1:10) +
+  labs(x = "Income decile (1 = lowest income)",
+       y = "Mean repeated RUM loss per single-campsite closure ($)",
+       title = "Repeated RUM Welfare under constant distance and/or value of time") +
+  theme_bw(base_size = 16, base_family = "serif") +
+  theme(panel.grid.minor = element_blank(), panel.grid.major.x = element_blank(), legend.position = "bottom",
+        strip.background = element_rect(fill = "white", colour = "black"), strip.text = element_text(face = "bold"),
+        panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.7))
+
+ggsave("figure/rum_counterfactual_gradient.png", fig_b, width = 12, height = 7.5, dpi = 300, bg = "white")
+
+```
+
+## RUM - Travel Cost
+
+```{r}
+
+dir.create("figure", showWarnings = FALSE)
+dir.create("data",   showWarnings = FALSE)
+ 
+KM_TO_MILES <- 0.621371
+ 
+ 
+## ---- Step 1. Put the six years in one table, distances in miles -----------------------------------------
+final_data <- bind_rows(
+  mutate(final_data_2018, year = 2018), mutate(final_data_2019, year = 2019),
+  mutate(final_data_2020, year = 2020), mutate(final_data_2021, year = 2021),
+  mutate(final_data_2022, year = 2022), mutate(final_data_2023, year = 2023))
+ 
+camp <- final_data %>%
+  transmute(id = as.character(id), year, parkname,
+            trips  = VisitCount,
+            price  = price,                                   # travel cost of this campsite for this camper ($)
+            miles  = travel_distance_km * KM_TO_MILES,        # distance to this campsite (miles)
+            income = income)
+ 
+ 
+##  Split each camper's price into  rate per mile x miles + leftover 
+# rate per mile: the single number r that best fits  price = r * miles  across the camper's campsites
+camp <- camp %>%
+  group_by(id, year) %>%
+  mutate(rate_per_mile = sum(price * miles) / sum(miles^2)) %>%
+  ungroup() %>%
+  mutate(leftover = price - rate_per_mile * miles)           # entry fees etc. that distance does not explain
+ 
+ 
+## One row per camper, with an income decile (1 = lowest income, within each year)
+campers <- camp %>%
+  group_by(id, year) %>%
+  summarise(income          = first(income),
+            nearest_miles   = min(miles),
+            median_miles    = median(miles),
+            median_price    = median(price),
+            rate_per_mile   = first(rate_per_mile),
+            .groups = "drop") %>%
+  filter(income > 0) %>%
+  group_by(year) %>%
+  mutate(decile = ntile(income, 10)) %>%
+  ungroup()
+ 
+ 
+##Figure: what differs across income deciles? 
+what_varies <- campers %>%
+  group_by(decile) %>%
+  summarise(campers                    = n(),
+            mean_income                = mean(income),
+            nearest_campsite_miles     = mean(nearest_miles),
+            median_distance_miles      = mean(median_miles),
+            price_per_mile             = mean(rate_per_mile),
+            median_price_per_campsite  = mean(median_price))
+ 
+write.csv(what_varies, "data/rum_what_varies_with_income.csv", row.names = FALSE)
+ 
+fig_a <- what_varies %>%
+  select(decile,
+         `A. Distance to nearest campsite (miles)`   = nearest_campsite_miles,
+         `B. Median distance to campsites (miles)`   = median_distance_miles,
+         `C. Price per mile ($)`                     = price_per_mile,
+         `D. Median price per campsite ($)`          = median_price_per_campsite) %>%
+  pivot_longer(-decile) %>%
+  ggplot(aes(decile, value)) +
+  geom_line(linewidth = 0.7) +
+  geom_point(size = 2) +
+  facet_wrap(~ name, scales = "free_y") +
+  scale_x_continuous(breaks = 1:10) +
+  labs(x = "Income decile (1 = lowest income)", y = NULL,
+       title = "Differences in distance or price per mile across income deciles across all years") +
+  theme_bw(base_size = 12, base_family = "serif") +
+  theme(panel.grid.minor = element_blank(), panel.grid.major.x = element_blank(),
+        strip.background = element_rect(fill = "white", colour = "black"),
+        strip.text = element_text(face = "bold"),
+        panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.7))
+ 
+ggsave("figure/rum_what_varies_with_income.png", fig_a, width = 9, height = 6.5, dpi = 300, bg = "white")
+
+
+# Across years
+rum_losses <- function(d) {
+ 
+  ids   <- sort(unique(d$id))
+  sites <- sort(unique(d$parkname))
+  put   <- function(v) { m <- matrix(NA_real_, length(ids), length(sites))     # camper x campsite table
+                         m[cbind(match(d$id, ids), match(d$parkname, sites))] <- v; m }
+  price <- put(d$price)
+  trips <- put(d$trips)
+  miles <- put(d$miles)
+  extra <- put(d$leftover)
+  rate  <- put(d$rate_per_mile)[, 1]                                            # one rate per camper
+ 
+  # --- estimate kappa (one per campsite) and lambda by maximum likelihood ---
+  log_lik <- function(theta) {
+    kappa <- theta[seq_along(sites)];  beta <- theta[length(sites) + 1]
+    V     <- sweep(beta * price, 2, kappa, "+")                                  # utility of each campsite
+    denom <- 1 + rowSums(exp(V))                                                 # 1 = stay home
+    sum(trips * V) - 52 * sum(log(denom))
+  }
+  start <- c(log((colSums(trips) + 0.5) / (52 * length(ids))), -0.01)
+  fit   <- optim(start, function(th) -log_lik(th), method = "BFGS", control = list(maxit = 2000, reltol = 1e-12))
+  kappa <- fit$par[seq_along(sites)]
+  beta  <- fit$par[length(sites) + 1]
+  lambda <- -beta                                                               # marginal utility of income
+ 
+  # --- loss per campsite closure, averaged over the campsites, for a given price table ---
+  average_loss <- function(price_table) {
+    V     <- sweep(beta * price_table, 2, kappa, "+")
+    P     <- exp(V) / (1 + rowSums(exp(V)))                                      # weekly probability of each campsite
+    rowMeans(-52 * log(1 - P) / lambda)
+  }
+ 
+  # --- four price scenarios ---
+  avg_rate  <- mean(rate)                                                       # the average camper's rate per mile
+  avg_miles <- colMeans(miles)                                                  # the average camper's distance to each campsite
+ 
+  price_baseline       <- price                                                 # everything as observed
+  price_equal_rate     <- avg_rate * miles + extra                              # same rate per mile, own distance  -> value of time OFF
+  price_equal_distance <- outer(rate, avg_miles) + extra                        # own rate per mile, same distance  -> distance OFF
+  price_both_equal     <- matrix(avg_rate * avg_miles, length(ids), length(sites), byrow = TRUE) + extra
+ 
+  tibble(id = ids,
+         baseline       = average_loss(price_baseline),
+         equal_rate     = average_loss(pmax(price_equal_rate, 0)),
+         equal_distance = average_loss(pmax(price_equal_distance, 0)),
+         both_equal     = average_loss(pmax(price_both_equal, 0)))
+}
+ 
+losses <- camp %>%
+  group_by(year) %>%
+  group_modify(~ rum_losses(.x)) %>%                                            # runs rum_losses once per year
+  ungroup()
+ 
+ 
+## ---- Figure B: the counterfactual gradients ---------------------------------------------------------------
+by_decile <- campers %>%
+  inner_join(losses, by = c("id", "year")) %>%
+  group_by(year, decile) %>%                                        # deciles are within each year, so one panel per year
+  summarise(campers = n(),
+            baseline                                  = mean(baseline),
+            `equal rate per mile (value of time off)` = mean(equal_rate),
+            `equal distance (distance off)`           = mean(equal_distance),
+            `both off`                                = mean(both_equal),
+            .groups = "drop")
+ 
+write.csv(by_decile, "data/rum_counterfactual_gradient.csv", row.names = FALSE)
+ 
+fig_b <- by_decile %>%
+  select(-campers) %>%
+  pivot_longer(-c(year, decile), names_to = "scenario", values_to = "loss") %>%
+  mutate(scenario = factor(scenario, levels = c("baseline", "equal rate per mile (value of time off)",
+                                                "equal distance (distance off)", "both off"))) %>%
+  ggplot(aes(decile, loss, colour = scenario, linetype = scenario, shape = scenario)) +
+  geom_line(linewidth = 0.7) +
+  geom_point(size = 2, fill = "white") +
+  scale_colour_manual(values = c("black", "grey30", "grey55", "grey75"), name = NULL) +
+  scale_linetype_manual(values = c("solid", "dashed", "dotdash", "dotted"), name = NULL) +
+  scale_shape_manual(values = c(16, 1, 2, 4), name = NULL) +
+  facet_wrap(~ year, ncol = 3) +
+  scale_x_continuous(breaks = 1:10) +
+  labs(x = "Income decile (1 = lowest income)",
+       y = "Mean repeated RUM loss per single-campsite closure ($)",
+       title = "Repeated RUM Welfare under constant distance and/or price per mile") +
+  theme_bw(base_size = 16, base_family = "serif") +
+  theme(panel.grid.minor = element_blank(), panel.grid.major.x = element_blank(), legend.position = "bottom",
+        strip.background = element_rect(fill = "white", colour = "black"), strip.text = element_text(face = "bold"),
+        panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.7))
+ 
+ggsave("figure/rum_counterfactual_gradient.png", fig_b, width = 12, height = 7.5, dpi = 300, bg = "white")
+ 
+```
+
+## MDCEV
+
+### Welfare re-estimate
+
+Run once this will take a long time to complete.
+
+```{r}
+#| eval: false    
+#| echo: true 
+
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(rmdcev)
+ 
+dir.create("figure", showWarnings = FALSE)
+dir.create("data",   showWarnings = FALSE)
+ 
+YEARS       <- 2018:2023
+NERRS       <- 100       # conditional error draws per camper, as in your code
+N_DRAWS     <- 100       # parameter draws, as in your code
+KM_TO_MILES <- 0.621371
+ 
+welfare_ind_list <- readRDS("data/welfare_ind_list.rds")
+ 
+ 
+## The inputs your travel-cost code used 
+# vehicle cost per km (AAA brochure, 25 mpg, 15,000 miles a year), shared by 3 people, exactly as in your code
+aaa <- tribble(~year, ~gas, ~maintenance, ~inflation, ~ownership,
+               2018, 4.68, 0.0858, 1.2816,  6202,
+               2019, 4.49, 0.0960, 1.262,   6845,
+               2020, 4.09, 0.1011, 1.2314,  6831,
+               2021, 4.75, 0.1043, 1.12144, 6633,
+               2022, 5.81, 0.1064, 1.113,   6599,
+               2023, 5.09, 0.1085, 1.0618,  7542) %>%
+  mutate(cost_per_mile  = (gas / 25 * 15000 + maintenance * inflation * 15000 + ownership * inflation) / 15000,
+         vehicle_per_km = cost_per_mile / 1.60934 / 3)
+ 
+# hours of travel time for the flight, one way (the same numbers as in your code; the trip is counted twice)
+air_hours <- tribble(~island_park, ~island_live, ~air_hours,
+  "Hawaii", "Oahu", 2.33,  "Hawaii", "Kauai", 2.42,  "Hawaii", "Molokai", 3.5,  "Hawaii", "Maui", 2.17,  "Hawaii", "Lanai", 4.34,
+  "Oahu",   "Hawaii", 2.33, "Oahu",  "Kauai", 2.17,  "Oahu",   "Molokai", 2.17, "Oahu",   "Maui", 2.17,  "Oahu",   "Lanai", 2.17,
+  "Kauai",  "Hawaii", 2.42, "Kauai", "Oahu",  2.17,  "Kauai",  "Molokai", 3.5,  "Kauai",  "Maui", 2.33,  "Kauai",  "Lanai", 4.34,
+  "Molokai","Hawaii", 3.5,  "Molokai","Oahu", 2.17,  "Molokai","Kauai",  3.5,  "Molokai","Maui", 2,     "Molokai","Lanai", 2)
+ 
+ 
+## Put the six years in one table and split the price into its pieces 
+final_data <- bind_rows(
+  mutate(final_data_2018, year = 2018), mutate(final_data_2019, year = 2019),
+  mutate(final_data_2020, year = 2020), mutate(final_data_2021, year = 2021),
+  mutate(final_data_2022, year = 2022), mutate(final_data_2023, year = 2023))
+ 
+camp <- final_data %>%
+  filter(parkname != "Stay_Home") %>%
+  left_join(select(aaa, year, vehicle_per_km), by = "year") %>%
+  left_join(air_hours, by = c("island_park", "island_live")) %>%
+  transmute(id = as.character(id), year, parkname, island_park, island_live,
+            trips  = VisitCount,
+            price  = price,
+            km     = travel_distance_km,
+            miles  = travel_distance_km * KM_TO_MILES,
+            income = income,
+            vehicle_per_km,
+            air_hours = coalesce(air_hours, 0)) %>%                  # 0 hours when the camper lives on the campsite's island
+  mutate(wage_hr    = income * 0.75 / 2080,                          # hourly value of time
+         vehicle    = km * vehicle_per_km,
+         drive_time = wage_hr * km / 50,
+         air_time   = wage_hr * air_hours * 2,
+         other      = price - vehicle - drive_time - air_time)       # entry fees, flights, rental car, parking
+ 
+# Check: what is left over must be positive dollars that do not depend on income. If this fails, tell me.
+cat("Smallest 'everything else' value:", round(min(camp$other, na.rm = TRUE), 4), "(should be >= 0)\n")
+cat("Rows that are on another island than the camper:", sum(camp$air_hours > 0), "of", nrow(camp), "\n")
+cat("Distance (km), campsite on the camper's island vs another island:\n")
+print(tapply(camp$km, camp$air_hours > 0, summary))
+ 
+# Constants for the counterfactuals (all within the year)
+avg_wage <- camp %>% distinct(id, year, wage_hr) %>% group_by(year) %>% summarise(avg_wage = mean(wage_hr), .groups = "drop")
+avg_km   <- camp %>% group_by(year, parkname) %>% summarise(avg_km = mean(km), .groups = "drop")
+ 
+camp <- camp %>%
+  left_join(avg_wage, by = "year") %>%
+  left_join(avg_km,   by = c("year", "parkname")) %>%
+  mutate(# value of time OFF: the average wage in both time terms; own distance, own fees and flights
+         equal_vot      = vehicle + avg_wage * (km / 50 + air_hours * 2) + other,
+         # distance OFF: the average distance to the campsite; own wage, own fees and flights
+         equal_distance = avg_km * vehicle_per_km + wage_hr * (avg_km / 50 + air_hours * 2) + other,
+         # both OFF
+         both_equal     = avg_km * vehicle_per_km + avg_wage * (avg_km / 50 + air_hours * 2) + other)
+ 
+ 
+# Campers who could not afford their trips at some counterfactual price (more than 95% of income) are left out of every line
+affordable <- camp %>%
+  group_by(id, year) %>%
+  summarise(income = first(income),
+            ok = all(c(sum(price * trips), sum(equal_vot * trips), sum(equal_distance * trips), sum(both_equal * trips)) < 0.95 * income),
+            .groups = "drop")
+cat("Campers left out because trips would cost more than 95% of income:", sum(!affordable$ok), "of", nrow(affordable), "\n")
+camp <- camp %>% semi_join(filter(affordable, ok), by = c("id", "year"))
+ 
+ 
+## One row per camper, with an income decile (1 = lowest income, within each year)
+campers <- camp %>%
+  group_by(id, year) %>%
+  summarise(income = first(income), .groups = "drop") %>%
+  filter(income > 0) %>%
+  group_by(year) %>%
+  mutate(decile = ntile(income, 10)) %>%
+  ungroup()
+ 
+ 
+## Your rmdcev pipeline, run on one counterfactual price table 
+rmdcev_losses <- function(yr, scenario) {
+ 
+  file <- paste0("data/mdcev_cf_v2_", yr, "_", scenario, ".rds")
+  if (file.exists(file)) return(readRDS(file))                          # already done: reuse
+ 
+  # this year's data with the counterfactual price (campers who cannot afford it are dropped)
+  dat   <- get(paste0("final_data_", yr))
+  keep  <- paste(dat$id, dat$parkname) %in% paste(camp$id[camp$year == yr], camp$parkname[camp$year == yr])
+  dat   <- dat[keep, ]
+  cf    <- camp[camp$year == yr, ]
+  dat$price <- cf[[scenario]][match(paste(dat$id, dat$parkname), paste(cf$id, cf$parkname))]
+ 
+  # estimate
+  data_model <- mdcev.data(dat, id.var = "id", alt.var = "parkname", choice = "VisitCount")
+  fit <- mdcev(~ 1, data = data_model, model = "gamma", algorithm = "MLE", std_errors = "mvn",
+               n_draws = N_DRAWS, trunc_data = 1, print_iterations = FALSE)
+ 
+  # policies: close campsite k (its price is set very high), then close all campsites
+  J <- fit$stan_data[["J"]]
+  policies <- CreateBlankPolicies(npols = J + 1, model = fit, price_change_only = TRUE)
+  policies$price_p[seq_len(J)] <- lapply(seq_len(J), function(k) { v <- policies$price_p[[k]]; v[k + 1] <- 999999; v })
+  policies$price_p[[J + 1]]    <- c(0, rep(999999, J))
+ 
+  # conditional welfare
+  df_sim <- PrepareSimulationData(fit, policies)
+  set.seed(2000 + yr)
+  w <- mdcev.sim(df_sim$df_indiv, df_common = df_sim$df_common, sim_options = df_sim$sim_options,
+                 cond_err = 1, nerrs = NERRS, draw_mlhs = 1, sim_type = "welfare")
+ 
+  # mean over draws for each camper and policy; average loss over the single-campsite policies (the last policy closes everything)
+  per_camper <- t(sapply(w, colMeans, na.rm = TRUE))                    # campers x policies
+  out <- tibble(id = as.character(unique(dat$id)),
+                loss = -rowMeans(per_camper[, seq_len(J), drop = FALSE]))
+  saveRDS(out, file)
+  out
+}
+ 
+cf_losses <- crossing(year = YEARS, scenario = c("equal_vot", "equal_distance", "both_equal")) %>%
+  group_by(year, scenario) %>%
+  group_modify(~ rmdcev_losses(.y$year, .y$scenario)) %>%               # one rmdcev run per year and scenario (slow)
+  ungroup() %>%
+  pivot_wider(names_from = scenario, values_from = loss)
+ 
+ 
+## Baseline: your existing rmdcev results ------------------------------------------------------------
+# welfare_ind_list has one row per camper x policy: site = 1..J closes each campsite, site = J + 1 closes all; mean_value is negative
+baseline <- bind_rows(welfare_ind_list, .id = "year") %>%
+  mutate(year = as.integer(year), id = as.character(id)) %>%
+  group_by(year) %>%
+  filter(site < max(site)) %>%
+  group_by(id, year) %>%
+  summarise(baseline = -mean(mean_value), .groups = "drop")
+ 
+ 
+## Figure: the counterfactual gradients
+by_decile <- campers %>%
+  inner_join(baseline,  by = c("id", "year")) %>%
+  inner_join(cf_losses, by = c("id", "year")) %>%
+  group_by(year, decile) %>%
+  summarise(campers = n(),
+            baseline                                  = mean(baseline),
+            `equal value of time (value of time off)` = mean(equal_vot),
+            `equal distance (distance off)`           = mean(equal_distance),
+            `both off`                                = mean(both_equal),
+            .groups = "drop")
+ 
+write.csv(by_decile, "data/mdcev_counterfactual_gradient.csv", row.names = FALSE)
+ 
+fig <- by_decile %>%
+  select(-campers) %>%
+  pivot_longer(-c(year, decile), names_to = "scenario", values_to = "loss") %>%
+  mutate(scenario = factor(scenario, levels = c("baseline", "equal value of time (value of time off)",
+                                                "equal distance (distance off)", "both off"))) %>%
+  ggplot(aes(decile, loss, colour = scenario, linetype = scenario, shape = scenario)) +
+  geom_line(linewidth = 0.7) +
+  geom_point(size = 2, fill = "white") +
+  facet_wrap(~ year, ncol = 3) +
+  scale_colour_manual(values = c("black", "grey30", "grey55", "grey75"), name = NULL) +
+  scale_linetype_manual(values = c("solid", "dashed", "dotdash", "dotted"), name = NULL) +
+  scale_shape_manual(values = c(16, 1, 2, 4), name = NULL) +
+  scale_x_continuous(breaks = 1:10) +
+  labs(x = "Income decile (1 = lowest income)",
+       y = "Mean MDCEV loss per single-campsite closure ($)",
+       title = "Welfare under constant distance and/or value of time",
+       caption = "Conditional MDCEV loss from a re-estimated model with constant distance and/or value of time (driving and flight time)") +
+  theme_bw(base_size = 12, base_family = "serif") +
+  theme(panel.grid.minor = element_blank(), panel.grid.major.x = element_blank(), legend.position = "bottom",
+        strip.background = element_rect(fill = "white", colour = "black"), strip.text = element_text(face = "bold"),
+        panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.7))
+ 
+ggsave("figure/mdcev_counterfactual_gradient.png", fig, width = 12, height = 7.5, dpi = 300, bg = "white")
+ 
+
+```
+
+### Plots
+
+```{r}
+#| eval: false    
+#| echo: true 
+## Baseline: your existing rmdcev results 
+# welfare_ind_list has one row per camper x policy: site = 1..J closes each campsite, site = J + 1 closes all; mean_value is negative
+baseline <- bind_rows(welfare_ind_list, .id = "year") %>%
+  mutate(year = as.integer(year), id = as.character(id)) %>%
+  group_by(year) %>%
+  filter(site < max(site)) %>%
+  group_by(id, year) %>%
+  summarise(baseline = -mean(mean_value), .groups = "drop")
+ 
+ 
+## Figure: the counterfactual gradients
+by_decile <- campers %>%
+  inner_join(baseline,  by = c("id", "year")) %>%
+  inner_join(cf_losses, by = c("id", "year")) %>%
+  group_by(year, decile) %>%
+  summarise(campers = n(),
+            baseline                                  = mean(baseline),
+            `equal value of time (value of time off)` = mean(equal_vot),
+            `equal distance (distance off)`           = mean(equal_distance),
+            `both off`                                = mean(both_equal),
+            .groups = "drop")
+ 
+write.csv(by_decile, "data/mdcev_counterfactual_gradient.csv", row.names = FALSE)
+ 
+fig <- by_decile %>%
+  select(-campers) %>%
+  pivot_longer(-c(year, decile), names_to = "scenario", values_to = "loss") %>%
+  mutate(scenario = factor(scenario, levels = c("baseline", "equal value of time (value of time off)",
+                                                "equal distance (distance off)", "both off"))) %>%
+  ggplot(aes(decile, loss, colour = scenario, linetype = scenario, shape = scenario)) +
+  geom_line(linewidth = 0.7) +
+  geom_point(size = 2, fill = "white") +
+  facet_wrap(~ year, ncol = 3) +
+  scale_colour_manual(values = c("black", "grey30", "grey55", "grey75"), name = NULL) +
+  scale_linetype_manual(values = c("solid", "dashed", "dotdash", "dotted"), name = NULL) +
+  scale_shape_manual(values = c(16, 1, 2, 4), name = NULL) +
+  scale_x_continuous(breaks = 1:10) +
+  labs(x = "Income decile (1 = lowest income)",
+       y = "Mean MDCEV loss per single-campsite closure ($)",
+       title = "Welfare under constant distance and/or value of time",
+       caption = "Conditional MDCEV loss from a re-estimated model with constant distance and/or value of time (driving and flight time)") +
+  theme_bw(base_size = 12, base_family = "serif") +
+  theme(panel.grid.minor = element_blank(), panel.grid.major.x = element_blank(), legend.position = "bottom",
+        strip.background = element_rect(fill = "white", colour = "black"), strip.text = element_text(face = "bold"),
+        panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.7))
+ 
+ggsave("figure/mdcev_counterfactual_gradient.png", fig, width = 12, height = 7.5, dpi = 300, bg = "white")
+ 
+```
+
+### Significantly different?
+
+Are these statistically different? This simple test is just if the welfare loss is statistically different
+
+Is the welfare loss of the high-income campers different from the low-income campers?
+
+```{r}
+
+
+library(dplyr)
+library(tidyr)
+library(sandwich)
+
+dir.create("data", showWarnings = FALSE)
+set.seed(898989)
+N_BOOT <- 2000
+
+
+## One row per camper and model (the same construction as your distributional code), all year
+person <- final_comparison_master %>%
+    filter(year %in% 2018:2023,
+           !parkname %in% c("All sites closed", "System closure", "Close_All", "Stay_Home"),
+           !is.na(income), income > 0) %>%
+    group_by(year, id, zip, income) %>%
+    summarise(RUM   = -mean(annual_rum_loss, na.rm = TRUE),
+              MDCEV = -mean(loss_mdcev,      na.rm = TRUE), .groups = "drop") %>%
+    group_by(year) %>% mutate(dec = ntile(income, 10)) %>% ungroup() %>%      # income deciles within each year, as in the figure
+    pivot_longer(c(RUM, MDCEV), names_to = "model", values_to = "usd") %>%
+    filter(!is.na(usd)) %>%
+    mutate(pct = 100 * usd / income)                                  # loss as % of the camper's own income
+
+
+##  The test for one year, model, measure and comparison 
+gap_test <- function(d, v, low_max) {
+    
+    low  <- d[d$dec <= low_max, ]                      # decile 1 (low_max = 1) or deciles 1-2 (low_max = 2)
+    high <- d[d$dec >= 11 - low_max, ]                 # decile 10 (low_max = 1) or deciles 9-10 (low_max = 2)
+    both <- rbind(transform(low, top = 0), transform(high, top = 1))
+    y    <- both[[v]]
+    
+    # difference in means with zip-clustered standard errors
+    fit  <- lm(y ~ top, data = both)
+    se   <- sqrt(vcovCL(fit, cluster = both$zip, type = "HC1")["top", "top"])
+    gap  <- unname(coef(fit)["top"])
+    G    <- length(unique(both$zip))
+    p_cl <- 2 * pt(-abs(gap / se), df = G - 1)
+    
+    # zip-cluster bootstrap: resample zips within each group
+    zl <- low  %>% group_by(zip) %>% summarise(s = sum(.data[[v]]), n = n(), .groups = "drop")
+    zh <- high %>% group_by(zip) %>% summarise(s = sum(.data[[v]]), n = n(), .groups = "drop")
+    draws <- replicate(N_BOOT, {
+        il <- sample.int(nrow(zl), replace = TRUE)
+        ih <- sample.int(nrow(zh), replace = TRUE)
+        sum(zh$s[ih]) / sum(zh$n[ih]) - sum(zl$s[il]) / sum(zl$n[il])
+    })
+    p_boot <- min(1, 2 * min((1 + sum(draws <= 0)) / (N_BOOT + 1), (1 + sum(draws >= 0)) / (N_BOOT + 1)))
+    
+    tibble(campers_low = nrow(low), campers_high = nrow(high), zips_low = nrow(zl), zips_high = nrow(zh),
+           mean_low = mean(low[[v]]), mean_high = mean(high[[v]]),
+           gap = gap, se = se, ci_lo = unname(quantile(draws, 0.025)), ci_hi = unname(quantile(draws, 0.975)),
+           p_cluster = p_cl, p_boot = p_boot)
+}
+
+
+## Run it for every year, model, measure and comparison 
+settings <- expand_grid(year = 2018:2023, model = c("RUM", "MDCEV"),
+                        measure = c("usd", "pct"), low_max = c(1, 2))
+
+results <- settings %>%
+    mutate(out = purrr::pmap(list(year, model, measure, low_max), function(yr, md, ms, lm)
+        gap_test(person[person$year == yr & person$model == md, ], ms, lm))) %>%
+    tidyr::unnest(out) %>%
+    mutate(comparison = ifelse(low_max == 1, "decile 10 vs decile 1", "deciles 9-10 vs deciles 1-2")) %>%
+    group_by(model, measure) %>%
+    mutate(p_boot_holm = p.adjust(p_boot, method = "holm")) %>%      # optional: 12 tests per model and measure
+    ungroup() %>%
+    select(year, model, measure, comparison, everything(), -low_max)
+
+write.csv(results, "data/within_model_gap_tests.csv", row.names = FALSE)
+
+
+## Appendix tables: difference (p-value), RUM and MDCEV side by side 
+stars <- function(p) ifelse(p < 0.01, "***", ifelse(p < 0.05, "**", ifelse(p < 0.10, "*", "")))
+fmt   <- function(gap, p, digits) paste0(formatC(gap, format = "f", digits = digits), stars(p), " (", formatC(p, format = "f", digits = 3), ")")
+
+for (ms in c("usd", "pct")) {
+    tab <- results %>%
+        filter(measure == ms) %>%
+        mutate(cell = fmt(gap, p_boot, ifelse(ms == "usd", 2, 4))) %>%
+        select(year, comparison, model, cell) %>%
+        pivot_wider(names_from = model, values_from = cell) %>%
+        arrange(comparison, year)
+    cat("\n", ifelse(ms == "usd", "Difference in mean loss per person ($)", "Difference in mean loss as % of income"),
+        ", high income minus low income, bootstrap p-value in parentheses\n", sep = "")
+    print(as.data.frame(tab), row.names = FALSE)
+    write.csv(tab, paste0("data/within_model_gap_table_", ms, ".csv"), row.names = FALSE)
+}
+cat("\n* p<0.10  ** p<0.05  *** p<0.01. Zip codes in each group are in data/within_model_gap_tests.csv (zips_low, zips_high).\n")
 ```

@@ -1,0 +1,25 @@
+"measure","year","index","model","model_label","est","lo","hi"
+"avg_site",2018,"concentration: Income","rum_unc","RUM",0.0748901001483454,0.0481575076373317,0.0958830345274842
+"avg_site",2018,"concentration: Income","mdcev_cond","MDCEV",-0.0825823752670347,-0.139520234673221,-0.0151209520133714
+"avg_site",2018,"regressivity vs income","rum_unc","RUM",0.206305547908186,0.158004539997759,0.241973104731333
+"avg_site",2018,"regressivity vs income","mdcev_cond","MDCEV",0.0488330724928063,-0.00768693854501625,0.107378705469133
+"avg_site",2019,"concentration: Income","rum_unc","RUM",0.0815836488004484,0.0519899247186629,0.10200736628288
+"avg_site",2019,"concentration: Income","mdcev_cond","MDCEV",-0.0895265665041565,-0.142565393678655,-0.0303080783375581
+"avg_site",2019,"regressivity vs income","rum_unc","RUM",0.211775352894492,0.162778023715906,0.25416314881199
+"avg_site",2019,"regressivity vs income","mdcev_cond","MDCEV",0.0406651375898868,-0.0112159866744276,0.0921898503867543
+"avg_site",2020,"concentration: Income","rum_unc","RUM",0.0590654867784858,0.0223161701243917,0.0883966934960252
+"avg_site",2020,"concentration: Income","mdcev_cond","MDCEV",-0.0901553834736303,-0.185707408518649,0.0265219171820106
+"avg_site",2020,"regressivity vs income","rum_unc","RUM",0.170281366192185,0.119503115574031,0.217046618982324
+"avg_site",2020,"regressivity vs income","mdcev_cond","MDCEV",0.0210604959400684,-0.0754354699123137,0.13303132788691
+"avg_site",2021,"concentration: Income","rum_unc","RUM",0.059957329574035,0.0307378609378179,0.0841113459572915
+"avg_site",2021,"concentration: Income","mdcev_cond","MDCEV",-0.07086990925722,-0.138749596187546,0.0329163330191148
+"avg_site",2021,"regressivity vs income","rum_unc","RUM",0.179928961146193,0.135320526598468,0.215819060885865
+"avg_site",2021,"regressivity vs income","mdcev_cond","MDCEV",0.0491017223149378,-0.0186745826559436,0.145056905095926
+"avg_site",2022,"concentration: Income","rum_unc","RUM",0.0477214327620953,0.011508046220966,0.0765186505167866
+"avg_site",2022,"concentration: Income","mdcev_cond","MDCEV",-0.0711094085832522,-0.122521772714794,-0.00977474583198588
+"avg_site",2022,"regressivity vs income","rum_unc","RUM",0.165906268300501,0.115321104039889,0.2066596734471
+"avg_site",2022,"regressivity vs income","mdcev_cond","MDCEV",0.0470754269551531,-0.00398354365538545,0.104340178056659
+"avg_site",2023,"concentration: Income","rum_unc","RUM",0.05342136218692,0.0178822703504677,0.0833646514151208
+"avg_site",2023,"concentration: Income","mdcev_cond","MDCEV",-0.0882348553627242,-0.14785344461918,-0.0245589343853401
+"avg_site",2023,"regressivity vs income","rum_unc","RUM",0.177764205412739,0.126338924184982,0.222520224779049
+"avg_site",2023,"regressivity vs income","mdcev_cond","MDCEV",0.0361079878630944,-0.0277866463690636,0.0996653398603133

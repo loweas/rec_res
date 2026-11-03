@@ -214,3 +214,4 @@ Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’
 Log-Likelihood: -2805.2
 McFadden R^2:  NaN 
 Likelihood ratio test : chisq = NaN (p.value = NA)
+[1mwrote[0m [32m313.00B[0m in [36m 0s[0m, [32m77.22MB/s[0m[1mwrote[0m [32m1.00TB[0m in [36m 0s[0m, [32m769.31TB/s[0m                                                                                                [1mwrote[0m [32m501.00B[0m in [36m 0s[0m, [32m262.67MB/s[0m                                                                                [1mwrote[0m [32m1.00TB[0m in [36m 0s[0m, [32m733.14TB/s[0m                                                                                

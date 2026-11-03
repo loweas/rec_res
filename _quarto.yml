@@ -1,38 +1,31 @@
 project:
   type: website
-  
-render:
-    - "*.qmd"
-    - "!rum_2.qmd"
-
 website:
   title: "Unequal Recreational Losses?"
   search: true
-  
   navbar:
     left:
       - href: index.qmd
         text: Home
-      - href: mdcev.qmd
-        text: MDCEV
-      - href: rum.qmd
-        text: Random Utility
-
+      - href: model.qmd
+        text: Models
+      - href: combined.html
+        text: Combined
     tools:
       - icon: youtube
         href: https://www.youtube.com/@Prof.Iguana
       - icon: github
         menu:
           - text: Source Code
-            href:  https://github.com/loweas/rec_res
+            href: https://github.com/loweas/rec_res
           - text: Report a Bug
-            href:  https://github.com/loweas/rec_res/issues
+            href: https://github.com/loweas/rec_res/issues
 
-# Add this section below:
 execute:
   message: false
   warning: false
-  
+  freeze: auto        # only re-run a page's code when that page changes
+
 format:
   html:
     theme: cosmo
