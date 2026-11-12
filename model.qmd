@@ -12,11 +12,7 @@ format:
 editor: visual
 ---
 
-
 This script will run a RUM model on our data assuming a stay at home option and compare it to our result of the MDCEV.
-
-
-
 
 # Library
 
@@ -27,7 +23,10 @@ The first code will produce final_data_yyyy by year and then should be able to r
 This code will take some time to run.
 
 ```{r}
+#| eval: false    
+#| echo: true 
 
+library(rmdcev)
 library(dplyr)
 library(tidyr)
 library(haven)
@@ -51,15 +50,18 @@ library(ggpattern)
 
 ```
 
+# Data Clean
+
+The next section produces final_data for each year and calculates the yearly cost.
+
+It will create a .rds file for each year in data folder.
 
 ```{r}
-#| cache: true
-#| message: false
-#| warning: false
-#| code-fold: true
-#| code-summary: "Show the Code"
+#| eval: false    
+#| echo: true 
 
 
+select <- dplyr::select
 
 # Load datasets
 reservation_data <- read_dta("data/reservation_data_merged_id_complete.dta")
@@ -229,7 +231,7 @@ cost_per_mile
 
 miles_to_km <- 1.60934
 
-cost_per_km <- cost_per_mile / miles_to_km
+cost_per_km <- cost_per_mile / `DSCmiles_to_km
 cost_per_km
 
 final_data_2018$price <- (final_data_2018$travel_distance_km * cost_per_km) / 3 +
@@ -1671,30 +1673,41 @@ final_data_2022$parkname_numeric <- as.integer(factor(final_data_2022$parkname, 
 final_data_2023 <- final_data_2023 %>% arrange(id, parkname)
 final_data_2023$parkname_numeric <- as.integer(factor(final_data_2023$parkname, levels = unique(final_data_2023$parkname)))
 
-saveRDS(final_data_2018,"final_data_2018.rds")
-saveRDS(final_data_2019,"final_data_2019.rds")
-saveRDS(final_data_2020,"final_data_2020.rds")
-saveRDS(final_data_2021, "final_data_2021.rds")
-saveRDS(final_data_2022, "final_data_2022.rds")
-saveRDS(final_data_2023,"final_data_2023.rds")
+saveRDS(final_data_2018,"data/final_data_2018.rds")
+saveRDS(final_data_2019,"data/final_data_2019.rds")
+saveRDS(final_data_2020,"data/final_data_2020.rds")
+saveRDS(final_data_2021, "data/final_data_2021.rds")
+saveRDS(final_data_2022, "data/final_data_2022.rds")
+saveRDS(final_data_2023,"data/final_data_2023.rds")
+
 ```
 
 # MDVEC
+
+We will run a clean MDCEV. The official run for each year is :
+
+```
+mdcev_mle <- mdcev(~ 1, data = data_model, model = "gamma", algorithm = "MLE", std_errors = "mvn", n_draws = 100, trunc_data = 1, print_iterations = TRUE)
+```
+
+-   \~ 1: each site gets its own appeal (a constant).
+
+-   algorithm = "MLE": the model picks the parameter values that best fit the observed trips.
+
+-   std_errors = "mvn": uncertainty is measured by assuming the estimates are roughly normally distributed.
+
+-   n_draws = 100: it saves 100 plausible sets of parameters for confidence intervals on welfare.
+
+-   trunc_data = 1: everyone in the data took at least one trip.
+
+-   print_iterations = TRUE: just shows progress.
+
 ```{r}
 #| eval: false    
 #| echo: true 
 
-#Mdcev pipeline with year lists · R
-library(dplyr)
-library(tidyr)
-library(rmdcev)
-library(haven)
-library(readr)
- 
-# ---- ADDED: year-keyed storage so mdcev_mle / policies / data_model survive
-# past the year that created them. Everything else below is your original
-# code, unchanged, with one extra line after each year's model and policies
-# are built. ----
+
+
 mdcev_model_list <- list()
 policies_list     <- list()
 data_model_list   <- list()
@@ -1728,7 +1741,7 @@ data_model_list[["2018"]] <- data_model   # ADDED
 ##Estimate model
 mdcev_mle <- mdcev(~ 1,
                    data = data_model,
-                   model = "gamma", #test with hybrid instead of gamma
+                   model = "gamma", 
                    algorithm = "MLE",
                    std_errors = "mvn",
                    n_draws = 100,
@@ -1738,54 +1751,7 @@ mdcev_model_list[["2018"]] <- mdcev_mle   # ADDED
  
 summary(mdcev_mle)
  
- 
-## Policy simulation
-nalts <- mdcev_mle$stan_data[["J"]]  # Should be 21
- 
-npols <- 22  # 21 individual site closures + 1 for closing all
- 
-# Create blank policies
-policies <- CreateBlankPolicies(npols = npols,
-                                model = mdcev_mle,
-                                price_change_only = TRUE)
- 
-# Set price extremely high to simulate closure for each individual site (sites 1 to 21)
-for (i in 1:21) {
-  # +1 to skip the numeraire in position 1
-  policies$price_p[[i]][i + 1] <- 999999
-}
- 
-# Policy 22: Close all 21 sites
-# The price vector has length = nalts + 1 (includes numeraire)
-policies$price_p[[22]] <- c(0, rep(999999, nalts))
- 
-# Check lengths for safety (optional but recommended)
-stopifnot(all(sapply(policies$price_p, length) == nalts + 1))
-policies_list[["2018"]] <- policies   # ADDED
- 
-# Prepare data for simulation
-df_sim <- PrepareSimulationData(mdcev_mle, policies)
- 
-# Run simulation
-welfare_2018 <- mdcev.sim(df_sim$df_indiv,
-                     df_common = df_sim$df_common,
-                     sim_options = df_sim$sim_options,
-                     cond_err = 1,
-                     nerrs = 100,
-                     draw_mlhs = 1,
-                     sim_type = "welfare")
- 
-# Optional: Custom summary printer
-print.summary.mdcev.sim <- function(x, digits = max(3, getOption("digits") - 2),
-                                    width = getOption("width"),
-                                    ...) {
-  print(x$CoefTable, digits = digits, n = Inf)
-  invisible(x)
-}
- 
-# View results
-summary(welfare_2018)
- 
+
 #############
 # 2019 model #
 #############
@@ -1827,53 +1793,6 @@ mdcev_model_list[["2019"]] <- mdcev_mle   # ADDED
 summary(mdcev_mle)
  
  
-## Policy simulation
-nalts <- mdcev_mle$stan_data[["J"]]  # Should be 21
- 
-npols <- 22  # 21 individual site closures + 1 for closing all
- 
-# Create blank policies
-policies <- CreateBlankPolicies(npols = npols,
-                                model = mdcev_mle,
-                                price_change_only = TRUE)
- 
-# Set price extremely high to simulate closure for each individual site (sites 1 to 21)
-for (i in 1:21) {
-  # +1 to skip the numeraire in position 1
-  policies$price_p[[i]][i + 1] <- 999999
-}
- 
-# Policy 22: Close all 21 sites
-# The price vector has length = nalts + 1 (includes numeraire)
-policies$price_p[[22]] <- c(0, rep(999999, nalts))
- 
-# Check lengths for safety (optional but recommended)
-stopifnot(all(sapply(policies$price_p, length) == nalts + 1))
-policies_list[["2019"]] <- policies   # ADDED
- 
-# Prepare data for simulation
-df_sim <- PrepareSimulationData(mdcev_mle, policies)
- 
-# Run simulation
-welfare_2019 <- mdcev.sim(df_sim$df_indiv,
-                     df_common = df_sim$df_common,
-                     sim_options = df_sim$sim_options,
-                     cond_err = 1,
-                     nerrs = 100,
-                     draw_mlhs = 1,
-                     sim_type = "welfare")
- 
-# Optional: Custom summary printer
-print.summary.mdcev.sim <- function(x, digits = max(3, getOption("digits") - 2),
-                                    width = getOption("width"),
-                                    ...) {
-  print(x$CoefTable, digits = digits, n = Inf)
-  invisible(x)
-}
- 
-# View results
-summary(welfare_2019)
- 
 ##############
 # 2020 model #
 ##############
@@ -1912,71 +1831,7 @@ mdcev_mle <- mdcev(~ 1,
                    print_iterations = TRUE)
 mdcev_model_list[["2020"]] <- mdcev_mle   # ADDED
  
-summary(mdcev_mle)
- 
-## Policy simulation
-nalts <- mdcev_mle$stan_data[["J"]]
- 
-npols <- 23
- 
-policies<- CreateBlankPolicies(npols = npols,
-                               model = mdcev_mle,
-                               price_change_only = TRUE)
- 
-## SET price extremely high "To simulate
-#CSH of site closures, p1 is set to a very
-#large number so that the new price is much
-#higher than the choke price and therefore essentially
-#has the same effect as site closures!!"
- 
-policies$price_p[[1]][2]   <- 999999 #
-policies$price_p[[2]][3]   <- 999999 #
-policies$price_p[[3]][4]   <- 999999 #
-policies$price_p[[4]][5]   <- 999999 #
-policies$price_p[[5]][6]   <- 999999 #
-policies$price_p[[6]][7]   <- 999999 #
-policies$price_p[[7]][8]   <- 999999 #
-policies$price_p[[8]][9]   <- 999999 #
-policies$price_p[[9]][10]  <- 999999 #
-policies$price_p[[10]][11] <- 999999 #
-policies$price_p[[11]][12] <- 999999 #
-policies$price_p[[12]][13] <- 999999 #
-policies$price_p[[13]][14] <- 999999 #
-policies$price_p[[14]][15] <- 999999 #
-policies$price_p[[15]][16] <- 999999 #
-policies$price_p[[16]][17] <- 999999 #
-policies$price_p[[17]][18] <- 999999 #
-policies$price_p[[18]][19] <- 999999 #
-policies$price_p[[19]][20] <- 999999 #
-policies$price_p[[20]][21] <- 999999 #
-policies$price_p[[21]][22] <- 999999 #
-policies$price_p[[22]][23] <- 999999 #
- 
-#23rd policy: close all sites
-policies$price_p[[23]] <- c(0, rep(999999, 22))
-policies_list[["2020"]] <- policies   # ADDED
- 
- 
-df_sim <- PrepareSimulationData(mdcev_mle, policies)
- 
-welfare_2020 <- mdcev.sim(df_sim$df_indiv,
-                     df_common = df_sim$df_common,
-                     sim_options = df_sim$sim_options,
-                     cond_err = 1,
-                     nerrs = 100,
-                     draw_mlhs = 1,
-                     sim_type = "welfare")
- 
-print.summary.mdcev.sim <- function(x, digits = max(3, getOption("digits") - 2),
-                                    width = getOption("width"),
-                                    ...){
-  # Print all rows of the tibble
-  print(x$CoefTable, digits = digits, n = Inf)
- 
-  invisible(x)
-}
- 
-summary(welfare_2020)
+
  
 ##############
 # 2021 model #
@@ -2014,72 +1869,6 @@ mdcev_mle <- mdcev(~ 1,
                    trunc_data = 1,
                    print_iterations = TRUE)
 mdcev_model_list[["2021"]] <- mdcev_mle   # ADDED
- 
-summary(mdcev_mle)
- 
-## Policy simulation
-nalts <- mdcev_mle$stan_data[["J"]]
- 
-npols <- 23
- 
-policies<- CreateBlankPolicies(npols = npols,
-                               model = mdcev_mle,
-                               price_change_only = TRUE)
- 
-## SET price extremely high "To simulate
-#CSH of site closures, p1 is set to a very
-#large number so that the new price is much
-#higher than the choke price and therefore essentially
-#has the same effect as site closures!!"
- 
-policies$price_p[[1]][2]   <- 999999 #
-policies$price_p[[2]][3]   <- 999999 #
-policies$price_p[[3]][4]   <- 999999 #
-policies$price_p[[4]][5]   <- 999999 #
-policies$price_p[[5]][6]   <- 999999 #
-policies$price_p[[6]][7]   <- 999999 #
-policies$price_p[[7]][8]   <- 999999 #
-policies$price_p[[8]][9]   <- 999999 #
-policies$price_p[[9]][10]  <- 999999 #
-policies$price_p[[10]][11] <- 999999 #
-policies$price_p[[11]][12] <- 999999 #
-policies$price_p[[12]][13] <- 999999 #
-policies$price_p[[13]][14] <- 999999 #
-policies$price_p[[14]][15] <- 999999 #
-policies$price_p[[15]][16] <- 999999 #
-policies$price_p[[16]][17] <- 999999 #
-policies$price_p[[17]][18] <- 999999 #
-policies$price_p[[18]][19] <- 999999 #
-policies$price_p[[19]][20] <- 999999 #
-policies$price_p[[20]][21] <- 999999 #
-policies$price_p[[21]][22] <- 999999 #
-policies$price_p[[22]][23] <- 999999 #
- 
-#23rd policy: close all sites
-policies$price_p[[23]] <- c(0, rep(999999, 22))
-policies_list[["2021"]] <- policies   # ADDED
- 
- 
-df_sim <- PrepareSimulationData(mdcev_mle, policies)
- 
-welfare_2021 <- mdcev.sim(df_sim$df_indiv,
-                     df_common = df_sim$df_common,
-                     sim_options = df_sim$sim_options,
-                     cond_err = 1,
-                     nerrs = 100,
-                     draw_mlhs = 1,
-                     sim_type = "welfare")
- 
-print.summary.mdcev.sim <- function(x, digits = max(3, getOption("digits") - 2),
-                                    width = getOption("width"),
-                                    ...){
-  # Print all rows of the tibble
-  print(x$CoefTable, digits = digits, n = Inf)
- 
-  invisible(x)
-}
- 
-summary(welfare_2021)
  
 ##############
 # 2022 model #
@@ -2119,70 +1908,7 @@ mdcev_mle <- mdcev(~ 1,
 mdcev_model_list[["2022"]] <- mdcev_mle   # ADDED
  
 summary(mdcev_mle)
- 
-## Policy simulation
-nalts <- mdcev_mle$stan_data[["J"]]
- 
-npols <- 23
- 
-policies<- CreateBlankPolicies(npols = npols,
-                               model = mdcev_mle,
-                               price_change_only = TRUE)
- 
-## SET price extremely high "To simulate
-#CSH of site closures, p1 is set to a very
-#large number so that the new price is much
-#higher than the choke price and therefore essentially
-#has the same effect as site closures!!"
- 
-policies$price_p[[1]][2]   <- 999999 #
-policies$price_p[[2]][3]   <- 999999 #
-policies$price_p[[3]][4]   <- 999999 #
-policies$price_p[[4]][5]   <- 999999 #
-policies$price_p[[5]][6]   <- 999999 #
-policies$price_p[[6]][7]   <- 999999 #
-policies$price_p[[7]][8]   <- 999999 #
-policies$price_p[[8]][9]   <- 999999 #
-policies$price_p[[9]][10]  <- 999999 #
-policies$price_p[[10]][11] <- 999999 #
-policies$price_p[[11]][12] <- 999999 #
-policies$price_p[[12]][13] <- 999999 #
-policies$price_p[[13]][14] <- 999999 #
-policies$price_p[[14]][15] <- 999999 #
-policies$price_p[[15]][16] <- 999999 #
-policies$price_p[[16]][17] <- 999999 #
-policies$price_p[[17]][18] <- 999999 #
-policies$price_p[[18]][19] <- 999999 #
-policies$price_p[[19]][20] <- 999999 #
-policies$price_p[[20]][21] <- 999999 #
-policies$price_p[[21]][22] <- 999999 #
-policies$price_p[[22]][23] <- 999999 #
- 
-#23rd policy: close all sites
-policies$price_p[[23]] <- c(0, rep(999999, 22))
-policies_list[["2022"]] <- policies   # ADDED
- 
- 
-df_sim <- PrepareSimulationData(mdcev_mle, policies)
- 
-welfare_2022 <- mdcev.sim(df_sim$df_indiv,
-                     df_common = df_sim$df_common,
-                     sim_options = df_sim$sim_options,
-                     cond_err = 1,
-                     nerrs = 100,
-                     draw_mlhs = 1,
-                     sim_type = "welfare")
- 
-print.summary.mdcev.sim <- function(x, digits = max(3, getOption("digits") - 2),
-                                    width = getOption("width"),
-                                    ...){
-  # Print all rows of the tibble
-  print(x$CoefTable, digits = digits, n = Inf)
- 
-  invisible(x)
-}
- 
-summary(welfare_2022)
+
  
 ##############
 # 2023 model #
@@ -2222,447 +1948,318 @@ mdcev_mle <- mdcev(~ 1,
 mdcev_model_list[["2023"]] <- mdcev_mle   # ADDED
  
 summary(mdcev_mle)
- 
-## Policy simulation
-nalts <- mdcev_mle$stan_data[["J"]]
- 
-npols <- 22
- 
-policies<- CreateBlankPolicies(npols = npols,
-                               model = mdcev_mle,
-                               price_change_only = TRUE)
- 
-## SET price extremely high "To simulate
-#CSH of site closures, p1 is set to a very
-#large number so that the new price is much
-#higher than the choke price and therefore essentially
-#has the same effect as site closures!!"
- 
-policies$price_p[[1]][2]   <- 999999 #
-policies$price_p[[2]][3]   <- 999999 #
-policies$price_p[[3]][4]   <- 999999 #
-policies$price_p[[4]][5]   <- 999999 #
-policies$price_p[[5]][6]   <- 999999 #
-policies$price_p[[6]][7]   <- 999999 #
-policies$price_p[[7]][8]   <- 999999 #
-policies$price_p[[8]][9]   <- 999999 #
-policies$price_p[[9]][10]  <- 999999 #
-policies$price_p[[10]][11] <- 999999 #
-policies$price_p[[11]][12] <- 999999 #
-policies$price_p[[12]][13] <- 999999 #
-policies$price_p[[13]][14] <- 999999 #
-policies$price_p[[14]][15] <- 999999 #
-policies$price_p[[15]][16] <- 999999 #
-policies$price_p[[16]][17] <- 999999 #
-policies$price_p[[17]][18] <- 999999 #
-policies$price_p[[18]][19] <- 999999 #
-policies$price_p[[19]][20] <- 999999 #
-policies$price_p[[20]][21] <- 999999 #
-policies$price_p[[21]][22] <- 999999 #
- 
-#23rd policy: close all sites
-policies$price_p[[22]] <- c(0, rep(999999, 21))
-policies_list[["2023"]] <- policies   # ADDED
- 
- 
-df_sim <- PrepareSimulationData(mdcev_mle, policies)
- 
-welfare_2023 <- mdcev.sim(df_sim$df_indiv,
-                     df_common = df_sim$df_common,
-                     sim_options = df_sim$sim_options,
-                     cond_err = 1,
-                     nerrs = 100,
-                     draw_mlhs = 1,
-                     sim_type = "welfare")
- 
-print.summary.mdcev.sim <- function(x, digits = max(3, getOption("digits") - 2),
-                                    width = getOption("width"),
-                                    ...){
-  # Print all rows of the tibble
-  print(x$CoefTable, digits = digits, n = Inf)
- 
-  invisible(x)
-}
- 
-summary(welfare_2023)
- 
-# List of welfare objects and corresponding years
-welfare_list <- list(
-  "2018" = welfare_2018,
-  "2019" = welfare_2019,
-  "2020" = welfare_2020,
-  "2021" = welfare_2021,
-  "2022" = welfare_2022,
-  "2023" = welfare_2023
-)
- saveRDS(welfare_list, "welfare_list.rds")
-# Loop through each item and save the summary as CSV
-for (year in names(welfare_list)) {
-  welfare_obj <- welfare_list[[year]]
- 
-  # Get summary and extract the coefficient table
-  welfare_summary <- summary(welfare_obj)$CoefTable
- 
-  # Save to CSV
-  write.csv(welfare_summary,
-            file = paste0("welfare_summary_", year, ".csv"),
-            row.names = FALSE)
-}
- 
- 
- 
-############## Create individual-specific mean value per site 2018 ##############
- 
-# Step 1: Get unique IDs from final_data_2018 in the same order
-unique_ids <- unique(final_data_2018$id)
-unique_zips <- final_data_2018 %>%
-  distinct(id, zip) %>%
-  arrange(match(id, unique_ids))  # Ensure same order as IDs
- 
-# Step 2: Create updated welfare_2018_ind with real IDs and ZIPs
-welfare_2018_ind <- data.frame(individual = integer(),
-                               site = integer(),
-                               mean_value = numeric(),
-                               id = integer(),
-                               zip = character())
- 
-for (i in seq_along(welfare_2018)) {
-  individual_matrix <- welfare_2018[[i]]
-  mean_values <- apply(individual_matrix, 2, mean, na.rm = TRUE)
- 
-  individual_df <- data.frame(
-    individual = rep(i, length(mean_values)),              # Sequential index (not used anymore)
-    site = seq_along(mean_values),
-    mean_value = mean_values,
-    id = rep(unique_ids[i], length(mean_values)),          # Actual id
-    zip = rep(unique_zips$zip[i], length(mean_values))     # Corresponding zip
-  )
- 
-  welfare_2018_ind <- rbind(welfare_2018_ind, individual_df)
-}
- 
-# Optional: Drop the 'individual' column if only real id is needed
-welfare_2018_ind$individual <- NULL
- 
- 
- 
- 
-############## Create individual-specific mean value per site 2019 ##############
- 
-# Step 1: Get unique IDs from final_data_2019 in the same order
-unique_ids <- unique(final_data_2019$id)
-unique_zips <- final_data_2019 %>%
-  distinct(id, zip) %>%
-  arrange(match(id, unique_ids))  # Ensure same order as IDs
- 
-# Step 2: Create updated welfare_2019_ind with real IDs and ZIPs
-welfare_2019_ind <- data.frame(individual = integer(),
-                               site = integer(),
-                               mean_value = numeric(),
-                               id = integer(),
-                               zip = character())
- 
-for (i in seq_along(welfare_2019)) {
-  individual_matrix <- welfare_2019[[i]]
-  mean_values <- apply(individual_matrix, 2, mean, na.rm = TRUE)
- 
-  individual_df <- data.frame(
-    individual = rep(i, length(mean_values)),              # Sequential index (not used anymore)
-    site = seq_along(mean_values),
-    mean_value = mean_values,
-    id = rep(unique_ids[i], length(mean_values)),          # Actual id
-    zip = rep(unique_zips$zip[i], length(mean_values))     # Corresponding zip
-  )
- 
-  welfare_2019_ind <- rbind(welfare_2019_ind, individual_df)
-}
- 
-# Optional: Drop the 'individual' column if only real id is needed
-welfare_2019_ind$individual <- NULL
- 
-############## Create individual-specific mean value per site 2020 ##############
- 
-# Step 1: Get unique IDs from final_data_2020 in the same order
-unique_ids <- unique(final_data_2020$id)
-unique_zips <- final_data_2020 %>%
-  distinct(id, zip) %>%
-  arrange(match(id, unique_ids))  # Ensure same order as IDs
- 
-# Step 2: Create updated welfare_2020_ind with real IDs and ZIPs
-welfare_2020_ind <- data.frame(individual = integer(),
-                               site = integer(),
-                               mean_value = numeric(),
-                               id = integer(),
-                               zip = character())
- 
-for (i in seq_along(welfare_2020)) {
-  individual_matrix <- welfare_2020[[i]]
-  mean_values <- apply(individual_matrix, 2, mean, na.rm = TRUE)
- 
-  individual_df <- data.frame(
-    individual = rep(i, length(mean_values)),              # Sequential index (not used anymore)
-    site = seq_along(mean_values),
-    mean_value = mean_values,
-    id = rep(unique_ids[i], length(mean_values)),          # Actual id
-    zip = rep(unique_zips$zip[i], length(mean_values))     # Corresponding zip
-  )
- 
-  welfare_2020_ind <- rbind(welfare_2020_ind, individual_df)
-}
- 
-# Optional: Drop the 'individual' column if only real id is needed
-welfare_2020_ind$individual <- NULL
- 
- 
-############## Create individual-specific mean value per site 2021 ##############
- 
-# Step 1: Get unique IDs from final_data_2021 in the same order
-unique_ids <- unique(final_data_2021$id)
-unique_zips <- final_data_2021 %>%
-  distinct(id, zip) %>%
-  arrange(match(id, unique_ids))  # Ensure same order as IDs
- 
-# Step 2: Create updated welfare_2021_ind with real IDs and ZIPs
-welfare_2021_ind <- data.frame(individual = integer(),
-                               site = integer(),
-                               mean_value = numeric(),
-                               id = integer(),
-                               zip = character())
- 
-for (i in seq_along(welfare_2021)) {
-  individual_matrix <- welfare_2021[[i]]
-  mean_values <- apply(individual_matrix, 2, mean, na.rm = TRUE)
- 
-  individual_df <- data.frame(
-    individual = rep(i, length(mean_values)),              # Sequential index (not used anymore)
-    site = seq_along(mean_values),
-    mean_value = mean_values,
-    id = rep(unique_ids[i], length(mean_values)),          # Actual id
-    zip = rep(unique_zips$zip[i], length(mean_values))     # Corresponding zip
-  )
- 
-  welfare_2021_ind <- rbind(welfare_2021_ind, individual_df)
-}
- 
-# Optional: Drop the 'individual' column if only real id is needed
-welfare_2021_ind$individual <- NULL
- 
-############## Create individual-specific mean value per site 2022 ##############
- 
-# Step 1: Get unique IDs from final_data_2022 in the same order
-unique_ids <- unique(final_data_2022$id)
-unique_zips <- final_data_2022 %>%
-  distinct(id, zip) %>%
-  arrange(match(id, unique_ids))  # Ensure same order as IDs
- 
-# Step 2: Create updated welfare_2022_ind with real IDs and ZIPs
-welfare_2022_ind <- data.frame(individual = integer(),
-                               site = integer(),
-                               mean_value = numeric(),
-                               id = integer(),
-                               zip = character())
- 
-for (i in seq_along(welfare_2022)) {
-  individual_matrix <- welfare_2022[[i]]
-  mean_values <- apply(individual_matrix, 2, mean, na.rm = TRUE)
- 
-  individual_df <- data.frame(
-    individual = rep(i, length(mean_values)),              # Sequential index (not used anymore)
-    site = seq_along(mean_values),
-    mean_value = mean_values,
-    id = rep(unique_ids[i], length(mean_values)),          # Actual id
-    zip = rep(unique_zips$zip[i], length(mean_values))     # Corresponding zip
-  )
- 
-  welfare_2022_ind <- rbind(welfare_2022_ind, individual_df)
-}
- 
-# Optional: Drop the 'individual' column if only real id is needed
-welfare_2022_ind$individual <- NULL
- 
-############## Create individual-specific mean value per site 2023 ##############
- 
-# Step 1: Get unique IDs from final_data_2023 in the same order
-unique_ids <- unique(final_data_2023$id)
-unique_zips <- final_data_2023 %>%
-  distinct(id, zip) %>%
-  arrange(match(id, unique_ids))  # Ensure same order as IDs
- 
-# Step 2: Create updated welfare_2023_ind with real IDs and ZIPs
-welfare_2023_ind <- data.frame(individual = integer(),
-                               site = integer(),
-                               mean_value = numeric(),
-                               id = integer(),
-                               zip = character())
- 
-for (i in seq_along(welfare_2023)) {
-  individual_matrix <- welfare_2023[[i]]
-  mean_values <- apply(individual_matrix, 2, mean, na.rm = TRUE)
- 
-  individual_df <- data.frame(
-    individual = rep(i, length(mean_values)),              # Sequential index (not used anymore)
-    site = seq_along(mean_values),
-    mean_value = mean_values,
-    id = rep(unique_ids[i], length(mean_values)),          # Actual id
-    zip = rep(unique_zips$zip[i], length(mean_values))     # Corresponding zip
-  )
- 
-  welfare_2023_ind <- rbind(welfare_2023_ind, individual_df)
-}
- 
-# Optional: Drop the 'individual' column if only real id is needed
-welfare_2023_ind$individual <- NULL
- 
-# ---- ADDED: quick check that each list actually holds six distinct years'
-# worth of different models, not six copies of the same one ----
+
+
+
+
+ 
+#  This is is all the models
 length(mdcev_model_list)   # should be 6
-sapply(mdcev_model_list, function(m) length(m$parms_info$alt_names))  # site counts should vary (21/21/22/22/22/21)
-saveRDS(mdcev_model_list, "data/mdcev_model_list.rds")
+sapply(mdcev_model_list, function(m) length(m$parms_info$alt_names))  
+saveRDS(mdcev_model_list, "data/mdcev/mdcev_model_list.rds")
 
-welfare_ind_list <- list(
-  "2018" = welfare_2018_ind,
-  "2019" = welfare_2019_ind,
-  "2020" = welfare_2020_ind,
-  "2021" = welfare_2021_ind,
-  "2022" = welfare_2022_ind,
-  "2023" = welfare_2023_ind
-)
 
-saveRDS(welfare_ind_list, "data/welfare_ind_list.rds")
  
 ```
 
-#### SATIATION 2x & 4x
-Satiation multiply every translation parameter (gamma) by 2, and by 4 (doubling twice). Uses the previous data from mdcev_model_list
+## Welfare
+
+This section tales the results from the mdcev_model_list.rds and simulates welfare by increasing the price of of each price for a closure.
+
+What this does slightly different than the sims.
+
+Before we used
+
+-   **`n_draws = 100`** whic saves 100 plausible sets of parameters.
+
+-   We run a simulated **100-draw version** adds `nsims = 100`, so it uses all 100 and not the default which is == 30
+
+-   This is stored in data/mdcev/welfare_100/
+
 ```{r}
 #| eval: false    
 #| echo: true 
-# Satiation multiply every translation parameter (gamma) by 2, and by 4 (doubling twice).
+NSIMS <- 100    # parameter draws; theta_tilde has 100 rows
+NERRS <- 100    # conditional error draws per camper
+years <- 2018:2023
+ 
+mdcev_model_list <- readRDS("data/mdcev/mdcev_model_list.rds")
 
+print.summary.mdcev.sim <- function(x, digits = max(3, getOption("digits") - 2), ...) {
+  print(x$CoefTable, digits = digits, n = Inf); invisible(x)
+}
+ 
+welfare_list_100 <- list()
+for (yr in years) {
+  y   <- as.character(yr)
+  mod <- mdcev_model_list[[y]]
+  nalts <- mod$stan_data$J
+  message(">>> ", y, ": ", nalts, " sites, ", NSIMS, " parameter draws")
+ 
+  ## policies: 1..nalts = close site i, nalts + 1 = close all sites
+  policies <- CreateBlankPolicies(npols = nalts + 1, model = mod, price_change_only = TRUE)
+  for (i in 1:nalts) policies$price_p[[i]][i + 1] <- 999999      # +1 skips the numeraire
+  policies$price_p[[nalts + 1]] <- c(0, rep(999999, nalts))
+  stopifnot(all(sapply(policies$price_p, length) == nalts + 1))
+ 
+  set.seed(898989 + yr)
+  df_sim <- PrepareSimulationData(mod, policies, nsims = NSIMS)
+ 
+  t0 <- Sys.time()
+  w <- mdcev.sim(df_sim$df_indiv,
+                 df_common   = df_sim$df_common,
+                 sim_options = df_sim$sim_options,
+                 cond_err    = 1,
+                 nerrs       = NERRS,
+                 draw_mlhs   = 1,
+                 sim_type    = "welfare")
+  message("    done in ", format(Sys.time() - t0))
+ 
+  stopifnot(nrow(as.matrix(w[[1]])) == NSIMS)                    # really 100 draws
+  welfare_list_100[[y]] <- w
+  saveRDS(w, sprintf("data/mdcev/welfare_%s.rds", y))
+  print(summary(w))
+}
+saveRDS(welfare_list_100, "data/mdcev/welfare_list_100.rds")
+ 
+## Per-camper welfare 
+welfare_ind_100 <- lapply(years, function(yr) {
+  y    <- as.character(yr)
+  w    <- welfare_list_100[[y]]
+  mod  <- mdcev_model_list[[y]]
+  fd   <- get(paste0("final_data_", y))
+  ids  <- sort(unique(fd$id))
+  J    <- mod$stan_data$J
+  alts <- mod$parms_info$alt_names
+  if (is.null(alts)) alts <- mod$parms_info$parm_names$alt_names
+  stopifnot(length(ids) == length(w), length(alts) == J)
+  M <- t(sapply(w, function(m) colMeans(as.matrix(m), na.rm = TRUE)))      # campers x policies
+  zips <- fd %>% distinct(id, zip) %>% group_by(id) %>% slice(1) %>% ungroup()
+  data.frame(year = yr, id = rep(ids, times = J + 1),
+             parkname = rep(c(alts, "All sites closed"), each = length(ids)),
+             loss_mdcev = as.vector(M)) %>%
+    left_join(zips, by = "id")
+})
+names(welfare_ind_100) <- years
+saveRDS(welfare_ind_100, "data/mdcev/welfare_ind_list_100.rds")
+ 
+## Put the 100-draw MDCEV losses into final_comparison_master 
+mdcev_long <- bind_rows(welfare_ind_100) %>%
+  transmute(year = as.integer(year), id = as.character(id), parkname, loss_mdcev)
+ 
+final_comparison_master <- final_comparison_master %>%
+  mutate(id = as.character(id), year = as.integer(year)) %>%
+  select(-any_of("loss_mdcev")) %>%
+  left_join(mdcev_long, by = c("year", "id", "parkname"))
+ 
+## losses only where the camper visited
+visits <- bind_rows(lapply(years, function(y) get(paste0("final_data_", y)) %>%
+            transmute(year = as.integer(y), id = as.character(id), parkname, VisitCount)))
+final_comparison_master %>%
+  inner_join(visits, by = c("year", "id", "parkname")) %>%
+  group_by(visited = VisitCount > 0) %>%
+  summarise(rows = n(), share_with_loss = mean(abs(loss_mdcev) > 1e-6, na.rm = TRUE)) %>%
+  print()
+ 
+```
 
-stopifnot(all(c("n_psi", "n_gamma") %in% names(mdcev_model_list[["2018"]]$parms_info$n_vars)))
+## Robustness checks
 
-MULTS       <- c(2, 4)          # 2 = gamma doubled; 4 = doubled
-YEARS       <- 2018:2023        # start with 2018, then widen
-NERRS       <- 100              # same as the 100x run; 
-FORCE_RERUN <- FALSE
+#### SATIATION 2x & 4x 
 
-scale_gamma <- function(mle_obj, multiplier) {
-  n_psi   <- mle_obj$parms_info$n_vars$n_psi
-  n_gamma <- mle_obj$parms_info$n_vars$n_gamma
-  gamma_cols <- (n_psi + 1):(n_psi + n_gamma)
+Satiation multiply every translation parameter (gamma) by 2, and by 4 (doubling twice). Uses the previous data from mdcev_model_list
 
-  orig_gamma <- as.numeric(mle_obj$stan_fit$par$gamma)
-  new_gamma  <- orig_gamma * multiplier
+```{r}
+#| eval: false    
+#| echo: true 
+library(rmdcev)
+mdcev_model_list <- readRDS("data/mdcev/mdcev_model_list.rds")
 
-  out <- mle_obj
-  out$stan_fit$par$gamma[1, ] <- new_gamma
-  out$stan_fit$theta_tilde[, gamma_cols] <-
-    matrix(new_gamma, nrow = nrow(out$stan_fit$theta_tilde),
-           ncol = length(new_gamma), byrow = TRUE)
+## copy of a model with every gamma (estimate and all 100 draws) multiplied by f
+scale_gamma <- function(mod, f) {
+  gc <- grep("^gamma", colnames(mod$stan_fit$theta_tilde))
+  mod$stan_fit$theta_tilde[, gc] <- mod$stan_fit$theta_tilde[, gc] * f
+  mod$stan_fit$par$gamma         <- mod$stan_fit$par$gamma * f
+  mod
+}
+
+run_scaled <- function(f) {
+  out <- list()
+  for (yr in 2018:2023) {
+    mod <- scale_gamma(mdcev_model_list[[as.character(yr)]], f); nalts <- mod$stan_data$J
+    pol <- CreateBlankPolicies(npols = nalts + 1, model = mod, price_change_only = TRUE)
+    for (i in 1:nalts) pol$price_p[[i]][i + 1] <- 999999
+    pol$price_p[[nalts + 1]] <- c(0, rep(999999, nalts))
+    set.seed(898989 + yr)
+    df_sim <- PrepareSimulationData(mod, pol, nsims = 100)
+    out[[as.character(yr)]] <- mdcev.sim(df_sim$df_indiv, df_common = df_sim$df_common,
+                                         sim_options = df_sim$sim_options, cond_err = 1,
+                                         nerrs = 100, draw_mlhs = 1, sim_type = "welfare")
+    message("gamma x", f, ": ", yr, " done")
+  }
   out
 }
 
-extract_ind <- function(w, yr, mult) {
-  yr_chr <- as.character(yr)
-  ids <- data_model_list[[yr_chr]] %>% as.data.frame() %>% distinct(id) %>% pull(id)
-  alts <- mdcev_model_list[[yr_chr]]$parms_info$alt_names
-  site_lookup <- data.frame(site = seq_len(length(alts) + 1),
-                            parkname = c(alts, "Stay_Home"))        # last policy = close every campsite
-  stopifnot(length(w) == length(ids))
-  imap_dfr(w, function(m, i) {
-    mv <- apply(m, 2, mean, na.rm = TRUE)
-    data.frame(site = seq_along(mv), mean_value = mv, id = ids[as.integer(i)])
-  }) %>%
-    left_join(site_lookup, by = "site") %>%
-    filter(!is.na(parkname)) %>%
-    transmute(id = as.character(id), parkname, year = yr, multiplier = mult, loss = mean_value)
+welfare_x2_list <- run_scaled(2); saveRDS(welfare_x2_list, "data/satiation/welfare_x2_list_100.rds")
+welfare_x4_list <- run_scaled(4); saveRDS(welfare_x4_list, "data/satiation/welfare_x4_list_100.rds")
+```
+
+#### Constant VVT/DISTANCE
+
+One other check we do to understand the distributional analysis is to look at the how the VVT and distance effect the welfare.
+
+In this step we rerun some of Data Clean which and assume:
+
+1.  VVT is constant
+2.  Distance to each site is constant
+
+```{r}
+#| eval: false    
+#| echo: true 
+
+ 
+YEARS       <- 2018:2023
+NERRS       <- 100       # conditional error draws per camper, as in your code
+N_DRAWS     <- 100       # parameter draws, as in your code
+KM_TO_MILES <- 0.621371
+ 
+welfare_ind_list <- readRDS("data/mdcev/welfare_ind_list_100.rds")
+ 
+ 
+## The inputs your travel-cost code used 
+# vehicle cost per km (AAA brochure, 25 mpg, 15,000 miles a year), shared by 3 people, exactly as in your code
+aaa <- tribble(~year, ~gas, ~maintenance, ~inflation, ~ownership,
+               2018, 4.68, 0.0858, 1.2816,  6202,
+               2019, 4.49, 0.0960, 1.262,   6845,
+               2020, 4.09, 0.1011, 1.2314,  6831,
+               2021, 4.75, 0.1043, 1.12144, 6633,
+               2022, 5.81, 0.1064, 1.113,   6599,
+               2023, 5.09, 0.1085, 1.0618,  7542) %>%
+  mutate(cost_per_mile  = (gas / 25 * 15000 + maintenance * inflation * 15000 + ownership * inflation) / 15000,
+         vehicle_per_km = cost_per_mile / 1.60934 / 3)
+ 
+# hours of travel time for the flight, one way (the same numbers as in your code; the trip is counted twice)
+air_hours <- tribble(~island_park, ~island_live, ~air_hours,
+  "Hawaii", "Oahu", 2.33,  "Hawaii", "Kauai", 2.42,  "Hawaii", "Molokai", 3.5,  "Hawaii", "Maui", 2.17,  "Hawaii", "Lanai", 4.34,
+  "Oahu",   "Hawaii", 2.33, "Oahu",  "Kauai", 2.17,  "Oahu",   "Molokai", 2.17, "Oahu",   "Maui", 2.17,  "Oahu",   "Lanai", 2.17,
+  "Kauai",  "Hawaii", 2.42, "Kauai", "Oahu",  2.17,  "Kauai",  "Molokai", 3.5,  "Kauai",  "Maui", 2.33,  "Kauai",  "Lanai", 4.34,
+  "Molokai","Hawaii", 3.5,  "Molokai","Oahu", 2.17,  "Molokai","Kauai",  3.5,  "Molokai","Maui", 2,     "Molokai","Lanai", 2)
+ 
+ 
+## six years in one table and split the price 
+final_data <- bind_rows(
+  mutate(final_data_2018, year = 2018), mutate(final_data_2019, year = 2019),
+  mutate(final_data_2020, year = 2020), mutate(final_data_2021, year = 2021),
+  mutate(final_data_2022, year = 2022), mutate(final_data_2023, year = 2023))
+ 
+camp <- final_data %>%
+  filter(parkname != "Stay_Home") %>%
+  left_join(select(aaa, year, vehicle_per_km), by = "year") %>%
+  left_join(air_hours, by = c("island_park", "island_live")) %>%
+  transmute(id = as.character(id), year, parkname, island_park, island_live,
+            trips  = VisitCount,
+            price  = price,
+            km     = travel_distance_km,
+            miles  = travel_distance_km * KM_TO_MILES,
+            income = income,
+            vehicle_per_km,
+            air_hours = coalesce(air_hours, 0)) %>%                  # 0 hours when the camper lives on the campsite's island
+  mutate(wage_hr    = income * 0.75 / 2080,                          # hourly value of time
+         vehicle    = km * vehicle_per_km,
+         drive_time = wage_hr * km / 50,
+         air_time   = wage_hr * air_hours * 2,
+         other      = price - vehicle - drive_time - air_time)       # entry fees, flights, rental car, parking
+ 
+
+ 
+# Constants for the counterfactuals (all within the year)
+avg_wage <- camp %>% distinct(id, year, wage_hr) %>% group_by(year) %>% summarise(avg_wage = mean(wage_hr), .groups = "drop")
+avg_km   <- camp %>% group_by(year, parkname) %>% summarise(avg_km = mean(km), .groups = "drop")
+ 
+camp <- camp %>%
+  left_join(avg_wage, by = "year") %>%
+  left_join(avg_km,   by = c("year", "parkname")) %>%
+  mutate(# value of time OFF: the average wage in both time terms; own distance, own fees and flights
+         equal_vot      = vehicle + avg_wage * (km / 50 + air_hours * 2) + other,
+         # distance OFF: the average distance to the campsite; own wage, own fees and flights
+         equal_distance = avg_km * vehicle_per_km + wage_hr * (avg_km / 50 + air_hours * 2) + other,
+         # both OFF
+         both_equal     = avg_km * vehicle_per_km + avg_wage * (avg_km / 50 + air_hours * 2) + other)
+ 
+ 
+# Campers who could not afford their trips at some counterfactual price (more than 95% of income) are left out of every line
+affordable <- camp %>%
+  group_by(id, year) %>%
+  summarise(income = first(income),
+            ok = all(c(sum(price * trips), sum(equal_vot * trips), sum(equal_distance * trips), sum(both_equal * trips)) < 0.95 * income),
+            .groups = "drop")
+cat("Campers left out because trips would cost more than 95% of income:", sum(!affordable$ok), "of", nrow(affordable), "\n")
+camp <- camp %>% semi_join(filter(affordable, ok), by = c("id", "year"))
+ 
+ 
+## One row per camper, with an income decile (1 = lowest income, within each year)
+campers <- camp %>%
+  group_by(id, year) %>%
+  summarise(income = first(income), .groups = "drop") %>%
+  filter(income > 0) %>%
+  group_by(year) %>%
+  mutate(decile = ntile(income, 10)) %>%
+  ungroup()
+ 
+ 
+## Your rmdcev pipeline, run on one counterfactual price table 
+rmdcev_losses <- function(yr, scenario) {
+ 
+  file <- paste0("data/tc_constant/mdcev_cf_v2_", yr, "_", scenario, ".rds")
+  if (file.exists(file)) return(readRDS(file))                        
+ 
+  # this year's data with the counterfactual price (campers who cannot afford it are dropped)
+  dat   <- get(paste0("final_data_", yr))
+  keep  <- paste(dat$id, dat$parkname) %in% paste(camp$id[camp$year == yr], camp$parkname[camp$year == yr])
+  dat   <- dat[keep, ]
+  cf    <- camp[camp$year == yr, ]
+  dat$price <- cf[[scenario]][match(paste(dat$id, dat$parkname), paste(cf$id, cf$parkname))]
+ 
+  # estimate
+  data_model <- mdcev.data(dat, id.var = "id", alt.var = "parkname", choice = "VisitCount")
+  fit <- mdcev(~ 1, data = data_model, model = "gamma", algorithm = "MLE", std_errors = "mvn",
+               n_draws = N_DRAWS, trunc_data = 1, print_iterations = FALSE)
+ 
+  # policies: close campsite k (its price is set very high), then close all campsites
+  J <- fit$stan_data[["J"]]
+  policies <- CreateBlankPolicies(npols = J + 1, model = fit, price_change_only = TRUE)
+  policies$price_p[seq_len(J)] <- lapply(seq_len(J), function(k) { v <- policies$price_p[[k]]; v[k + 1] <- 999999; v })
+  policies$price_p[[J + 1]]    <- c(0, rep(999999, J))
+ 
+  # conditional welfare
+  df_sim <- PrepareSimulationData(fit, policies)
+  set.seed(2000 + yr)
+  w <- mdcev.sim(df_sim$df_indiv, df_common = df_sim$df_common, sim_options = df_sim$sim_options,
+                 cond_err = 1, nerrs = NERRS, draw_mlhs = 1, sim_type = "welfare")
+ 
+  # mean over draws for each camper and policy; average loss over the single-campsite policies (the last policy closes everything)
+  per_camper <- t(sapply(w, colMeans, na.rm = TRUE))                    # campers x policies
+  out <- tibble(id = as.character(unique(dat$id)),
+                loss = -rowMeans(per_camper[, seq_len(J), drop = FALSE]))
+  saveRDS(out, file)
+  out
 }
-
-results <- list()
-
-for (mult in MULTS) {
-  for (yr in YEARS) {
-    yr_chr <- as.character(yr)
-    f  <- paste0("welfare_", yr, "_x", mult, ".rds")
-    t0 <- Sys.time()
-
-    ok <- tryCatch({
-      if (file.exists(f) && !FORCE_RERUN) {
-        message(">>> ", yr, " gamma x", mult, ": loading saved run")
-        w <- readRDS(f)
-      } else {
-        message(">>> ", yr, " gamma x", mult, ": simulating (", NERRS, " draws per person) ...")
-        this_mle <- mdcev_model_list[[yr_chr]]
-        scaled   <- scale_gamma(this_mle, mult)
-        stopifnot(identical(scaled$parms_info$alt_names, this_mle$parms_info$alt_names))
-        message("    gamma before -> after (first 3): ",
-                paste(round(head(as.numeric(this_mle$stan_fit$par$gamma), 3), 2), collapse = ", "), "  ->  ",
-                paste(round(head(as.numeric(scaled$stan_fit$par$gamma), 3), 2), collapse = ", "))
-        ds <- PrepareSimulationData(scaled, policies_list[[yr_chr]])
-        set.seed(3000 + yr)
-        w <- mdcev.sim(ds$df_indiv, df_common = ds$df_common, sim_options = ds$sim_options,
-                       cond_err = 1, nerrs = NERRS, draw_mlhs = 1, sim_type = "welfare")
-        saveRDS(w, f)  # raw run saved first
-      }
-      ind <- extract_ind(w, yr, mult)
-      results[[paste(yr, mult)]] <- ind
-      assign(paste0("welfare_", yr, "_x", mult, "_ind"), ind, envir = .GlobalEnv)
-      TRUE
-    }, error = function(e) { message("  !!! ", yr, " x", mult, " failed: ", conditionMessage(e)); FALSE })
-
-    message("    ", yr, " x", mult, if (ok) " done" else " FAILED", " in ",
-            round(as.numeric(difftime(Sys.time(), t0, units = "mins")), 1), " minutes")
-  }
-}
-
-sat_mult_all <- bind_rows(results)
-stopifnot(nrow(sat_mult_all) > 0, !anyDuplicated(sat_mult_all[c("id", "parkname", "year", "multiplier")]))
-
-# ---- Merge onto the master as loss_mdcev_x2, loss_mdcev_x4, ... ------------------------------------
-if (exists("final_comparison_master")) {
-  wide <- sat_mult_all %>%
-    mutate(col = paste0("loss_mdcev_x", multiplier)) %>%
-    select(id, parkname, year, col, loss) %>%
-    tidyr::pivot_wider(names_from = col, values_from = loss)
-  final_comparison_master <- final_comparison_master %>%
-    mutate(id = as.character(id)) %>%
-    select(-any_of(setdiff(names(wide), c("id", "parkname", "year")))) %>%   # safe to re-run
-    left_join(wide, by = c("id", "parkname", "year"))
-  saveRDS(final_comparison_master, "final_comparison_master_with_multipliers.rds")
-}
-
-# ---- Mean loss per campsite by year: RUM, baseline (1x), 2x and 4x  ------------------------------
-if (exists("final_comparison_master")) {
-  cat("\nMean loss per campsite closure (USD; negative = loss), by year and satiation multiplier:\n")
-  final_comparison_master %>%
-    filter(parkname != "Stay_Home") %>%
-    group_by(year) %>%
-    summarise(rum = mean(annual_rum_loss, na.rm = TRUE),
-              x1  = mean(loss_mdcev, na.rm = TRUE),
-              across(any_of(grep("^loss_mdcev_x[0-9]+$", names(final_comparison_master), value = TRUE)),
-                     ~ mean(.x, na.rm = TRUE), .names = "{sub('loss_mdcev_', '', .col)}"),
-              .groups = "drop") %>%
-    mutate(across(-year, ~ round(.x, 2))) %>%
-    print(width = Inf)
-}
-
-welfare_x2_ind=rbind(welfare_2018_x2_ind,welfare_2019_x2_ind,welfare_2020_x2_ind,welfare_2021_x2_ind,welfare_2022_x2_ind,welfare_2023_x2_ind)
-welfare_x4_ind=rbind(welfare_2018_x4_ind,welfare_2019_x4_ind,welfare_2020_x4_ind,welfare_2021_x4_ind,welfare_2022_x4_ind,welfare_2023_x4_ind)
-saveRDS(welfare_x4_ind,"data/welfare_x4_ind.rds")
-saveRDS(welfare_x2_ind,"data/welfare_x2_ind.rds")
-
+ 
+cf_losses <- crossing(year = YEARS, scenario = c("equal_vot", "equal_distance", "both_equal")) %>%
+  group_by(year, scenario) %>%
+  group_modify(~ rmdcev_losses(.y$year, .y$scenario)) %>%               # one rmdcev run per year and scenario (slow)
+  ungroup() %>%
+  pivot_wider(names_from = scenario, values_from = loss)
+ 
 ```
 
 # Rum
+
 This function calculate the rum welfare manual and is used for each year to get a comparison to the MDCEV.
 
 ```{r}
-
-#| cache: true
-#| message: false
-
-
+#| eval: false    
+#| echo: true 
 
 # Create unique choice occasions for every visit
 data_rum <- final_data_2018 %>%
@@ -2758,15 +2355,15 @@ print(paste("Manual McFadden R2:", round(mcfadden_r2, 4)))
 
 ```
 
-
-
 # Per person 52-weeks
 
-This section assumes that there are 52 decisions for an indivudal and that they choose to camp or not. We assume the times visit is a choice. Note these :
+This section assumes that there are 52 decisions for an individual and that they choose to camp or not. We assume the times visit is a choice. Note these :
 
-      "Sum of single-site losses" = mean(rowSums(site)),
-      "All sites closed"          = mean(L[, "All sites closed"]),
-      "Average site closure"      = mean(colMeans(site))
+```         
+  "Sum of single-site losses" = mean(rowSums(site)),
+  "All sites closed"          = mean(L[, "All sites closed"]),
+  "Average site closure"      = mean(colMeans(site))
+```
 
 ```{r}
 #| eval: false    
@@ -2778,7 +2375,8 @@ N_KR  <- 1000                                    # Krinsky-Robb draws
 model_list_52    <- list()
 mcfadden_list_52 <- list()
 kr_list_52       <- list()                    # Krinsky-Robb draws per year
-week_diag_52    <- list()                    
+week_diag_52    <- list()  
+welfare_rum_list <- list() 
  
 ## give each trip a week, at most one trip per week. pref = preferred (calendar) week, whose week is taken goes to the nearest free week (the earlier one on a tie). Undated trips go to the first free week.
 
@@ -2923,7 +2521,7 @@ final_comparison_52_person <- map_df(years, function(yr) {
   kr_list_52[[paste("52wk", yr)]] <<- list(summary = kr_summary, draws = kr)
   print(kr_summary, digits = 4, row.names = FALSE)
  
-  # --- per-person point estimates (same output as before) -----------------
+#per-person point estimates 
   Lp <- person_loss(coef(rum_mle_52))
   rum_person_results <- data.frame(
     id              = rep(pid, ncol(Lp)),
@@ -2934,31 +2532,36 @@ final_comparison_52_person <- map_df(years, function(yr) {
   year_comparison <- rum_person_results %>%
     left_join(unique_users, by = "id") %>%
     mutate(year = yr)
+    welfare_rum_list[[as.character(yr)]] <<- list(
+    summary    = kr_summary,          
+    draws      = kr,                  # 1,000 KR draws x measures 
+    coef       = coef(rum_mle_52),    # the point estimates used
+    coef_draws = draws,               # the 1,000 coefficient draws 
+    person     = year_comparison)     # per-camper annual losses at the point estimates
  
   return(year_comparison)
 })
  
 
-saveRDS(model_list_52, "data/model_list_52.rds")
-saveRDS(kr_list_52,    "data/kr_list_52.rds")
+saveRDS(model_list_52, "data/rum/model_list_52.rds")
+saveRDS(kr_list_52,    "data/rum/kr_list_52.rds")
+saveRDS(welfare_rum_list,           "data/rum/welfare_rum_list.rds")
+saveRDS(final_comparison_52_person, "data/final_comparison_52_person.rds")
  
 
 ```
 
-
-
-
 # Full Closure
+
 This welfare loop needs to use the new names for the dif
 
 ```{r}
 #| eval: false    
 #| echo: true 
-#| cache: true
 
 # 1. Extract the Price Coefficient
 beta_price <- coef(rum_mle)["price"]
-model_list_52 <- readRDS("data/model_list_52.rds")
+model_list_52 <- readRDS("data/mdcev/model_list_52.rds")
 # 2. Calculate Total System Welfare Loss
 # We compare the current state (All Parks) to the "Closed" state (Stay_Home Only)
 total_system_welfare <- df_math %>%
@@ -2992,139 +2595,43 @@ print(summary_stats)
 
 ```
 
-# Coeffienct Table
-
-Creates Table 2 for 2018/2023 years and appendix. That are presented in the main paper.
-```{r}
-#| cache: true
-
-
-model_list_52 <- readRDS("data/model_list_52.rds")
-yrs <- c("2018", "2023")
-comparison_list <- lapply(yrs, function(y) model_list_52[[paste("52wk", y)]])
-names(comparison_list) <- yrs
-
-## coefficient names in the order stargazer lists them 
-all_names <- unique(unlist(lapply(comparison_list, function(m) names(coef(m)))))
-
-key_rows  <- c("price", grep("Keanakolu", all_names, value = TRUE))
-ord_names <- c(key_rows, sort(setdiff(all_names, key_rows)))
-labels    <- sub("^\\(Intercept\\):", "", ord_names)
-labels[ord_names == "price"] <- "Travel cost (price)"
-labels    <- gsub("&", "and", labels)                     # "&" breaks HTML output
-
-##McFadden R2 for the bottom rows
-n_campers <- sapply(comparison_list, function(m) {
-  oid <- tryCatch(idx(m, 1), error = function(e) idx(m$model, 1))
-  length(unique(oid)) / 52
-})
-mcf <- sapply(comparison_list, function(m) summary(m)$mfR2)
-
-stargazer(
-  comparison_list,
-  type = "html",
-  out = "tables/rum_comparison_results.html",
-  title = "Table: Repeated RUM estimates, 2018 and 2023",
-  column.labels = yrs,
-  model.names = FALSE,
-  model.numbers = FALSE,
-  dep.var.labels.include = FALSE,
-  single.row = TRUE,
-  order = match(ord_names, all_names),
-  covariate.labels = labels,
-  add.lines = list(c("Individuals", n_campers),
-                   c("McFadden R<sup>2</sup>", sprintf("%.3f", mcf))),
-  omit.stat = c("f", "ser", "lr", "rsq", "adj.rsq"),
-  star.cutoffs = c(0.05, 0.01, 0.001),
-  no.space = TRUE,
-  notes = c("Standard errors in parentheses. 52 weekly choice occasions per individual;","site constants are relative to staying home (reference alternative).")
-)
-
-```
-
-
-# All Coefficent
-
-Creates Table 2 for all years and appendix 
-
-```{r}
-#| eval: false     
-#| echo: true 
-
-
-
-
-comparison_list <- list(
-    "52-Week"  = model_list_52[["52wk 2018"]],
-    "52-Week"  = model_list_52[["52wk 2019"]],
-    "52-Week"  = model_list_52[["52wk 2020"]],
-    "52-Week"  = model_list_52[["52wk 2021"]],
-    "52-Week"  = model_list_52[["52wk 2022"]],
-    "52-Week"  = model_list_52[["52wk 2023"]]
-)
-
-
-stargazer(
-comparison_list,
-type = "html",
-out = "tables/rum_comparison_results_appendix.html",
-title = "Table: Comparison of RUM Specifications (2018 vs. 2023)",
-column.labels = c("2018", "2019","2020","2021","2022","2023"),
-column.separate = c(2, 2),
-model.names = TRUE,
-dep.var.labels.include = FALSE,
-model.numbers = FALSE,
-# Use 'order' to pull Price (22) and Bunker (6) to the top of the table
-# This keeps the table concise and professional
-order = c(23, 6),
-# Rename only the ones we kept at the top
-covariate.labels = c("Travel Cost (Price)", "Keanakolu Bunkhouse"),
-omit.stat = c("f", "ser", "lr", "rsq", "adj.rsq"),
-star.cutoffs = c(0.05, 0.01, 0.001),
-no.space = TRUE,
-notes = "Standard errors in parentheses. 52-Week model includes 'Stay-at-Home' as a weekly choice."
-)
-
-```
-
 #### Merge
-So to merge now the MDCEV code and Rum the file will be called final_comparison_master.csv 
+
+So to merge now the MDCEV code and Rum the file will be called final_comparison_master.csv
+
 ```{r}
 #| eval: false    
 #| echo: true 
 
 
 years <- 2018:2023
- 
 
- ----
-mdcev_baseline_all <- map_df(years, function(yr) {
-  yr_chr <- as.character(yr)
-  alt_names_yr <- mdcev_model_list[[yr_chr]]$parms_info$alt_names
-  nalts <- length(alt_names_yr)
-  site_lookup <- data.frame(
-    site     = seq_len(nalts + 1),
-    parkname = c(alt_names_yr, "Close_All")
-  )
- 
-  get(paste0("welfare_", yr, "_ind")) %>%
-    left_join(site_lookup, by = "site") %>%
-    filter(!is.na(parkname)) %>%
-    mutate(
-      id       = as.character(id),
-      year     = yr,
-      parkname = ifelse(parkname == "Close_All", "Stay_Home", parkname)
-    ) %>%
-    select(id, parkname, year, zip, loss_mdcev = mean_value)
-})
- 
-# Merge both onto the 52-week RUM comparison
-mdcev_baseline_all$parkname[which(mdcev_baseline_all$parkname=="Stay_Home")]="All sites closed"
+mdcev_long <- function(wlist, value_name) {
+  bind_rows(lapply(names(wlist), function(y) {
+    w    <- wlist[[y]]
+    mod  <- mdcev_model_list[[y]]
+    alts <- mod$parms_info$alt_names
+    if (is.null(alts)) alts <- mod$parms_info$parm_names$alt_names
+    ids  <- sort(unique(get(paste0("final_data_", y))$id))
+    stopifnot(length(ids) == length(w), ncol(as.matrix(w[[1]])) == length(alts) + 1)
+    M <- t(sapply(w, function(m) colMeans(as.matrix(m), na.rm = TRUE)))      # campers x policies
+    tibble(id       = as.character(rep(ids, times = ncol(M))),
+           parkname = rep(c(alts, "All sites closed"), each = length(ids)),
+           year     = as.integer(y),
+           !!value_name := as.vector(M))
+  }))
+}
 
+mdcev_x2_all <- mdcev_long(welfare_x2_list, "loss_2x")
+mdcev_x4_all <- mdcev_long(welfare_x4_list, "loss_4x")
+
+mdcev_baseline_all <- mdcev_long(welfare_list_100, "loss_mdcev")
 
 final_comparison_master <- final_comparison_52_person %>%
-  mutate(id = as.character(id)) %>%
-  left_join(mdcev_baseline_all, by = c("id", "parkname", "year", "zip")) 
+    mutate(id = as.character(id), year = as.integer(year)) %>%
+    left_join(mdcev_baseline_all, by = c("id", "parkname", "year")) %>%
+    left_join(mdcev_x2_all,       by = c("id", "parkname", "year")) %>%
+    left_join(mdcev_x4_all,       by = c("id", "parkname", "year"))
  
 head(final_comparison_master)
  

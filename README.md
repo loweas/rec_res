@@ -10,90 +10,89 @@ project/
 ├── README.md                          ← this file
 │
 ├── data/
-│   ├── raw/                           ← original unmodified data (do not edit)
-│   │   ├── ZIP_TRACT_122025.xlsx      ← HUD ZIP-to-tract crosswalk (Dec 2025)
-│   │   ├── dishawaii.rds              ← EJScreen tract-level data for Hawaii
-│   │   ├── reservation_data.csv       ← raw DOFAW reservation records 2018–2023
-│   │   └── intra_island_distance/     ← driving distance matrix (zip × campsite)
 │   │
-│   ├── processed/                     ← cleaned data objects saved from R
-│   │   ├── final_data_YYYY.rds        ← annual choice data (2018–2023)
-│   │   ├── final_comparison_master.rds   ← welfare estimates merged across years
-│   │   ├── final_comparison_master1.rds  ← above + EJScreen indicators
-│   │   ├── dishawaii_zip.rds          ← ZIP-level EJScreen composites
-│   │   └── income_lookup.rds          ← individual id → income → income_block
+│   ├── reservation_data_merged_id_complete.dta  ← de-identified and cleaned individual-level panel data (2018–2023)
+│   ├── intra_island_distance2.csv                 ← intra-island distance and duration (zip → campsite)
+│   ├── final_comparison_master.csv                ← final comparison data for all models (2018–2023)
+│   ├── final_data_2018.rds                              ← final data for 2018 (individual-level panel)
+│   ├── final_data_2019.rds                              ← final data for 2019 (individual-level panel)
+│   ├── final_data_2020.rds                              ← final data for 2020 (individual-level panel)
+│   ├── final_data_2021.rds                              ← final data for 2021 (individual-level panel)
+│   ├── final_data_2022.rds                              ← final data for 2022 (individual-level panel)
+│   ├── final_data_2023.rds                              ← final data for 2023 (individual-level panel)
 │   │
-│   └── tables/                        ← exported HTML and Excel tables
-│       ├── Welfare_Comparison_Table_mdcev_*.html
-│       ├── Welfare_Comparison_Table_frequency_*.html
-│       ├── swait_louviere_stability.html
-│       ├── ji_temporal_reliability_summary.csv
-│       └── trips_by_income_block.xlsx
+│   ├── mdcev/                             ← results from mdcev models rmdecv package
+│   │   ├── mdcev_model_list.rds           ← list of MDCEV models (2018–2023) 
+│   │   ├── welfare_2018.rds               ← 2018 welfare estimates                          
+│   │   └── ................               ← repeat for 2019–2023 
+│   │
+│   ├── tc_constant/                              ← results from rerunning model constant VTT and D
+│   │   ├── mdcev_cf_v2_2018_both_equal.rds       ← 2018 Distance and VTT constant  
+│   │   ├── mdcev_cf_v2_2018_equal_distance.rds   ← 2018 Distance constant         
+│   │   ├── mdcev_cf_v2_2018_equal_vot.rds        ← 2018 VTT constant                      
+│   │   └── ................                      ← repeat for 2019–2023 
+│   │
+│   ├── satiation/                    ← results from rerunning mdcev changing gamma
+│   │   ├── welfare_2018_x2.rds       ← doubling gamma for 2018
+│   │   ├── ..................        ← repeat for 2019–2023 
+│   │   ├── welfare_2018_x4.rds.      ← quadrupling gamma for 2018
+│   │   └── ..................        ← repeat for 2019–2023 
+│   │
+│   └── rum/                           ← results from rum models
+│       ├── model_list_52.rds          ← frequency RUM models (52wk_2018:52wk_2023)    
+│       ├── kr_list_52.rds	           ← Krinsky-Robb confidence intervals for frequency RUM models
+│       ├── welfare_rum_list.rds       ← welfare estimates for frequency RUM models
+│       └── rum_flight_models_2018.rds ← flight RUM models (2018–2023)
 │
 ├── figures/                           ← all saved plots (300 dpi PNG)
-│   ├── hawaii_welfare_loss_map.png        ← Figure 3: spatial welfare map
-│   ├── distributional_figure4.png         ← Figure 4: welfare by distribution
-│   ├── appendix_A_welfare_2018_2020.png   ← Appendix A: years 2018–2020
-│   ├── appendix_B_welfare_2021_2023.png   ← Appendix B: years 2021–2023
-│   ├── option_value_gap_decomposition.png ← sensitivity analysis
-│   ├── geographic_constraint_tests.png    ← distance selection tests
-│   ├── ji_reliability_dotplot.png         ← Ji et al. stability dotplot
-│   └── stability_lineplot.png             ← sequential stability line
+│   ├── Oahu.png,Hawaii.png,Molakai.png,Kauai.png   ← Figure 1: Island Campsite locations
+│   ├── figure2_average.png                         ← Figure 2: Average welfare by year and model 
+│   ├── figureb1average.png                         ← Appendix Figure B1: Average welfare by year and model for participants
+│   ├── figure3_elasticities.png                    ← Figure 3: Elasticities by model and year
+│   ├── figureb2_elasticities.png                   ← Appendix Figure B2: Elasticities by model and year with the satation parameter
+│   ├── figure4_distributional.png                  ← Figure 4: Distributional welfare for 2018 & 2023
+│   ├── figureb3_distributional.png                 ← Appendix Figure B3: Distributional welfare for 2019 to 2022 with the satation parameter
+│   ├── figureb4_income.png                         ← Appendix Figure B4: Income distribution of participants
+│   ├── figureb5rum_counterfactual.png              ← Appendix Figure B5: RUM counterfactuals
+│   └── figureb6_mdcevcounterfactual.png            ← Appendix Figure B6: MDCEV counterfactuals
+│
+├── tables/                                  ← tables in html
+│   ├── table_1_mdcev_2018_2023.html         ← table 1: MDCEV Results 2018 2023
+│   ├── table_2_rum_2018_2023.html           ← table 2: RUM Results 2018 2023
+│   ├── table_3_welfare_2018_2023.html       ← table 3: Compare MDCEV and RUM Results from table 1 & 2 
+│   ├── table_B1_mdcev_2019_2020.html        ← table B1 MDCEV Results 2019 2020
+│   ├── table_B2_mdcev_2021_2022.html        ← table B2 MDCEV Results 2021 2022
+│   ├── table_B3_rum_2019_2022.html          ← table B3 RUM Results 2019 2022
+│   ├── table_B4_welfare_2019_2020.html      ← table B4: Welfare Results 2019 2020 
+│   ├── table_B5_welfare_2021_2022.html      ← table B5: Welfare Results 2021 2022
+│   ├── tableb6_temporal_stability.html      ← table B6: Temporal Stability Results
+│   ├── table_B7_gamma_2018_2019.html        ← table B6: MDCEV Results 2018 2019 with gamma = 2 & 4
+│   ├── table_B8_gamma_2020_2021.html        ← table B7: MDCEV Results 2020 2021 with gamma = 2 & 4 
+│   ├── table_B9_gamma_2022_2023.html        ← table B8: MDCEV Results 2022 2023 with gamma = 2 & 4
+│   ├── table_B10_rum_flight_2018.html       ← table B9: RUM Flight Results 2018  
+│   └── tableB.11_income.html                ← table B10: Income significantly different form top and bottom
 │
 ├── _site/                            ← File is set up to have a github page 
 │                                         There are many more files in this folder for the website
 │                                          https://loweas.github.io/rec_res/
 │   
-├── models/                            ← estimated model objects
-│   ├── model_list_obs.rds             ← observed RUM models (Year_2018:Year_2023)
-│   ├── model_list_52.rds              ← frequency RUM models (52wk_2018:52wk_2023)
-│   └── mdcev_models/                 ← MDCEV model objects by year
 │
-└── qmd/                               ← Quarto analysis files (run in order)
-    ├──index.qmd
-    ├──mdcev.qmd
-    └── rum.qmd
+└── index.qmd                            ← Quarto analysis files (run in order)
+└── models.qmd    
+└── README.md
+└── rec_res.Rproj
 ```
 
 ## Main Files
 
 ### `index.qmd`
-In this main file we pull the data from MDCEV and RUM and do comparsion analysis. Firt we will consider the Welfare measurements across models, EJ distributions by examining income, social vulnerabilities and environmental burdens. We also include some temporal spatial stability. 
+This main file creates all tables and figures in the paper. It pulls the data createad when running model.gmd. *Note running model.qmd can take a few days given it both runs all MDCEV simulations including satiation and how constant travel cost assumptions effect the simulations.*
 
-## Welfare Comparsion 
-
-Comparision across all MDCEV and RUM.
-
-## EJ Distribution
-
-Crosswalks EJScreen indicators from census tract to ZIP code level using the HUD ZIP-to-tract crosswalk file (population-weighted means via `TOT_RATIO`). Constructs:
-
-- `env_composite`: mean of 11 environmental burden indicators (PM2.5 and ozone excluded — limited Hawaii data)
-- `soci_composite`: mean of 8 social vulnerability indicators
-- `env_block` / `soci_block`: percentile blocks (0–20th through 95–100th)
-- `is_disadvantaged_50`: ZIP flagged if 100% of population in DAC tracts. The matching process provides population weights.
-
-**Key outputs:** `dishawaii_zip`, updated `final_comparison_master1`
-
-
-Examines welfare losses across three distributional dimensions: household income, social vulnerability (EJScreen), and environmental burden (EJScreen). Produces Figure 4 and appendix distributional figures. Includes sensitivity analysis of the income gradient in the frequency RUM — decomposing the option value gap into beta scaling, ASC, and geographic constraint components.
-
-**Key outputs:** Figure 4, appendix figures A and B, `all_avg`, `all_avg_appendix`
-
-## Stability Questions
-
-Implements two temporal stability tests following Ji, Keiser and Kling (2020):
-
-1. **Pairwise t-tests** across all 15 year combinations using `combn(2018:2023, 2)`
-2. **Sequential % change** year-over-year at site level
-3. **Transfer error** — % difference when using one year's estimates to predict another
-4. **Swait-Louviere (1993) test** — likelihood ratio test of parameter stability (2018 vs 2019 and 2018 vs 2023 only — 2020–2022 fail due to COVID balanced-parks requirement)
-
-**Key outputs:** `stability_all`, `transfer_errors`, `sl_results`, stability figures
+Results are constructed from data in folder and provide comparision across all MDCEV and RUM.
 
 ---
 
-### `mdcev.qmd`
+### `model.qmd`
 
 Shows code to generate data but data is de-identified and cleaned for individual-level panel data. Key steps: parse check-in dates, create year variable, recode zip code 96812 → 96813, calculate average days visited per individual per year, build `final_data_YYYY` objects with visit counts per individual-campsite combination, assign campsites to islands via `island_park`, and flag inter-island visits.
 
@@ -118,14 +117,13 @@ Estimates the Multiple Discrete-Continuous Extreme Value (MDCEV) model for each 
 ---
 
 ### `rum.qmd`
-Estimates two Random Utility Model specifications for each year:
+Estimates repeated Random Utility Model specifications for each year:
 
-- **Observed RUM:** conditions welfare on observed trip occasions only. Stay-at-home alternative included but never chosen — coefficient effectively unidentified.
 - **Frequency RUM (52-week):** creates 52 weekly choice occasions per individual. Stay-at-home IS chosen in non-trip weeks — coefficient identified at 5.90***.
 
-Both models use `mlogit(choice ~ price | 1)` via the `mlogit` and `dfidx` packages.
+use `mlogit(choice ~ price | 1)` via the `mlogit` and `dfidx` packages.
 
-**Key outputs:** `model_list_obs`, `model_list_52`
+**Key outputs:**  `model_list_52`
 
 
 Applies the log-sum welfare formula to each model's estimated coefficients:
@@ -134,7 +132,7 @@ $$CV_{it} = \frac{\ln \sum_{j \neq k} \exp(V_{ijt}) - \ln \sum_{j} \exp(V_{ijt})
 
 Individual annual welfare = sum of per-trip CV across all observed trips. Welfare is calculated for each of the 22 campsite closures plus system closure. Results merged into `final_comparison_master` and `final_comparison_master1`.
 
-**Key outputs:** `final_comparison_master`, `final_comparison_master1`
+**Key outputs:** `final_comparison_master`, 
 
 
 
@@ -143,8 +141,6 @@ Individual annual welfare = sum of per-trip CV across all observed trips. Welfar
 | Source | Description | Access |
 |---|---|---|
 | DOFAW reservation records | Campsite reservation data 2018–2023 | DOFAW administrative data d-identified |
-| HUD ZIP-TRACT crosswalk | `ZIP_TRACT_122025.xlsx` Dec 2025 release | [huduser.gov](https://www.huduser.gov/portal/datasets/usps_crosswalk.html) |
-| EJScreen | Census tract environmental justice indicators | [epa.gov/ejscreen](https://www.epa.gov/ejscreen) |
 | AAA Driving Costs | Annual per-mile cost brochures 2018–2023 | AAA newsroom |
 | OSRM Routing | Driving distance and duration zip → campsite |OSRM API https://project-osrm.org/ |
 

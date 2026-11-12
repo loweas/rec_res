@@ -1,5 +1,5 @@
 ---
-title: "Unequal Recreational Losses? Revealed Preference Evidence of Campsite Closures in Hawaiʻi"
+title: "Repeated Random Utility versus Kuhn-Tucker Models over Time: Evidence from Hawaiʻi Campsites"
 format:
   html:
     code-fold: true        # Enables dropdown for code
@@ -11,7 +11,7 @@ format:
 editor: visual
 ---
 
-This site provides a walk through on the results from Unequal Recreational Losses? Revealed Preference Evidence of Campsite Closures in Hawaiʻi. This tab covers the comparison by loading the data from the models. Tabs MDCEV and RUM are the codes that will run each model.
+This site provides a walk through on the results from "Repeated Random Utility versus Kuhn-Tucker Models over Time: Evidence from Hawaiʻi Campsites". This tab covers the comparison by loading the data from the models. Tabs MDCEV and RUM are the codes that will run each model.
 
 # Libraries
 
@@ -40,233 +40,989 @@ library(ggspatial)
 library(ggpattern)
 
 
+```
+
+# Load Data/Models
+
+This code loads the dataframe need to recreate all tables from the paper.
+
+```{r}
+
 final_comparison_master=read_csv("data/final_comparison_master.csv")
 
+# Raw
+final_data_2018 <- readRDS("data/final_data_2018.rds")
+final_data_2019 <- readRDS("data/final_data_2019.rds")
+final_data_2020 <- readRDS("data/final_data_2020.rds")
+final_data_2021 <- readRDS("data/final_data_2021.rds")
+final_data_2022 <- readRDS("data/final_data_2022.rds")
+final_data_2023 <- readRDS("data/final_data_2023.rds")
 
-final_data_2018 <- read_csv("data/final_data_2018.csv")
-final_data_2019 <- read_csv("data/final_data_2019.csv")
-final_data_2020 <- read_csv("data/final_data_2020.csv")
-final_data_2021 <- read_csv("data/final_data_2021.csv")
-final_data_2022 <- read_csv("data/final_data_2022.csv")
-final_data_2023 <- read_csv("data/final_data_2023.csv")
-
-
-model_list_52 <- readRDS("data/model_list_52.rds")
-kr_list_52 <- readRDS("data/kr_list_52.rds")
-welfare_list <- readRDS("data/welfare_list.rds")
-mdcev_model_list <- readRDS("data/mdcev_model_list.rds")
-
+# RUM
+model_list_52 <- readRDS("data/rum/model_list_52.rds")
+kr_list_52 <- readRDS("data/rum/kr_list_52.rds")
+welfare_rum_list <- readRDS("data/rum/welfare_rum_list.rds")
 
 
-```
-
-# Welfare Table
-
-```{r}
-#| cache: true
-
-# Calculate Mean and 95% Confidence Intervals
-summary_wide <- final_comparison_master %>%
-  filter(year %in% c(2018, 2023)) %>%
-  group_by(parkname, year) %>%
-  summarise(
-    n = n(),
-    mean_val = mean(annual_rum_loss, na.rm = TRUE),
-    sd_val   = sd(annual_rum_loss, na.rm = TRUE),
-    # Calculate Standard Error and 95% CI bounds
-    se_val   = sd_val / sqrt(n),
-    LCI      = mean_val - (1.96 * se_val),
-    UCI      = mean_val + (1.96 * se_val),
-    .groups = "drop"
-  ) %>%
-  select(parkname, year, mean_val, LCI, UCI) %>%
-  pivot_wider(
-    names_from = year, 
-    values_from = c(mean_val, LCI, UCI),
-    names_glue = "{year}_{.value}" 
-  ) %>%
-  # 2018 Stats then 2023 Stats
-  select(parkname, 
-         contains("2018"), 
-         contains("2023")) %>%
-  as.data.frame()
-
-```
-
-```{r}
-#| cache: true
-#| eval: false
-
-stargazer(summary_wide, 
-          type = "html", 
-          out = "tables/Welfare_Comparison_Table.html",
-          summary = FALSE, 
-          rownames = FALSE,
-          title = "Welfare Loss: Mean and 95% Confidence Intervals (2018 vs 2023)",
-          digits = 2,
-          # Groups the 3 columns under each year
-          column.labels = c("Park Name", "2018", "2023"),
-          column.separate = c(1, 3, 3), 
-          covariate.labels = c("Park", 
-                               "Mean", "Lower CI", "Upper CI", 
-                               "Mean", "Lower CI", "Upper CI"))
+# MDVEC 
+mdcev_model_list <- readRDS("data/mdcev/mdcev_model_list.rds")
+welfare_list <- readRDS("data/mdcev/welfare_list_100.rds")
+welfare_ind_list <- readRDS("data/mdcev/welfare_ind_list_100.rds")
+welfare_x2_list <- readRDS("data/satiation/welfare_x2_list_100.rds")
+welfare_x4_list <- readRDS("data/satiation/welfare_x4_list_100.rds")
 
 
 
-# Calculate Mean and 95% Confidence Intervals
-summary_wide <- final_comparison_master %>%
-  filter(year %in% c(2018, 2023)) %>%
-  group_by(parkname, year) %>%
-  summarise(
-    n = n(),
-    mean_val = mean(annual_rum_loss, na.rm = TRUE),
-    sd_val   = sd(annual_rum_loss, na.rm = TRUE),
-    # Calculate Standard Error and 95% CI bounds
-    se_val   = sd_val / sqrt(n),
-    LCI      = mean_val - (1.96 * se_val),
-    UCI      = mean_val + (1.96 * se_val),
-    .groups = "drop"
-  ) %>%
-  select(parkname, year, mean_val, LCI, UCI) %>%
-  pivot_wider(
-    names_from = year, 
-    values_from = c(mean_val, LCI, UCI),
-    names_glue = "{year}_{.value}" 
-  ) %>%
-  # 2018 Stats then 2023 Stats
-  select(parkname, 
-         contains("2018"), 
-         contains("2023")) %>%
-  as.data.frame()
+# MDVEC 
+mdcev_cf_2018_both_equal <- readRDS("data/tc_constant/mdcev_cf_v2_2018_both_equal.rds")
+mdcev_cf_v2_2018_equal_distance <- readRDS("data/tc_constant/mdcev_cf_v2_2018_equal_distance.rds")
+mdcev_cf_v2_2018_equal_vot<- readRDS("data/tc_constant/mdcev_cf_v2_2018_equal_vot.rds")
 
+mdcev_cf_2019_both_equal <- readRDS("data/tc_constant/mdcev_cf_v2_2019_both_equal.rds")
+mdcev_cf_v2_2019_equal_distance <- readRDS("data/tc_constant/mdcev_cf_v2_2019_equal_distance.rds")
+mdcev_cf_v2_2019_equal_vot<- readRDS("data/tc_constant/mdcev_cf_v2_2019_equal_vot.rds")
+
+mdcev_cf_2020_both_equal <- readRDS("data/tc_constant/mdcev_cf_v2_2020_both_equal.rds")
+mdcev_cf_v2_2020_equal_distance <- readRDS("data/tc_constant/mdcev_cf_v2_2020_equal_distance.rds")
+mdcev_cf_v2_2020_equal_vot<- readRDS("data/tc_constant/mdcev_cf_v2_2020_equal_vot.rds")
+
+mdcev_cf_2021_both_equal <- readRDS("data/tc_constant/mdcev_cf_v2_2021_both_equal.rds")
+mdcev_cf_v2_2021_equal_distance <- readRDS("data/tc_constant/mdcev_cf_v2_2021_equal_distance.rds")
+mdcev_cf_v2_2021_equal_vot<- readRDS("data/tc_constant/mdcev_cf_v2_2021_equal_vot.rds")
+
+mdcev_cf_2022_both_equal <- readRDS("data/tc_constant/mdcev_cf_v2_2022_both_equal.rds")
+mdcev_cf_v2_2022_equal_distance <- readRDS("data/tc_constant/mdcev_cf_v2_2022_equal_distance.rds")
+mdcev_cf_v2_2022_equal_vot<- readRDS("data/tc_constant/mdcev_cf_v2_2022_equal_vot.rds")
+
+
+mdcev_cf_2023_both_equal <- readRDS("data/tc_constant/mdcev_cf_v2_2023_both_equal.rds")
+mdcev_cf_v2_2023_equal_distance <- readRDS("data/tc_constant/mdcev_cf_v2_2023_equal_distance.rds")
+mdcev_cf_v2_2023_equal_vot<- readRDS("data/tc_constant/mdcev_cf_v2_2023_equal_vot.rds")
 
 ```
 
+# Coefficient Tables
+
+## HawaiianName
+
 ```{r}
-#| cache: true
-#| eval: false
-stargazer(summary_wide, 
-          type = "html", 
-          out = "tables/Welfare_Comparison_Table_frequency.html",
-          summary = FALSE, 
-          rownames = FALSE,
-          title = "Welfare Loss Frequency: Mean and 95% Confidence Intervals (2018 vs 2023)",
-          digits = 2,
-          # Groups the 3 columns under each year
-          column.labels = c("Park Name", "2018", "2023"),
-          column.separate = c(1, 3, 3), 
-          covariate.labels = c("Park", 
-                               "Mean", "Lower CI", "Upper CI", 
-                               "Mean", "Lower CI", "Upper CI"))
+
+SITE_NAMES <- c(
+  ainapo      = "\u02BB\u0100inap\u014D",   # ʻĀinapō
+  hipalau     = "Hipalau",
+  kaluahaulu  = "Kaluahaulu",
+  kamananui   = "Kamananui",
+  kaunala     = "Kaunala",
+  kawaikoi    = "Kawaikoi",
+  keanakolu   = "Keanakolu",
+  kuaokala    = "Kuaokal\u0101",             # Kuaokalā
+  kulanaahane = "Kulana\u02BBahane",         # Kulanaʻahane
+  kuliouou    = "Kuli\u02BBou\u02BBou",      # Kuliʻouʻou
+  lonomea     = "Lonomea",
+  maakua      = "Ma\u02BBakua",              # Maʻakua
+  manana      = "M\u0101nana",               # Mānana
+  peacock     = "Peacock Flats",
+  sugi        = "Sugi Grove",
+  waialae     = "Wai\u02BBalae",             # Waiʻalae
+  waikoali    = "Waikoali",
+  waikolu     = "Waikolu",
+  waimano     = "Waimano",
+  waimanu     = "Waimanu",
+  wiliwili    = "Wiliwili",
+  wiliwilinui = "Wiliwilinui")
+
+site_key <- function(x) {
+  w <- sub(" .*", "", x)                                          # first word
+  w <- iconv(w, "UTF-8", "ASCII//TRANSLIT")                       # drop macrons
+  tolower(gsub("[^A-Za-z]", "", w))                               # drop ʻokina, punctuation
+}
+ 
 ```
 
+## Table 1 - MDCEV
+
+### B.1
+
+### B.2
+
+Include Appendix table B.1 (2019-2020) and B.2 (2021-2022)
+
 ```{r}
-#| cache: true
-#| message: false
-#| warning: false
-#| code-fold: true
-#| code-summary: "Show the Code"
 
-
-# Calculate Mean and 95% Confidence Intervals
-summary_wide <- final_comparison_master %>%
-  filter(year %in% c(2019, 2020)) %>%
-  group_by(parkname, year) %>%
-  summarise(
-    n = n(),
-    mean_val = mean(annual_rum_loss, na.rm = TRUE),
-    sd_val   = sd(annual_rum_loss, na.rm = TRUE),
-    # Calculate Standard Error and 95% CI bounds
-    se_val   = sd_val / sqrt(n),
-    LCI      = mean_val - (1.96 * se_val),
-    UCI      = mean_val + (1.96 * se_val),
-    .groups = "drop"
-  ) %>%
-  select(parkname, year, mean_val, LCI, UCI) %>%
-  pivot_wider(
-    names_from = year, 
-    values_from = c(mean_val, LCI, UCI),
-    names_glue = "{year}_{.value}" 
-  ) %>%
-  # 2018 Stats then 2023 Stats
-  select(parkname, 
-         contains("2019"), 
-         contains("2020")) %>%
-  as.data.frame()
-
+## Estimates for one model 
+## Estimate = MLE; s.e. = standard deviation of the 100 saved parameter draws (rmdcev's "mvn" method)
+kt_data <- function(mod) {
+  th  <- as.matrix(mod$stan_fit$theta_tilde)
+  est <- function(p) as.numeric(unlist(mod$stan_fit$par[[p]]))
+  se  <- function(p) as.numeric(apply(th[, grep(paste0("^", p, "\\["), colnames(th)), drop = FALSE], 2, sd))
+  alts <- mod$parms_info$alt_names
+  if (is.null(alts)) alts <- mod$parms_info$parm_names$alt_names
+  J <- length(alts)
+  b <- est("psi"); b_se <- se("psi"); g <- est("gamma"); g_se <- se("gamma")
+  stopifnot(length(b) %in% c(J - 1, J), length(g) == J, length(g_se) == J)
+  k <- length(b) + J + 2                                          # psi, gamma, alpha, scale
+  if (length(b) == J - 1) { b <- c(0, b); b_se <- c(NA, b_se) }    # first site is the base (fixed)
+  ll <- if (!is.null(mod$log.likelihood)) as.numeric(mod$log.likelihood) else as.numeric(mod$stan_fit$value)
+  n  <- mod$stan_data$I
+  list(sites = data.frame(key = site_key(alts), b = b, b_se = b_se, g = g, g_se = g_se),
+       alpha = c(est("alpha")[1], se("alpha")[1]),
+       scale = c(est("scale")[1], se("scale")[1]),
+       ll = ll, aic = -2 * ll + 2 * k, bic = -2 * ll + k * log(n), obs = n * J, n = n)
+}
+ 
+stars <- function(e, s) {
+  p <- 2 * pnorm(-abs(e / s))
+  ifelse(is.na(p), "", ifelse(p < 0.01, "***", ifelse(p < 0.05, "**", ifelse(p < 0.1, "*", ""))))
+}
+f3   <- function(x) formatC(x, format = "f", digits = 3, big.mark = ",")
+f0   <- function(x) formatC(round(x), format = "d", big.mark = ",")
+ 
+##  Table as a data frame of text (rows = campsites + model rows, 4 columns per year) 
+kt_text_table <- function(years) {
+  E <- lapply(as.character(years), function(y) kt_data(mdcev_model_list[[y]]))
+  keys <- unique(unlist(lapply(E, function(e) e$sites$key)))
+  miss <- setdiff(keys, names(SITE_NAMES))
+  if (length(miss)) message("no display name for: ", paste(miss, collapse = ", "))
+  keys <- keys[order(match(keys, names(SITE_NAMES)), keys)]        # order of SITE_NAMES
+ 
+  site_cols <- function(e, k) {
+    r <- e$sites[e$sites$key == k, ]
+    if (nrow(r) == 0) return(rep("\u2013", 4))                     # not available that year
+    c(paste0(f3(r$b), if (is.na(r$b_se)) "" else stars(r$b, r$b_se)),
+      if (is.na(r$b_se)) "fixed" else f3(r$b_se),
+      paste0(f3(r$g), stars(r$g, r$g_se)),
+      f3(r$g_se))
+  }
+  par_cols <- function(v) c(paste0(f3(v[1]), stars(v[1], v[2])), f3(v[2]), "-", "-")
+ 
+  rows <- c(
+    lapply(keys, function(k) c(ifelse(k %in% names(SITE_NAMES), SITE_NAMES[k], k),
+                               unlist(lapply(E, site_cols, k = k)))),
+    list(c("\u03B1", unlist(lapply(E, function(e) par_cols(e$alpha)))),
+         c("\u03C3", unlist(lapply(E, function(e) par_cols(e$scale))))))
+  tab <- as.data.frame(do.call(rbind, rows), stringsAsFactors = FALSE)
+  names(tab) <- c("Campsite", paste0(rep(c("beta_", "beta_se_", "gamma_", "gamma_se_"), length(years)),
+                                     rep(years, each = 4)))
+  ## one value per model, spanning that model's four columns
+  stats <- data.frame(
+    label = c("Log-likelihood", "AIC", "BIC", "Observations", "Individuals"),
+    sapply(E, function(e) c(f3(e$ll), f0(e$aic), f0(e$bic), f0(e$obs), f0(e$n))))
+  list(tab = tab, stats = stats)
+}
+ 
+## HTML code needed to create table
+td <- function(x, align = "center", span = 1)
+  paste0('<td', if (span > 1) paste0(' colspan="', span, '"'), ' style="text-align:', align,
+         '; padding:2px 8px;">', x, "</td>")
+ 
+make_kt_table <- function(years, labels, title, file) {
+  T <- kt_text_table(years)
+  print(T$tab, row.names = FALSE); print(T$stats, row.names = FALSE)   # check the numbers here
+ 
+  esc  <- function(x) gsub("&", "&amp;", x)
+  body <- apply(T$tab, 1, function(r)
+    paste0("<tr>", td(esc(r[1]), "left"), paste(sapply(r[-1], td), collapse = ""), "</tr>"))
+  body[length(body) - 1] <- sub("<tr>", '<tr style="border-top:1px solid black;">', body[length(body) - 1])
+  stats <- apply(T$stats, 1, function(r)
+    paste0("<tr>", td(r[1], "left"), paste(sapply(r[-1], td, span = 4), collapse = ""), "</tr>"))
+  stats[1] <- sub("<tr>", '<tr style="border-top:1px solid black;">', stats[1])
+ 
+  head1 <- paste0('<tr style="border-top:2px solid black;"><td rowspan="2" style="padding:2px 8px;"></td>',
+                  paste0('<td colspan="4" style="text-align:center; padding:2px 8px; border-bottom:1px solid black;">',
+                         labels, " - ", years, "</td>", collapse = ""), "</tr>")
+  head2 <- paste0('<tr style="border-bottom:1px solid black;">',
+                  paste(rep(paste0(td("Mean &beta;<sub>q</sub>"), td("s.e."),
+                                   td("Mean &gamma;<sub>j</sub>"), td("s.e.")), length(years)),
+                        collapse = ""), "</tr>")
+  notes <- paste0('<tr style="border-top:2px solid black;"><td colspan="', 1 + 4 * length(years),
+                  '" style="padding:4px 8px; font-size:10pt;">',
+                  "Notes: *p<0.1, **p<0.05, ***p<0.01. Standard errors (s.e.) are computed using simulation-based multivariate normal approximation (MVN) with 100 draws. Campsite constant (normalized to zero for ʻĀinapō) = β_q. Satiation at campsite = γ_j. Satiation in numeraire = α, Scale parameter = σ. – indicates that the campsite was not available in that year.", SITE_NAMES[["ainapo"]],
+                  " is the reference campsite (&beta;<sub>q</sub> fixed at 0). &ndash; = campsite not available that year.",
+                  "</td></tr>")
+ 
+  html <- paste0('<html><head><meta charset="UTF-8"></head>',
+                 '<body style="font-family:\'Times New Roman\', serif; font-size:11pt;">',
+                 "<p><b>", title, "</b></p>",
+                 '<table style="border-collapse:collapse;">',
+                 head1, head2, paste(body, collapse = ""), paste(stats, collapse = ""), notes,
+                 "</table></body></html>")
+  con <- file(file, encoding = "UTF-8"); writeLines(enc2utf8(html), con); close(con)
+  message("wrote ", file)
+}
+ 
+## Main Table and Appendix
+make_kt_table(c(2018, 2023), c("Model 1", "Model 2"),
+  "Table 1. Kuhn-Tucker models with multiple discrete-continuous extreme value specification.",
+  "tables/table_1_mdcev_2018_2023.html")
+ 
+make_kt_table(c(2019, 2020), c("Model 1", "Model 2"),
+  "Table B.1. Kuhn-Tucker models with multiple discrete-continuous extreme value specification.",
+  "tables/table_B1_mdcev_2019_2020.html")
+ 
+make_kt_table(c(2021, 2022), c("Model 1", "Model 3"),
+  "Table B.2. Kuhn-Tucker models with multiple discrete-continuous extreme value specification.",
+  "tables/table_B2_mdcev_2021_2022.html")
+ 
 ```
 
-```{r}
-#| cache: true
-#| eval: false
+## Table 2 - RUM
 
-stargazer(summary_wide, 
-          type = "html", 
-          out = "tables/Welfare_Comparison_Table_frequency_1920.html",
-          summary = FALSE, 
-          rownames = FALSE,
-          title = "Welfare Loss Frequency: Mean and 95% Confidence Intervals (2019 & 2020)",
-          digits = 2,
-          # Groups the 3 columns under each year
-          column.labels = c("Park Name", "2019", "2020"),
-          column.separate = c(1, 3, 3), 
-          covariate.labels = c("Park", 
-                               "Mean", "Lower CI", "Upper CI", 
-                               "Mean", "Lower CI", "Upper CI"))
+### B.3
+
+Includes Table B.3 in appendix
+
+```{r}
+stars <- function(e, s) {
+  p <- 2 * pnorm(-abs(e / s))
+  ifelse(is.na(p), "", ifelse(p < 0.01, "***", ifelse(p < 0.05, "**", ifelse(p < 0.1, "*", ""))))
+}
+fnum <- function(x, d = 3) sub("^-", "\u2212", formatC(x, format = "f", digits = d, big.mark = ","))
+f0   <- function(x) formatC(round(x), format = "d", big.mark = ",")
+td   <- function(x, align = "center", span = 1, style = "")
+  paste0('<td', if (span > 1) paste0(' colspan="', span, '"'), ' style="text-align:', align,
+         '; padding:2px 8px;', style, '">', x, "</td>")
+
+##Estimates for one model 
+rum_data <- function(m) {
+  b  <- coef(m); se <- sqrt(diag(vcov(m)))
+  int <- grepl("^\\(Intercept\\):", names(b))
+  oid <- tryCatch(idx(m, 1), error = function(e) idx(m$model, 1))
+  occ <- length(unique(oid))
+  list(sites = data.frame(key = site_key(sub("^\\(Intercept\\):", "", names(b)[int])),
+                          b = b[int], se = se[int]),
+       price = c(b[!int][1], se[!int][1]),
+       ll = as.numeric(logLik(m)), obs = occ, n = occ / 52)
+}
+ 
+## Build one table 
+make_rum_table <- function(years, title, file, price_digits = 4) {
+  E <- lapply(years, function(y) rum_data(model_list_52[[paste("52wk", y)]]))
+  keys <- unique(unlist(lapply(E, function(e) e$sites$key)))
+  miss <- setdiff(keys, names(SITE_NAMES))
+  if (length(miss)) message("no display name for: ", paste(miss, collapse = ", "))
+  keys <- keys[order(match(keys, names(SITE_NAMES)), keys)]
+ 
+  site_cells <- function(e, k) {
+    r <- e$sites[e$sites$key == k, ]
+    if (nrow(r) == 0) return(c("\u2013", "\u2013"))                  # not available that year
+    c(paste0(fnum(r$b), stars(r$b, r$se)), fnum(r$se))
+  }
+  tab <- do.call(rbind, c(
+    lapply(keys, function(k) c(ifelse(k %in% names(SITE_NAMES), SITE_NAMES[k], k),
+                               unlist(lapply(E, site_cells, k = k)))),
+    list(c("Travel cost", unlist(lapply(E, function(e)
+      c(paste0(fnum(e$price[1], price_digits), stars(e$price[1], e$price[2])),
+        fnum(e$price[2], price_digits))))))))
+  stats <- rbind(c("Log-likelihood", sapply(E, function(e) fnum(e$ll))),
+                 c("Observations",   sapply(E, function(e) f0(e$obs))),
+                 c("Individuals",    sapply(E, function(e) f0(e$n))))
+  print(tab); print(stats)                                            # check the numbers here
+ 
+  body <- apply(tab, 1, function(r)
+    paste0("<tr>", td(r[1], "left"), paste(sapply(r[-1], td), collapse = ""), "</tr>"))
+  body[length(body)] <- sub("<tr>", '<tr style="border-top:1px solid black;">', body[length(body)])
+  st <- apply(stats, 1, function(r)
+    paste0("<tr>", td(r[1], "left"), paste(sapply(r[-1], td, span = 2), collapse = ""), "</tr>"))
+  st[1] <- sub("<tr>", '<tr style="border-top:1px solid black;">', st[1])
+ 
+  head1 <- paste0('<tr style="border-top:2px solid black;"><td style="padding:2px 8px;"></td>',
+                  paste0('<td colspan="2" style="text-align:center; padding:2px 8px; border-bottom:1px solid black;">',
+                         years, "</td>", collapse = ""), "</tr>")
+  head2 <- paste0('<tr style="border-bottom:1px solid black;">', td("Campsite", "left"),
+                  paste(rep(paste0(td("Coef."), td("s.e.")), length(years)), collapse = ""), "</tr>")
+  notes <- paste0('<tr style="border-top:2px solid black;"><td colspan="', 1 + 2 * length(years),
+                  '" style="padding:4px 8px; font-size:10pt;">',
+                  "*p<0.1, **p<0.05, ***p<0.01. Repeated random utility model estimated as a conditional logit with 52 weekly choice occasions per camper. Staying home is the reference alternative, so the campsite coefficients are alternative-specific constants relative to staying home. – indicates that the campsite was not available in that year. ",
+                  "&ndash; = campsite not available that year.</td></tr>")
+ 
+  html <- paste0('<html><head><meta charset="UTF-8"></head>',
+                 '<body style="font-family:\'Times New Roman\', serif; font-size:11pt;">',
+                 "<p><b>", title, "</b></p>",
+                 '<table style="border-collapse:collapse;">',
+                 head1, head2, paste(body, collapse = ""), paste(st, collapse = ""), notes,
+                 "</table></body></html>")
+  con <- file(file, encoding = "UTF-8"); writeLines(enc2utf8(html), con); close(con)
+  message("wrote ", file)
+}
+ 
+## Tables 
+make_rum_table(c(2018, 2023), "Table 2. Repeated Random Utility models",
+               "tables/table_2_rum_2018_2023.html")
+make_rum_table(c(2019, 2020,2021, 2022), "Table B.3. Repeated Random Utility models",
+               "tables/table_B3_rum_2019_2023.html")
+
+
+ 
 ```
 
-```{r}
-#| cache: true
-#| eval: false
+## Table 3 -Welfare
 
-# ── Build summary for both models ─────────────────────────────────────────────
-calc_summary <- function(data, loss_col, years) {
-    data %>%
-        filter(year %in% years, parkname != "Stay_Home") %>%
-        group_by(parkname, year) %>%
-        summarise(
-            n        = n(),
-            mean_val = mean(.data[[loss_col]],  na.rm = TRUE),
-            sd_val   = sd(.data[[loss_col]],    na.rm = TRUE),
-            se_val   = sd_val / sqrt(n),
-            LCI      = mean_val - 1.96 * se_val,
-            UCI      = mean_val + 1.96 * se_val,
-            .groups  = "drop"
-        ) %>%
-        select(parkname, year, mean_val, LCI, UCI)
+### B.4
+
+### B.5
+
+Includes Table B.4-B.5 in appendix
+
+```{r}
+
+
+## MDCEV: per-draw mean loss per camper, each policy 
+md_welfare <- function(y) {
+  y <- as.character(y)
+  w <- welfare_list[[y]]; mod <- mdcev_model_list[[y]]; J <- mod$stan_data$J
+  alts <- mod$parms_info$alt_names
+  if (is.null(alts)) alts <- mod$parms_info$parm_names$alt_names
+  D <- Reduce(`+`, lapply(w, function(m) as.matrix(m)[, 1:(J + 1), drop = FALSE])) / length(w)
+  data.frame(key = c(site_key(alts), "system"), est = colMeans(D),
+             lo = apply(D, 2, quantile, 0.025), hi = apply(D, 2, quantile, 0.975))
 }
 
-# ── Frequency RUM ─────────────────────────────────────────────────────────────
-freq_wide <- calc_summary(final_comparison_master, "annual_rum_loss", c(2021, 2022)) %>%
-    pivot_wider(
-        names_from  = year,
-        values_from = c(mean_val, LCI, UCI),
-        names_glue  = "{year}_freq_{.value}"
-    )
+## RUM: read the saved Krinsky-Robb summary 
+## summary rows: one per campsite, "All sites closed", plus totals that are not shown here
+rum_welfare <- function(y) {
+  s <- welfare_rum_list[[as.character(y)]]$summary
+  s <- s[!s$measure %in% c("Sum of single-site losses", "Average site closure"), ]
+  data.frame(key = ifelse(s$measure == "All sites closed", "system", site_key(s$measure)),
+             est = s$mean, lo = s$lower, hi = s$upper)
+}
 
-stargazer(
-    summary_wide,
-    type       = "html",
-    out        = "tables/Welfare_Comparison_Table_frequency_2122.html",
-    summary    = FALSE,
-    rownames   = FALSE,
-    title      = "Welfare Loss: Observed and Repeated RUM — Mean and 95% CI (2021 & 2022)",
-    digits     = 2,
-    # 4 groups: 2020 Observed, 2020 Repeated, 2022 Observed, 2022 Repeated
-    column.labels    = c("Park Name",
-                         "2021 Repeated","2022 Repeated"),
-    column.separate  = c(1, 3, 3, 3, 3),
-    covariate.labels = c("Park",
-                         "Mean", "Lower CI", "Upper CI",   # 2019 Repeated
-                         "Mean", "Lower CI", "Upper CI"),  # 2020 Repeated
-    notes       = "95% confidence intervals. Observed RUM conditions welfare on observed trips. Repeated RUM uses 52 weekly choice occasions.",
-    notes.align = "l"
-)
+## Build one table 
+make_welfare_table <- function(years, title, file) {
+  W <- lapply(years, function(y) list(md = md_welfare(y), rum = rum_welfare(y)))
+  keys <- setdiff(unique(unlist(lapply(W, function(w) c(w$md$key, w$rum$key)))), "system")
+  miss <- setdiff(keys, names(SITE_NAMES))
+  if (length(miss)) message("no display name for: ", paste(miss, collapse = ", "))
+  keys <- c(keys[order(match(keys, names(SITE_NAMES)), keys)], "system")
+td_w <- function(x, align = "center", style = "")
+  paste0('<td style="text-align:', align, '; padding:1px 8px;', style, '">', x, "</td>")
+  get <- function(d, k) d[d$key == k, ]
+  est_cell <- function(d, k) { r <- get(d, k); if (nrow(r) == 0) "\u2013" else fnum(r$est) }
+  ci_cell  <- function(d, k) { r <- get(d, k); if (nrow(r) == 0) "" else
+                               paste0("[", fnum(r$lo), ", ", fnum(r$hi), "]") }
 
-message("Saved to Welfare_Comparison_Table_Repeated_2122.html")
+ 
+  ## printed check: estimates per site, MDCEV and RUM, each year
+  chk <- data.frame(campsite = keys, sapply(W, function(w) sapply(keys, est_cell, d = w$md)),
+                    sapply(W, function(w) sapply(keys, est_cell, d = w$rum)))
+  names(chk) <- c("campsite", paste0("MDCEV_", years), paste0("RUM_", years))
+  print(chk, row.names = FALSE)
+ 
+  rows <- unlist(lapply(keys, function(k) {
+    name <- if (k == "system") "System closure" else ifelse(k %in% names(SITE_NAMES), SITE_NAMES[k], k)
+    top  <- if (k == "system") " border-top:1px solid black;" else ""
+    c(paste0("<tr>", td_w(name, "left", top),
+             paste(unlist(lapply(W, function(w) c(td_w(est_cell(w$md, k), style = top),
+                                                  td_w(est_cell(w$rum, k), style = top)))), collapse = ""),
+             "</tr>"),
+      paste0("<tr>", td_w(""),
+             paste(unlist(lapply(W, function(w) c(td_w(ci_cell(w$md, k)), td_w(ci_cell(w$rum, k))))),
+                   collapse = ""), "</tr>"))
+  }))
+ 
+  head1 <- paste0('<tr style="border-top:2px solid black;"><td style="padding:2px 8px;"></td>',
+                  paste0('<td colspan="2" style="text-align:center; padding:2px 8px; border-bottom:1px solid black;">',
+                         years, "</td>", collapse = ""), "</tr>")
+  head2 <- paste0('<tr style="border-bottom:1px solid black;">', td_w("Campsite", "left"),
+                  paste(rep(paste0(td_w("MDCEV<br>CS<sup>H</sup>"), td_w("Repeated RUM<br>CV<sub>RUM</sub>")),
+                            length(years)), collapse = ""), "</tr>")
+  notes <- paste0('<tr style="border-top:2px solid black;"><td colspan="', 1 + 2 * length(years),
+                  '" style="padding:4px 8px; font-size:10pt;">',
+                  "Welfare loss per person per year in USD, averaged over all campers. 95 percent confidence intervals in brackets. MDCEV: welfare is calculated conditional on observed trips, with 100 parameter draws from the multivariate normal distribution of the estimates and 100 conditional error draws per camper using the modified Latin hypercube sampling algorithm. Repeated RUM: welfare is calculated unconditionally from the log-sum over 52 weekly choice occasions, with confidence intervals from 1,000 draws. – indicates that the campsite was not available in that year.",
+                  "</td></tr>")
+ 
+  html <- paste0('<html><head><meta charset="UTF-8"></head>',
+                 '<body style="font-family:\'Times New Roman\', serif; font-size:11pt;">',
+                 "<p><b>", title, "</b></p>",
+                 '<table style="border-collapse:collapse;">',
+                 head1, head2, paste(rows, collapse = ""), notes, "</table></body></html>")
+  con <- file(file, encoding = "UTF-8"); writeLines(enc2utf8(html), con); close(con)
+  message("wrote ", file)
+}
+ 
+##  Tables 
+make_welfare_table(c(2018, 2023),
+  "Table 3. Simulation exercise of welfare estimates for site closure MDCEV and RUM \u2013 2018 vs. 2023.",
+  "tables/table_3_welfare_2018_2023.html")
+make_welfare_table(c(2019, 2020),
+  "Table B.4. Simulation exercise of welfare estimates for site closure MDCEV and RUM \u2013 2019 vs. 2020.",
+  "tables/table_B4_welfare_2019_2020.html")
+make_welfare_table(c(2021, 2022),
+  "Table B.5. Simulation exercise of welfare estimates for site closure MDCEV and RUM \u2013 2021 vs. 2022.",
+  "tables/table_B5_welfare_2021_2022.html")
+
 ```
 
-## Plot
+# Additional Tables
+
+# Stability
+
+## Table B.6
+
+-   Difference between the repeated RUM and the MDCEV estimate, draw by draw (draw s of the repeated RUM against draw s of the MDCEV, as in the stability tests;
+
+-   the MDCEV has 100 draws, so the first 1000 Krinsky-Robb draws are used). Welfare losses are taken as positive values, so a positive difference means a larger loss in the repeated RUM.
+
+-   Mean difference and 90% interval;
+
+-   \* = the interval excludes zero (the models differ significantly).
+
+-   Per visitor: mean over the campers who visited each site (needs W_vis in both saved files).
+
+```{r}
+
+years <- 2018:2023
+S     <- c(0.01, 0.10, 0.20, 0.50)                                   # travel cost increases
+part_avg <- function(L, vis) { n <- colSums(vis); mean((colSums(L * vis) / n)[n > 0]) }  # per visitor, then per site
+
+## MDCEV: per-draw measures 
+md_draws <- function(y) {
+  w   <- welfare_list[[as.character(y)]]; mod <- mdcev_model_list[[as.character(y)]]
+  J   <- mod$stan_data$J; vis <- 1 * (mod$stan_data$quant_j > 0)
+  A   <- simplify2array(lapply(w, function(m) -as.matrix(m)))        # draws x policies x campers
+  ## total-trip elasticity for one parameter draw: conditional demand, budget holds
+  sd <- mod$stan_data; k <- rowSums(sd$quant_j) > 0
+  x <- sd$quant_j[k, ]; p <- sd$price_j[k, ]; inc <- as.numeric(sd$income)[k]; z0 <- inc - rowSums(p * x)
+  el <- function(g, a1, s) {
+    G <- matrix(g, nrow(x), ncol(x), byrow = TRUE)
+    dem <- function(z) pmax(0, (G + x) / (1 + s) * (z / z0)^(1 - a1) - G) * (x > 0)
+    lo <- 0 * inc; hi <- inc
+    for (i in 1:60) { z <- (lo + hi) / 2; up <- inc - z - (1 + s) * rowSums(p * dem(z)) > 0; lo[up] <- z[up]; hi[!up] <- z[!up] }
+    (sum(dem(z)) / sum(x) - 1) / s
+  }
+  th <- as.matrix(mod$stan_fit$theta_tilde)
+  gc <- grep("^gamma", colnames(th)); ac <- grep("^alpha", colnames(th))[1]
+  list(avg     = apply(A[, 1:J, , drop = FALSE], 1, mean),           # mean over campers and sites
+       system  = rowMeans(A[, J + 1, ]),
+       visitor = apply(A[, 1:J, , drop = FALSE], 1, function(Ld) part_avg(t(Ld), vis)),
+       el      = t(apply(th, 1, function(r) sapply(S, function(s) el(r[gc], r[ac], s)))))
+}
+
+## Repeated RUM: per-draw measures from the saved Krinsky-Robb draws 
+rum_draws <- function(y) {
+  R    <- welfare_rum_list[[as.character(y)]]
+  m    <- model_list_52[[paste("52wk", y)]]
+  B    <- R$coef_draws[1:1000, ]                                       # the same draws as R$draws
+  w1   <- grepl("_w1$", idx(m, 1)); X <- model.matrix(m)[w1, ]
+  alts <- unique(as.character(idx(m, 2))); site <- alts != "Stay_Home"
+  ids  <- sub("_w1$", "", unique(as.character(idx(m, 1))[w1]))
+  vis  <- 1 * (xtabs(VisitCount ~ id + parkname, get(paste0("final_data_", y)))[ids, alts[site]] > 0)
+  P <- function(b, f = 1) { Xs <- X; Xs[, "price"] <- f * Xs[, "price"]
+                            E <- exp(matrix(Xs %*% b[colnames(Xs)], ncol = length(alts), byrow = TRUE)); E / rowSums(E) }
+  list(avg     = -R$draws[1:1000, "Average site closure"],
+       system  = -R$draws[1:1000, "All sites closed"],
+       visitor = apply(B, 1, function(b) part_avg(52 * log(1 - P(b)[, site]) / b[["price"]], vis)),
+       el      = t(apply(B, 1, function(b) { t0 <- sum(P(b)[, site])
+                   sapply(S, function(s) (sum(P(b, 1 + s)[, site]) / t0 - 1) / s) })))
+}
+
+##  Difference, draw by draw 
+model_diff <- function(md, rum, level = 0.90) {
+  a <- (1 - level) / 2; n <- min(length(md), length(rum))
+  d <- rum[1:n] - md[1:n]                                             # repeated RUM minus MDCEV
+  q <- quantile(d, c(a, 1 - a))
+  sprintf("%.3f [%.3f, %.3f]%s", mean(d), q[1], q[2], ifelse(q[1] > 0 | q[2] < 0, " *", ""))
+}
+draws_md  <- setNames(lapply(years, md_draws),  years)              # computed once per year
+draws_rum <- setNames(lapply(years, rum_draws), years)
+
+changed <- function(a, b, level = 0.90) {
+  d <- as.vector(outer(b, a, "-"))                               # every draw of year 2 minus every draw of year 1
+  q <- quantile(d, c((1 - level) / 2, (1 + level) / 2))
+  q[[1]] > 0 | q[[2]] < 0
+}
+
+pair_tests <- function(D, y1, y2) {
+  a <- D[[as.character(y1)]]; b <- D[[as.character(y2)]]
+  c(avg    = changed(a$avg, b$avg),
+    system = changed(a$system, b$system),
+    el_low = any(sapply(1:3, function(k) changed(a$el[, k], b$el[, k]))),   # * if +1%, +10% or +20% changed
+    el_50  = changed(a$el[, 4], b$el[, 4]))
+}
+
+pairs <- t(combn(years, 2))
+res   <- t(apply(pairs, 1, function(p) c(pair_tests(draws_md, p[1], p[2]), pair_tests(draws_rum, p[1], p[2]))))
+rownames(res) <- paste0(pairs[, 1], "\u2013", pairs[, 2])
+print(res)
+
+## HTML table 
+td  <- function(x, align = "center", extra = "") paste0('<td style="text-align:', align, '; padding:2px 8px;', extra, '">', x, "</td>")
+lab <- c("Average single-site closure", "System closure", "Elasticity, +1% to +20%", "Elasticity, +50%")
+
+body <- sapply(seq_len(nrow(res)), function(i)
+  paste0("<tr>", td(rownames(res)[i], "left"), paste(td(ifelse(res[i, ], "*", "\u2013")), collapse = ""), "</tr>"))
+stable <- paste0('<tr style="border-top:1px solid black;">', td("Stable pairs", "left"),
+                 paste(td(paste(colSums(!res), "of", nrow(res))), collapse = ""), "</tr>")
+
+site_md <- function(y) {
+    w   <- welfare_list[[as.character(y)]]; mod <- mdcev_model_list[[as.character(y)]]
+    J   <- mod$stan_data$J
+    D   <- -Reduce(`+`, lapply(w, function(m) as.matrix(m)[, 1:J, drop = FALSE])) / length(w)
+    colnames(D) <- mod$parms_info$alt_names
+    D
+}
+site_rum <- function(y) {
+    D <- -welfare_rum_list[[as.character(y)]]$draws
+    D[, !colnames(D) %in% c("Sum of single-site losses", "All sites closed", "Average site closure"), drop = FALSE]
+}
+
+## number of stable site-year pairs (campsites compared only when available in both years)
+site_stable <- function(f) {
+    S  <- setNames(lapply(years, f), years)
+    ok <- unlist(lapply(seq_len(nrow(pairs)), function(i) {
+        a <- S[[as.character(pairs[i, 1])]]; b <- S[[as.character(pairs[i, 2])]]
+        sapply(intersect(colnames(a), colnames(b)), function(s) !changed(a[, s], b[, s]))
+    }))
+    c(stable = sum(ok), total = length(ok))
+}
+
+st_md  <- site_stable(site_md)
+st_rum <- site_stable(site_rum)
+print(rbind(MDCEV = st_md, RUM = st_rum))
+## note you will need to check the results above with the results in the note 
+html <- paste0(
+  '<html><head><meta charset="UTF-8"></head><body style="font-family:\'Times New Roman\', serif; font-size:11pt;">',
+  "<p><b>Temporal stability of welfare estimates and elasticities, MDCEV and repeated RUM, 2018\u20132023</b></p>",
+  '<table style="border-collapse:collapse;">',
+  '<tr style="border-top:2px solid black;"><td></td>',
+  '<td colspan="4" style="text-align:center; padding:2px 8px; border-bottom:1px solid black;">MDCEV</td>',
+  '<td colspan="4" style="text-align:center; padding:2px 8px; border-bottom:1px solid black;">Repeated RUM</td></tr>',
+  '<tr style="border-bottom:1px solid black;">', td("Years", "left"), paste(td(rep(lab, 2)), collapse = ""), "</tr>",
+  paste(body, collapse = ""), stable,
+  '<tr style="border-top:2px solid black;"><td colspan="9" style="padding:4px 8px; font-size:10pt;">',
+  "Note: * indicates that the estimate differs significantly between the two years, that is, the 90 percent interval of the draw-by-draw difference excludes zero; – indicates no significant difference. Welfare loss per person. MDCEV results are based on 100 parameter draws and repeated RUM results on 1,000 Krinsky–Robb draws. The results for 10 and 20 percent increases in travel costs are identical to those for a 1 percent increase in both models. For single campsites, the loss is stable in 145 of 318 site-year pairs (46 percent) in the MDCEV and in 182 of 318 (57 percent) in the repeated RUM; each pair of years is compared only for the campsites available in both years.",
+  "</table></body></html>")
+
+
+con <- file("tables/tableb6_temporal_stability.html", encoding = "UTF-8"); writeLines(enc2utf8(html), con); close(con)
+
+```
+
+# Satiation
+
+## Table B.7
+
+## Table B.8
+
+## Table B.9
+
+### 
+
+Satiation 2x & 4x Here is the comparison of the satiation of the gamma by double and quadrupling.
+
+```{r}
+
+fnum_g <- function(x) sub("^-", "\u2212", formatC(x, format = "f", digits = 3, big.mark = ","))
+td_g   <- function(x, align = "center", style = "")
+  paste0('<td style="text-align:', align, '; padding:1px 8px;', style, '">', x, "</td>")
+
+## Welfare for one scaling and one year: each campsite, system closure, average site closure.
+## For each parameter draw: mean loss per camper; estimate = mean over draws, interval = 2.5-97.5%.
+gamma_welfare <- function(wl, y) {
+  y <- as.character(y)
+  x <- wl[[y]]; if (is.null(x)) stop("no results for year ", y)
+  mod  <- mdcev_model_list[[y]]; J <- mod$stan_data$J
+  alts <- mod$parms_info$alt_names
+  if (is.null(alts)) alts <- mod$parms_info$parm_names$alt_names
+  D <- Reduce(`+`, lapply(x, function(m) as.matrix(m)[, 1:(J + 1), drop = FALSE])) / length(x)
+  D <- cbind(D, rowMeans(D[, 1:J, drop = FALSE]))               # average over this year's campsites
+  data.frame(key = c(site_key(alts), "system", "average"), est = colMeans(D),
+             lo = apply(D, 2, quantile, 0.025), hi = apply(D, 2, quantile, 0.975))
+}
+
+make_gamma_table <- function(years, title, file) {
+  W <- lapply(years, function(y) list(x2 = gamma_welfare(welfare_x2_list, y),
+                                      x4 = gamma_welfare(welfare_x4_list, y)))
+  keys <- setdiff(unique(unlist(lapply(W, function(w) c(w$x2$key, w$x4$key)))), c("system", "average"))
+  keys <- c(keys[order(match(keys, names(SITE_NAMES)), keys)], "system", "average")
+
+  est_cell <- function(d, k) { r <- d[d$key == k, ]; if (nrow(r) == 0) "\u2013" else fnum_g(r$est) }
+  ci_cell  <- function(d, k) { r <- d[d$key == k, ]; if (nrow(r) == 0) "" else
+                               paste0("[", fnum_g(r$lo), ", ", fnum_g(r$hi), "]") }
+  label <- function(k) if (k == "system") "System closure" else if (k == "average") "Average site closure" else
+                       ifelse(k %in% names(SITE_NAMES), SITE_NAMES[k], k)
+
+  chk <- data.frame(campsite = sapply(keys, label),
+                    sapply(W, function(w) sapply(keys, est_cell, d = w$x2)),
+                    sapply(W, function(w) sapply(keys, est_cell, d = w$x4)))
+  names(chk) <- c("campsite", paste0("x2_", years), paste0("x4_", years))
+  print(chk, row.names = FALSE)                                  # check the numbers here
+
+  rows <- unlist(lapply(keys, function(k) {
+    top <- if (k == "system") " border-top:1px solid black;" else ""
+    c(paste0("<tr>", td_g(label(k), "left", top),
+             paste(unlist(lapply(W, function(w) c(td_g(est_cell(w$x2, k), style = top),
+                                                  td_g(est_cell(w$x4, k), style = top)))), collapse = ""),
+             "</tr>"),
+      paste0("<tr>", td_g(""),
+             paste(unlist(lapply(W, function(w) c(td_g(ci_cell(w$x2, k)), td_g(ci_cell(w$x4, k))))),
+                   collapse = ""), "</tr>"))
+  }))
+
+  head1 <- paste0('<tr style="border-top:2px solid black;"><td style="padding:2px 8px;"></td>',
+                  paste0('<td colspan="2" style="text-align:center; padding:2px 8px; border-bottom:1px solid black;">',
+                         years, "</td>", collapse = ""), "</tr>")
+  head2 <- paste0('<tr style="border-bottom:1px solid black;">', td_g("Campsite", "left"),
+                  paste(rep(paste0(td_g("&gamma;&times;2"), td_g("&gamma;&times;4")), length(years)),
+                        collapse = ""), "</tr>")
+  notes <- paste0('<tr style="border-top:2px solid black;"><td colspan="', 1 + 2 * length(years),
+                  '" style="padding:4px 8px; font-size:10pt;">',
+                  "Welfare loss per person per year in USD, averaged over all campers. 95 percent confidence intervals in brackets. MDCEV: welfare is calculated conditional on observed trips, with 100 parameter draws from the multivariate normal distribution of the estimates and 100 conditional error draws per camper using the modified Latin hypercube sampling algorithm.")
+
+  html <- paste0('<html><head><meta charset="UTF-8"></head>',
+                 '<body style="font-family:\'Times New Roman\', serif; font-size:11pt;">',
+                 "<p><b>", title, "</b></p>",
+                 '<table style="border-collapse:collapse;">',
+                 head1, head2, paste(rows, collapse = ""), notes, "</table></body></html>")
+  con <- file(file, encoding = "UTF-8"); writeLines(enc2utf8(html), con); close(con)
+  message("wrote ", file)
+}
+
+make_gamma_table(c(2018, 2019),
+  "Table B.7. Simulation exercise of welfare estimates for site closure MDCEV with satiation scaling, 2018\u20132019.",
+  "tables/table_B7_gamma_2018_2019.html")
+make_gamma_table(c(2020, 2021),
+  "Table B.8. Simulation exercise of welfare estimates for site closure MDCEV with satiation scaling, 2020\u20132021.",
+  "tables/table_B8_gamma_2020_2021.html")
+make_gamma_table(c(2022, 2023),
+  "Table B.9. Simulation exercise of welfare estimates for site closure MDCEV with satiation scaling, 2022\u20132023.",
+  "tables/table_B9_gamma_2022_2023.html")
+
+```
+
+# Flight 2018
+
+## Table B.10
+
+Home-island data ("2018 - RUM, home-island campsites only", keep_zero = TRUE)
+
+```{r}
+fnum_f <- function(x, d = 3) sub("^-", "\u2212", formatC(x, format = "f", digits = d, big.mark = ","))
+stars_f <- function(e, s) { p <- 2 * pnorm(-abs(e / s))
+  ifelse(is.na(p), "", ifelse(p < 0.01, "***", ifelse(p < 0.05, "**", ifelse(p < 0.1, "*", "")))) }
+f0_f   <- function(x) formatC(round(x), format = "d", big.mark = ",")
+td_f   <- function(x, align = "center", span = 1, style = "")
+  paste0('<td', if (span > 1) paste0(' colspan="', span, '"'), ' style="text-align:', align,
+         '; padding:2px 8px;', style, '">', x, "</td>")
+ 
+
+YEAR           <- 2018
+HOME_SET       <- FALSE 
+PRICE_DIGITS   <- 3
+build_main <- function(fd) {
+  d     <- fd %>%
+    mutate(id = as.character(id), flight = as.numeric(island_live != island_park)) %>%
+    dplyr::select(id, parkname, VisitCount, price, flight)
+  sites <- sort(unique(d$parkname))
+ 
+  trips <- d %>% filter(VisitCount > 0) %>% uncount(VisitCount) %>%
+    group_by(id) %>% mutate(week = row_number()) %>% ungroup() %>%
+    dplyr::select(id, week, chosen = parkname)
+  stopifnot(max(trips$week) <= 52)
+ 
+  occ <- expand_grid(id = unique(d$id), week = 1:52) %>%
+    left_join(trips, by = c("id", "week")) %>%
+    mutate(chosen = replace_na(chosen, "Stay_Home"), occ_id = paste0(id, "_w", week))
+ 
+  long <- expand_grid(occ, alt = c(sites, "Stay_Home")) %>%
+    left_join(d %>% dplyr::select(id, alt = parkname, price, flight), by = c("id", "alt")) %>%
+    mutate(price  = ifelse(alt == "Stay_Home", 0, price),
+           flight = ifelse(alt == "Stay_Home", 0, flight),
+           choice = alt == chosen)
+  stopifnot(!anyNA(long$price), !anyNA(long$flight))
+  long
+}
+ 
+
+build_home <- function(fd) {
+  home <- fd %>% filter(island_live == island_park)
+  used <- home %>% group_by(parkname) %>% summarise(n = sum(VisitCount), .groups = "drop")
+  home <- home %>% filter(parkname %in% used$parkname[used$n > 0])
+  cat("Campers:", n_distinct(fd$id), "->", n_distinct(home$id),
+      "| Campsites:", n_distinct(fd$parkname), "->", n_distinct(home$parkname),
+      "| Trips:", sum(fd$VisitCount), "->", sum(home$VisitCount), "\n")
+ 
+  d <- home %>% dplyr::select(id, parkname, VisitCount, price) %>% mutate(id = as.character(id))
+ 
+  trips <- d %>% filter(VisitCount > 0) %>% uncount(VisitCount) %>%
+    group_by(id) %>% mutate(week = row_number()) %>% ungroup() %>%
+    dplyr::select(id, week, chosen = parkname)
+  stopifnot(max(trips$week) <= 52)
+ 
+  occ <- expand_grid(id = unique(d$id), week = 1:52) %>%
+    left_join(trips, by = c("id", "week")) %>%
+    mutate(chosen = replace_na(chosen, "Stay_Home"), occ_id = paste0(id, "_w", week))
+ 
+  cset <- bind_rows(d %>% dplyr::select(id, alt = parkname, price),           # each camper's choice set
+                    tibble(id = unique(d$id), alt = "Stay_Home", price = 0))
+  long <- occ %>% inner_join(cset, by = "id", relationship = "many-to-many") %>%
+    mutate(choice = alt == chosen) %>% arrange(occ_id, alt)
+  stopifnot(!anyNA(long$price), all(tapply(long$choice, long$occ_id, sum) == 1))
+  long
+}
+ 
+fit_rum <- function(long, f) {
+  dl <- dfidx(long, idx = list("occ_id", "alt"), shape = "long")
+  m  <- mlogit(f, data = dl, reflevel = "Stay_Home")
+  list(model = m, occ = n_distinct(long$occ_id))
+}
+ 
+## Estimate the three models 
+fd <- get(paste0("final_data_", YEAR))
+L_main <- build_main(fd)
+L_home <- build_home(fd)
+ 
+flight_models <- list(
+  "Main model"       = fit_rum(L_main, choice ~ price | 1),
+  "Home island only" = fit_rum(L_home, choice ~ price | 1),
+  "Flight dummy"     = fit_rum(L_main, choice ~ price + flight | 1))
+saveRDS(flight_models, sprintf("data/rum/rum_flight_models_%d.rds", YEAR))
+ 
+##  Table 
+make_flight_table <- function(models, title, file) {
+  labs <- names(models)
+  co <- lapply(models, function(x) {
+    b <- coef(x$model); se <- sqrt(diag(vcov(x$model)))
+    data.frame(name = names(b), b = b, se = se, row.names = NULL)
+  })
+ 
+  ## campsite constants
+  int_keys <- function(c) site_key(sub("^\\(Intercept\\):", "", c$name[grepl("^\\(Intercept\\):", c$name)]))
+  keys <- unique(unlist(lapply(co, int_keys)))
+  keys <- keys[order(match(keys, names(SITE_NAMES)), keys)]
+  cell2 <- function(c, nm, d = 3) {
+    r <- c[c$name == nm, ]
+    if (nrow(r) == 0) return(c("\u2013", "\u2013"))
+    c(paste0(fnum_f(r$b, d), stars_f(r$b, r$se)), fnum_f(r$se, d))
+  }
+  site_cell <- function(c, k) {
+    nm <- c$name[grepl("^\\(Intercept\\):", c$name)]
+    nm <- nm[site_key(sub("^\\(Intercept\\):", "", nm)) == k]
+    if (length(nm) == 0) c("\u2013", "\u2013") else cell2(c, nm)
+  }
+  site_rows <- lapply(keys, function(k) c(ifelse(k %in% names(SITE_NAMES), SITE_NAMES[k], k),
+                                          unlist(lapply(co, site_cell, k = k))))
+ 
+  ## travel cost, flight, interaction (only rows that appear in some model)
+  other <- c(price = "Travel cost", flight = "Flight", `price:flight` = "Travel cost \u00D7 Flight")
+  other <- other[names(other) %in% unlist(lapply(co, `[[`, "name"))]
+  var_rows <- lapply(names(other), function(v) c(other[[v]], unlist(lapply(co, cell2, nm = v, d = PRICE_DIGITS))))
+ 
+  tab <- do.call(rbind, c(site_rows, var_rows))
+  stats <- rbind(
+    c("Log-likelihood", sapply(models, function(x) fnum_f(as.numeric(logLik(x$model)), 0))),
+    c("Observations",   sapply(models, function(x) f0_f(x$occ))),
+    c("Individuals",    sapply(models, function(x) f0_f(x$occ / 52))))
+  print(tab); print(stats)                                          # check the numbers here
+ 
+  body <- apply(tab, 1, function(r)
+    paste0("<tr>", td_f(r[1], "left"), paste(sapply(r[-1], td_f), collapse = ""), "</tr>"))
+  first_var <- length(site_rows) + 1
+  body[first_var] <- sub("<tr>", '<tr style="border-top:1px solid black;">', body[first_var])
+  st <- apply(stats, 1, function(r)
+    paste0("<tr>", td_f(r[1], "left"), paste(sapply(r[-1], td_f, span = 2), collapse = ""), "</tr>"))
+  st[1] <- sub("<tr>", '<tr style="border-top:1px solid black;">', st[1])
+ 
+  head1 <- paste0('<tr style="border-top:2px solid black;"><td style="padding:2px 8px;"></td>',
+                  paste0('<td colspan="2" style="text-align:center; padding:2px 8px; border-bottom:1px solid black;">',
+                         labs, "</td>", collapse = ""), "</tr>")
+  head2 <- paste0('<tr style="border-bottom:1px solid black;">', td_f("Campsite", "left"),
+                  paste(rep(paste0(td_f("Coef."), td_f("s.e.")), length(labs)), collapse = ""), "</tr>")
+  notes <- paste0('<tr style="border-top:2px solid black;"><td colspan="', 1 + 2 * length(labs),
+                  '" style="padding:4px 8px; font-size:10pt;">',
+                  "Note: *p&lt;0.1, **p&lt;0.05, ***p&lt;0.01. Conditional logit with 52 weekly choice occasions ",
+                  "per camper; staying home is the reference alternative. Home island only: each camper's choice ",
+                  "set contains only campsites on their home island; trips to other islands are treated as ",
+                  "weeks at home, and campers living on islands without campsites are excluded. Flight dummy = 1 if the campsite is on a different island from the camper's residence. ",
+                  "&ndash; = not included in the model.</td></tr>")
+ 
+  html <- paste0('<html><head><meta charset="UTF-8"></head>',
+                 '<body style="font-family:\'Times New Roman\', serif; font-size:11pt;">',
+                 "<p><b>", title, "</b></p>",
+                 '<table style="border-collapse:collapse;">',
+                 head1, head2, paste(body, collapse = ""), paste(st, collapse = ""), notes,
+                 "</table></body></html>")
+  con <- file(file, encoding = "UTF-8"); writeLines(enc2utf8(html), con); close(con)
+  message("wrote ", file)
+}
+ 
+make_flight_table(flight_models,
+  sprintf("Table B.10. Repeated RUM for %d, with and without trips that require a flight", YEAR),
+  sprintf("tables/table_B10_rum_flight_%d.html", YEAR))
+
+```
+
+# Income
+
+## Table B.11
+
+Are these statistically different? This simple test is just if the welfare loss is statistically different
+
+Is the welfare loss of the high-income campers different from the low-income campers?
+
+```{r}
+
+N_BOOT <- 2000
+
+## One row per camper and model: average loss over single-campsite closures (positive $),
+## income deciles within each year
+person <- final_comparison_master %>%
+  filter(year %in% 2018:2023,
+         !parkname %in% c("All sites closed", "System closure", "Close_All", "Stay_Home"),
+         !is.na(income), income > 0) %>%
+  group_by(year, id, zip, income) %>%
+  summarise(RUM   = -mean(annual_rum_loss, na.rm = TRUE),
+            MDCEV = -mean(loss_mdcev,      na.rm = TRUE), .groups = "drop") %>%
+  group_by(year) %>% mutate(dec = ntile(income, 10)) %>% ungroup() %>%
+  pivot_longer(c(RUM, MDCEV), names_to = "model", values_to = "usd") %>%
+  filter(!is.na(usd))
+
+## High-income minus low-income mean loss, p-value from a zip-code cluster bootstrap
+# compare top and then top 2
+gap_test <- function(d, k, seed) {
+  by_zip <- function(x) x %>% group_by(zip) %>% summarise(s = sum(usd), n = n(), .groups = "drop")
+  low  <- by_zip(filter(d, dec <= k))
+  high <- by_zip(filter(d, dec >= 11 - k))
+  mean_of <- function(z) sum(z$s) / sum(z$n)
+  set.seed(seed)
+  draws <- replicate(N_BOOT, mean_of(high[sample.int(nrow(high), replace = TRUE), ]) -
+                             mean_of(low[sample.int(nrow(low), replace = TRUE), ]))
+  p <- min(1, 2 * min(1 + sum(draws <= 0), 1 + sum(draws >= 0)) / (N_BOOT + 1))
+  tibble(gap = mean_of(high) - mean_of(low), p = p)
+}
+
+results <- expand_grid(year = 2018:2023, model = c("RUM", "MDCEV"), k = 1:2) %>%
+  mutate(out = pmap(list(year, model, k), function(yr, md, kk)
+    gap_test(filter(person, year == yr, model == md), kk, seed = 898989 + yr * 10 + kk))) %>%
+  unnest(out)
+print(results, n = Inf)
+
+## -Table for Word (HTML) 
+num   <- function(x, d) sub("^-", "\u2212", formatC(x, format = "f", digits = d))
+stars <- function(p) ifelse(p < 0.01, "***", ifelse(p < 0.05, "**", ifelse(p < 0.10, "*", "")))
+td    <- function(x, align = "center", extra = "") paste0('<td style="text-align:', align, '; padding:2px 10px;', extra, '">', x, "</td>")
+
+rows <- unlist(lapply(1:2, function(kk) {
+  panel <- c("Panel A. Highest versus lowest income decile",
+             "Panel B. Two highest versus two lowest income deciles")[kk]
+  c(paste0('<tr><td colspan="5" style="padding:6px 10px 2px; font-style:italic; border-top:1px solid black;">', panel, "</td></tr>"),
+    sapply(2018:2023, function(yr) {
+      r <- function(md) filter(results, year == yr, model == md, k == kk)
+      paste0("<tr>", td(yr, "left"),
+             td(paste0(num(r("RUM")$gap, 2),   stars(r("RUM")$p))),   td(num(r("RUM")$p, 3)),
+             td(paste0(num(r("MDCEV")$gap, 2), stars(r("MDCEV")$p))), td(num(r("MDCEV")$p, 3)), "</tr>")
+    }))
+}))
+
+html <- paste0(
+  '<html><head><meta charset="UTF-8"></head><body style="font-family:\'Times New Roman\', serif; font-size:11pt;">',
+  "<p><b>Differences in welfare loss per person between higher- and lower-income campers, 2018\u20132023</b></p>",
+  '<table style="border-collapse:collapse;">',
+  '<tr style="border-top:2px solid black;"><td></td>',
+  '<td colspan="2" style="text-align:center; padding:2px 10px; border-bottom:1px solid black;">Repeated RUM</td>',
+  '<td colspan="2" style="text-align:center; padding:2px 10px; border-bottom:1px solid black;">MDCEV</td></tr>',
+  '<tr style="border-bottom:1px solid black;">', td("Year", "left"),
+  td("Difference"), td("p-value"), td("Difference"), td("p-value"), "</tr>",
+  paste(rows, collapse = ""),
+  '<tr style="border-top:2px solid black;"><td colspan="5" style="padding:4px 10px; font-size:10pt;">',
+  "Note: Difference = mean welfare loss per person (USD per year, averaged over single-campsite closures) of the ",
+  "higher-income group minus the lower-income group. Income deciles are formed within each year. p-values from ",
+  "a bootstrap that resamples zip codes (2,000 draws). *** p&lt;0.01, ** p&lt;0.05, * p&lt;0.10.</td></tr>",
+  "</table></body></html>")
+
+
+con <- file("tables/tableB.11_income.html", encoding = "UTF-8"); writeLines(enc2utf8(html), con); close(con)
+```
+
+# Figures
+
+## Figure 1
+
+### Map
+
+Here are the maps. They were created in QGIS so no code provided
+
+```{r}
+
+knitr::include_graphics("figure/Kauai.png")
+knitr::include_graphics("figure/Oahu.png")
+
+knitr::include_graphics("figure/Molokai.png")
+
+knitr::include_graphics("figure/Hawaii.png")
+
+
+```
+
+## Figure 2
+
+### Welfare
+
+This is the mean per person through all years. This run will show you the average per person across the years. It pulls Krinsky-Robb errors.
+
+Average per personwelfare loss (in USD) across repeated RUM and MDCEV (2018-2023).
+
+```{r}
+
+years <- 2018:2023
+
+##  RUM: Krinsky-Robb, average site closure (losses as positive values) 
+rum <- do.call(rbind, lapply(years, function(y) {
+  s <- kr_list_52[[paste("52wk", y)]]$summary
+  r <- s[s$measure == "Average site closure", ]
+  stopifnot(nrow(r) == 1)
+  data.frame(model = "Repeated RUM", year = y, est = -r$mean, lo = -r$upper, hi = -r$lower)
+}))
+
+## MDCEV: rmdcev parameter draws (mdcev.sim), average over single-site closures
+## welfare_list[["YYYY"]]: list of per-person matrices, parameter draws x policies run from models
+
+md <- do.call(rbind, lapply(years, function(y) {
+  w <- welfare_list[[as.character(y)]]
+  J <- mdcev_model_list[[as.character(y)]]$stan_data$J
+  if (ncol(as.matrix(w[[1]])) < J + 1)
+    stop(y, ": welfare has fewer than J + 1 policies (check the policy loop for this year)")
+  draws <- Reduce(`+`, lapply(w, function(m) as.matrix(m)[, 1:J, drop = FALSE])) / length(w)
+  avg   <- -rowMeans(draws)  # each draw: mean per person, averaged over sites
+  data.frame(model = "MDCEV", year = y, est = mean(avg),
+             lo = unname(quantile(avg, 0.025)), hi = unname(quantile(avg, 0.975)))
+}))
+
+d <- rbind(rum, md) 
+d$model <- factor(d$model, levels = c("Repeated RUM", "MDCEV"))
+print(transform(d, est = round(est, 3), lo = round(lo, 3), hi = round(hi, 3)), row.names = FALSE)
+
+## Five  y-axis values in each panel
+nice_breaks <- function(lo, hi, n = 5) {
+  steps <- c(1, 2, 2.5, 5) * 10^rep(-3:3, each = 4)
+  for (s in steps) { b0 <- floor(lo / s) * s; if (b0 + (n - 1) * s >= hi) return(b0 + s * (0:(n - 1))) }
+}
+br   <- lapply(split(d, d$model), function(x) nice_breaks(min(x$lo), max(x$hi)))
+lims <- data.frame(model = factor(rep(names(br), each = 2), levels = levels(d$model)),
+                   y = unlist(lapply(br, range)))
+y_breaks <- function(l) br[[which.min(sapply(br, function(b) abs(mean(b) - mean(l))))]]
+
+p <- ggplot(d, aes(x = factor(year), y = est, group = model)) +
+  geom_line(linewidth = 0.5, linetype = "dashed", colour = "black") +
+  geom_errorbar(aes(ymin = lo, ymax = hi), width = 0.2, linewidth = 0.6, colour = "black") +
+  geom_point(shape = 16, size = 3.2, colour = "black") +
+  geom_blank(data = lims, aes(x = NULL, y = y, group = NULL), inherit.aes = FALSE) +
+  facet_wrap(~ model, nrow = 1, scales = "free_y") +
+  scale_y_continuous(breaks = y_breaks, labels = function(x) format(x, nsmall = 1, trim = TRUE)) +
+  labs(x = "Year", y = "Average welfare loss per person (USD)") +
+  theme_bw(base_size = 16, base_family = "serif") +
+  theme(panel.grid       = element_blank(),
+        strip.background = element_blank(),
+        strip.text       = element_text(size = 17, face = "bold"),
+        panel.border     = element_rect(colour = "black", linewidth = 0.8),
+        axis.ticks       = element_line(colour = "black", linewidth = 0.6),
+        axis.text        = element_text(colour = "black", size = 17),
+        axis.title       = element_text(size = 17))
+
+print(p)
+ggsave("figure/figure2_average.png", plot = p,width=16, height=10, dpi=300)
+
+
+```
 
 ### Mean Per Park
 
@@ -336,73 +1092,9 @@ scale_fill_manual(values = c(
   )
 
 p
-ggsave("images/comparision_perperson_2models.png", plot = p,width=12, height=10, dpi=300)
+ggsave("figure/comparision_perperson_2models.png", plot = p,width=12, height=10, dpi=300)
 
 
-```
-
-### Mean Per Person
-
-This run will show you the average per person across the years. It pulls Krinsky-Robb errors
-
-```{r}
-library(dplyr); library(ggplot2)
-years <- 2018:2023
-
-##  RUM: Krinsky-Robb, average site closure (losses as positive values) ------------------
-rum <- do.call(rbind, lapply(years, function(y) {
-  s <- kr_list_52[[paste("52wk", y)]]$summary
-  r <- s[s$measure == "Average site closure", ]
-  stopifnot(nrow(r) == 1)
-  data.frame(model = "Repeated RUM", year = y, est = -r$mean, lo = -r$upper, hi = -r$lower)
-}))
-
-## MDCEV: rmdcev parameter draws (mdcev.sim), average over single-site closures
-## welfare_list[["YYYY"]]: list of per-person matrices, parameter draws x policies run from models
-
-md <- do.call(rbind, lapply(years, function(y) {
-  w <- welfare_list[[as.character(y)]]
-  J <- mdcev_model_list[[as.character(y)]]$stan_data$J
-  if (ncol(as.matrix(w[[1]])) < J + 1)
-    stop(y, ": welfare has fewer than J + 1 policies (check the policy loop for this year)")
-  draws <- Reduce(`+`, lapply(w, function(m) as.matrix(m)[, 1:J, drop = FALSE])) / length(w)
-  avg   <- -rowMeans(draws)  # each draw: mean per person, averaged over sites
-  data.frame(model = "MDCEV", year = y, est = mean(avg),
-             lo = unname(quantile(avg, 0.025)), hi = unname(quantile(avg, 0.975)))
-}))
-
-d <- rbind(rum, md) 
-d$model <- factor(d$model, levels = c("Repeated RUM", "MDCEV"))
-print(transform(d, est = round(est, 3), lo = round(lo, 3), hi = round(hi, 3)), row.names = FALSE)
-
-## Five  y-axis values in each panel
-nice_breaks <- function(lo, hi, n = 5) {
-  steps <- c(1, 2, 2.5, 5) * 10^rep(-3:3, each = 4)
-  for (s in steps) { b0 <- floor(lo / s) * s; if (b0 + (n - 1) * s >= hi) return(b0 + s * (0:(n - 1))) }
-}
-br   <- lapply(split(d, d$model), function(x) nice_breaks(min(x$lo), max(x$hi)))
-lims <- data.frame(model = factor(rep(names(br), each = 2), levels = levels(d$model)),
-                   y = unlist(lapply(br, range)))
-y_breaks <- function(l) br[[which.min(sapply(br, function(b) abs(mean(b) - mean(l))))]]
-
-p <- ggplot(d, aes(x = factor(year), y = est, group = model)) +
-  geom_line(linewidth = 0.5, linetype = "dashed", colour = "black") +
-  geom_errorbar(aes(ymin = lo, ymax = hi), width = 0.2, linewidth = 0.6, colour = "black") +
-  geom_point(shape = 16, size = 3.2, colour = "black") +
-  geom_blank(data = lims, aes(x = NULL, y = y, group = NULL), inherit.aes = FALSE) +
-  facet_wrap(~ model, nrow = 1, scales = "free_y") +
-  scale_y_continuous(breaks = y_breaks, labels = function(x) format(x, nsmall = 1, trim = TRUE)) +
-  labs(x = "Year", y = "Average welfare loss per person (USD)") +
-  theme_bw(base_size = 16, base_family = "serif") +
-  theme(panel.grid       = element_blank(),
-        strip.background = element_blank(),
-        strip.text       = element_text(size = 17, face = "bold"),
-        panel.border     = element_rect(colour = "black", linewidth = 0.8),
-        axis.ticks       = element_line(colour = "black", linewidth = 0.6),
-        axis.text        = element_text(colour = "black", size = 17),
-        axis.title       = element_text(size = 17))
-
-print(p)
 ```
 
 ### Participant
@@ -432,14 +1124,7 @@ participants_summary_table <- participants_only_welfare %>%
     num_participants           = n(),
     .groups = "drop"
   )
-```
 
-#### Plot
-
-This plots out the per campsite average welfare across participates.
-
-```{r}
-#| cache: true
 # Reshape the Participants Summary for plotting
 plot_data_participants <- participants_summary_table %>%
   # Select the three mean columns we created earlier
@@ -493,101 +1178,23 @@ participants=ggplot(plot_data_participants, aes(x = factor(year), y = Mean_Welfa
     panel.border = element_rect(colour = "black", fill = NA, size = 1)
   )
 
-ggsave("images/comparision_perparticipate.png",plot=participants, width=12, height=10, dpi=300)
+ggsave("figure/comparision_perparticipate.png",plot=participants, width=12, height=10, dpi=300)
 participants
-
 ```
 
-## Satiation 2x & 4x
+## Figure 3
 
-Here is the comparison of the satiation of the gamma by double and quadrupling.
+### Elasticity
 
-```{r}
-welfare_x4_ind=readRDS("data/welfare_x4_ind.rds")
-welfare_x2_ind=readRDS("data/welfare_x2_ind.rds")
-welfare_x2_ind <- welfare_x2_ind %>%
-  rename(loss_2x = loss)
-welfare_x4_ind <- welfare_x4_ind %>%
-  rename(loss_4x = loss)
-
-welfare_x4_ind$parkname[which(welfare_x4_ind$parkname=="Stay_Home")]="All sites closed"
-
-welfare_x2_ind$parkname[which(welfare_x2_ind$parkname=="Stay_Home")]="All sites closed"
-
-final_comparison_master=merge(final_comparison_master, welfare_x2_ind, by.x=c("id","parkname","year"), by.y=c("id","parkname", "year"))
-
-final_comparison_master=merge(final_comparison_master,welfare_x4_ind,by.x=c("id","parkname","year"), by.y=c("id","parkname", "year"))
-
-```
-
-### Plot
-
-Here is the plot of how it effects MDCEV
+Total-trip price elasticities by year, repeated RUM and MDCEV, 2018--2023
 
 ```{r}
 
-
-plot_data <- final_comparison_master %>%
-  filter(parkname != "All sites closed") %>%
-  group_by(parkname, year) %>%
-  summarise(
-    RepeatedRUM = mean(annual_rum_loss,    na.rm = TRUE),
-    MDCEV        = mean(loss_mdcev,         na.rm = TRUE),
-    MDCEVx2  = mean(loss_2x,  na.rm = TRUE),
-    MDCEVx4     = mean(loss_4x,    na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  pivot_longer(cols = c(RepeatedRUM, MDCEV, MDCEVx2, MDCEVx4),
-               names_to = "Model_Type", values_to = "Mean_Welfare_Loss") %>%
-  mutate(Model_Type = factor(Model_Type, levels = c("RepeatedRUM", "MDCEV", "MDCEVx2", "MDCEVx4")))
- 
-#  Boxplot 
-p <- ggplot(plot_data, aes(x = factor(year), y = Mean_Welfare_Loss, fill = Model_Type)) +
-  geom_boxplot(outlier.shape = 21, outlier.fill = "white", color = "black", alpha = 0.8,
-               position = position_dodge(width = 0.85), width = 0.75) +
-  labs(
-    title    = "Distribution of Mean Park Welfare Loss from Site Closures by Year",
-    subtitle = "Comparing MDCEV Models and Seasonal RUM",
-    x = "Year",
-    y = "Average Welfare Loss Across sites ($)",
-    fill = "Model Type"
-  ) +
-  scale_fill_manual(values = c(
-    "RepeatedRUM" = "#D9D9D9",   # light grey
-    "MDCEV"        = "grey70",
-    "MDCEVx2"  = "grey40",
-    "MDCEVx4"     = "grey10"
-  )) +
-  theme_bw() +
-  theme(
-    text = element_text(family = "serif", size = 20),
-    plot.title    = element_text(face = "bold", size = 26, hjust = 0.5),
-    plot.subtitle = element_text(hjust = 0.5),
-    axis.title = element_text(face = "bold"),
-    axis.text  = element_text(color = "black"),
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    legend.position = "bottom",
-    legend.background = element_blank(),
-    panel.border = element_rect(colour = "black", fill = NA, size = 1)
-  )
- 
-
-ggsave("images/comparision_perperson_2modelsappendix.png", plot = p, width = 12, height = 10, dpi = 300)
-p 
-```
-
-## Elasticity
-
-Figure 3. Total-trip price elasticities by year, repeated RUM and MDCEV, 2018--2023
-
-```{r}
-library(ggplot2)
 years <- 2018:2023
 incs  <- c(1, 10, 20, 50)
 s_vec <- incs / 100
 
-## ---- Repeated RUM: change in expected trips (52 x site probabilities), Krinsky-Robb CI ----
+##  Repeated RUM: change in expected trips (52 x site probabilities), Krinsky-Robb CI 
 rum_el <- function(m, seed, R = 1000) {
   X    <- model.matrix(m)[grepl("_w1$", idx(m, 1)), ]       # week 1 only: all 52 weeks are identical
   alts <- unique(as.character(idx(m, 2))); site <- alts != "Stay_Home"
@@ -602,7 +1209,7 @@ rum_el <- function(m, seed, R = 1000) {
   data.frame(est = el(coef(m)), lo = apply(kr, 2, quantile, .025), hi = apply(kr, 2, quantile, .975))
 }
 
-## ---- MDCEV: conditional demand, budget holds (numeraire solved by bisection) --------------
+##  MDCEV: conditional demand, budget holds (numeraire solved by bisection)
 md_el <- function(mod) {
   sd <- mod$stan_data; x <- sd$quant_j; p <- sd$price_j; y <- as.numeric(sd$income)
   k  <- rowSums(x) > 0; x <- x[k, ]; p <- p[k, ]; y <- y[k]  # campers with trips
@@ -630,17 +1237,12 @@ md  <- do.call(rbind, lapply(years, function(y)
   data.frame(model = "MDCEV", year = y, inc = incs,
              md_el(mdcev_model_list[[as.character(y)]]))))
 
-```
-
-### Plot
-
-```{r}
 d <- rbind(rum, md)
 d$model <- factor(d$model, levels = c("Repeated RUM", "MDCEV"))
 d$inc   <- factor(d$inc, levels = incs, labels = paste0("+", incs, "%"))
 print(transform(d, est = round(est, 3), lo = round(lo, 3), hi = round(hi, 3)), row.names = FALSE)
 
-## ---- Plot
+##  Plot
 ## y-axis values in each panel
 nice_breaks <- function(lo, hi, n = 5) {
   steps <- c(1, 2, 2.5, 5) * 10^rep(-3:3, each = 4)
@@ -682,17 +1284,198 @@ p <- ggplot(d, aes(x = factor(year), y = est, group = inc, shape = inc, linetype
 
 print(p)
 
-ggsave("images/elasticities_RUM_MDCEV.png", p, width = 11, height = 6, dpi = 600)
+ggsave("figure/figure3_elasticities.png", p, width = 11, height = 6, dpi = 600)
 ```
 
-# Distributional Analysis
+## Figure B.1
+
+### Participations
+
+just participants of visiting a site included.
+
+```{r}
+
+years <- 2018:2023
+## Repeated RUM: participants only, Krinsky-Robb from the models in model_list_52 
+
+rum_participants <- function(m, fd, seed, R = 1000) {
+  oid  <- as.character(idx(m, 1)); alt <- as.character(idx(m, 2))
+  alts <- unique(alt); K <- length(alts); home <- alts == "Stay_Home"; sites <- alts[!home]
+  w1   <- grepl("_w1$", oid)                                  # week 1: all 52 weeks are identical
+  X    <- model.matrix(m)[w1, , drop = FALSE]
+  pid  <- sub("_w1$", "", oid[w1][seq(1, sum(w1), by = K)])  # camper ids, in the model's order
+
+  ## who visited which campsite (from VisitCount)
+  v  <- fd %>% mutate(id = as.character(id)) %>% filter(VisitCount > 0)
+  ii <- match(v$id, pid); jj <- match(v$parkname, sites); ok <- !is.na(ii) & !is.na(jj)
+  vis <- matrix(0, length(pid), length(sites)); vis[cbind(ii[ok], jj[ok])] <- 1
+  n_j <- colSums(vis); keep <- n_j > 0
+
+  avg_loss <- function(b) {
+    E <- exp(matrix(X %*% b[colnames(X)], ncol = K, byrow = TRUE)); P <- E / rowSums(E)
+    L <- -52 * log(1 - P[, !home, drop = FALSE]) / -b[["price"]]      # positive losses
+    mean(colSums(L * vis)[keep] / n_j[keep])
+  }
+  set.seed(seed)
+  kr <- apply(MASS::mvrnorm(R, coef(m), vcov(m)), 1, avg_loss)
+  c(est = avg_loss(coef(m)), lo = unname(quantile(kr, 0.025)), hi = unname(quantile(kr, 0.975)))
+}
+
+rum <- do.call(rbind, lapply(years, function(y) {
+  r <- rum_participants(model_list_52[[paste("52wk", y)]], get(paste0("final_data_", y)), seed = 898989 + y)
+  data.frame(model = "Repeated RUM", year = y, est = r[["est"]], lo = r[["lo"]], hi = r[["hi"]])
+}))
+
+## MDCEV: participants only, rmdcev parameter draws 
+## welfare and the model's trip data are in the same camper order
+md_participants <- function(w, mod) {
+  J   <- mod$stan_data$J
+  vis <- (mod$stan_data$quant_j > 0) * 1                       # campers x campsites
+  stopifnot(length(w) == nrow(vis), ncol(as.matrix(w[[1]])) >= J + 1)
+  S <- 0
+  for (i in seq_along(w)) S <- S + sweep(as.matrix(w[[i]])[, 1:J, drop = FALSE], 2, vis[i, ], `*`)
+  n_j  <- colSums(vis); keep <- n_j > 0
+  avg  <- -rowMeans(sweep(S[, keep, drop = FALSE], 2, n_j[keep], "/"))   # each draw: mean over visitors, then over sites
+  c(est = mean(avg), lo = unname(quantile(avg, 0.025)), hi = unname(quantile(avg, 0.975)))
+}
+
+md <- do.call(rbind, lapply(years, function(y) {
+  r <- md_participants(welfare_list[[as.character(y)]], mdcev_model_list[[as.character(y)]])
+  data.frame(model = "MDCEV", year = y, est = r[["est"]], lo = r[["lo"]], hi = r[["hi"]])
+}))
+
+
+d <- rbind(rum, md) 
+d$model <- factor(d$model, levels = c("Repeated RUM", "MDCEV"))
+print(transform(d, est = round(est, 3), lo = round(lo, 3), hi = round(hi, 3)), row.names = FALSE)
+
+## Five  y-axis values in each panel
+nice_breaks <- function(lo, hi, n = 5) {
+  steps <- c(1, 2, 2.5, 5) * 10^rep(-3:3, each = 4)
+  for (s in steps) { b0 <- floor(lo / s) * s; if (b0 + (n - 1) * s >= hi) return(b0 + s * (0:(n - 1))) }
+}
+br   <- lapply(split(d, d$model), function(x) nice_breaks(min(x$lo), max(x$hi)))
+lims <- data.frame(model = factor(rep(names(br), each = 2), levels = levels(d$model)),
+                   y = unlist(lapply(br, range)))
+y_breaks <- function(l) br[[which.min(sapply(br, function(b) abs(mean(b) - mean(l))))]]
+
+p <- ggplot(d, aes(x = factor(year), y = est, group = model)) +
+  geom_line(linewidth = 0.5, linetype = "dashed", colour = "black") +
+  geom_errorbar(aes(ymin = lo, ymax = hi), width = 0.2, linewidth = 0.6, colour = "black") +
+  geom_point(shape = 16, size = 3.2, colour = "black") +
+  geom_blank(data = lims, aes(x = NULL, y = y, group = NULL), inherit.aes = FALSE) +
+  facet_wrap(~ model, nrow = 1, scales = "free_y") +
+  scale_y_continuous(breaks = y_breaks, labels = function(x) format(x, nsmall = 1, trim = TRUE)) +
+  labs(x = "Year", y = "Average welfare loss per person (USD)") +
+  theme_bw(base_size = 16, base_family = "serif") +
+  theme(panel.grid       = element_blank(),
+        strip.background = element_blank(),
+        strip.text       = element_text(size = 17, face = "bold"),
+        panel.border     = element_rect(colour = "black", linewidth = 0.8),
+        axis.ticks       = element_line(colour = "black", linewidth = 0.6),
+        axis.text        = element_text(colour = "black", size = 17),
+        axis.title       = element_text(size = 17))
+
+print(p)
+ggsave("figure/figureb1average.png", plot = p,width=16, height=10, dpi=300)
+
+
+```
+
+## Figure B.2
+
+### Elasticity
+
+MDCEV total-trip price elasticities with estimated and scaled satiation parameters, 2018--2023.
+
+```{r}
+years <- 2018:2023
+incs  <- c(1, 10, 20, 50)
+s_vec <- incs / 100
+
+## MDCEV total-trip elasticity: conditional demand, budget holds (numeraire solved by bisection)
+## f multiplies every gamma (and every draw's gamma): 1 = baseline, 2 = gamma x2, 4 = gamma x4
+md_el <- function(mod, f = 1) {
+  sd <- mod$stan_data; x <- sd$quant_j; p <- sd$price_j; y <- as.numeric(sd$income)
+  k  <- rowSums(x) > 0; x <- x[k, ]; p <- p[k, ]; y <- y[k]          # campers with trips
+  z0 <- y - rowSums(p * x)
+  el <- function(g, a1, s) {
+    G   <- matrix(g, nrow(x), ncol(x), byrow = TRUE)
+    dem <- function(z) pmax(0, (G + x) / (1 + s) * (z / z0)^(1 - a1) - G) * (x > 0)
+    lo <- 0 * y; hi <- y
+    for (i in 1:60) {                                                # numeraire z that exhausts income
+      z <- (lo + hi) / 2; up <- y - z - (1 + s) * rowSums(p * dem(z)) > 0
+      lo[up] <- z[up]; hi[!up] <- z[!up]
+    }
+    (sum(dem(z)) / sum(x) - 1) / s
+  }
+  th <- as.matrix(mod$stan_fit$theta_tilde)
+  gc <- grep("^gamma", colnames(th)); ac <- grep("^alpha", colnames(th))[1]
+  E  <- t(apply(th, 1, function(r) sapply(s_vec, function(s) el(f * r[gc], r[ac], s))))
+  data.frame(est = colMeans(E), lo = apply(E, 2, quantile, .025), hi = apply(E, 2, quantile, .975))
+}
+
+panels <- c("MDCEV" = 1, "MDCEV, \u03B3\u00D72" = 2, "MDCEV, \u03B3\u00D74" = 4)
+d <- do.call(rbind, lapply(names(panels), function(nm) do.call(rbind, lapply(years, function(y)
+  data.frame(model = nm, year = y, inc = incs, md_el(mdcev_model_list[[as.character(y)]], panels[[nm]]))))))
+
+d$model <- factor(d$model, levels = names(panels))
+d$inc   <- factor(d$inc, levels = incs, labels = paste0("+", incs, "%"))
+print(transform(d, est = round(est, 3), lo = round(lo, 3), hi = round(hi, 3)), row.names = FALSE)
+
+## ---- Plot (same style) -----------------------------------------------------------------------
+nice_breaks <- function(lo, hi, n = 5) {
+  steps <- c(1, 2, 2.5, 5) * 10^rep(-3:3, each = 4)
+  for (s in steps) { b0 <- floor(lo / s) * s; if (b0 + (n - 1) * s >= hi) return(b0 + s * (0:(n - 1))) }
+}
+br   <- lapply(split(d, d$model), function(x) nice_breaks(min(x$lo), max(x$hi)))
+lims <- data.frame(model = factor(rep(names(br), each = 2), levels = levels(d$model)),
+                   y = unlist(lapply(br, range)))
+y_breaks <- function(l) br[[which.min(sapply(br, function(b) abs(mean(b) - mean(l))))]]
+
+pd <- position_dodge(width = 0.55)
+
+p <- ggplot(d, aes(x = factor(year), y = est, group = inc, shape = inc, linetype = inc)) +
+  geom_line(position = pd, linewidth = 0.6, colour = "black") +
+  geom_errorbar(aes(ymin = lo, ymax = hi), position = pd, width = 0.3, linewidth = 0.6,
+                linetype = "solid", colour = "black") +
+  geom_point(position = pd, size = 3.2, fill = "white", colour = "black", stroke = 0.8) +
+  geom_blank(data = lims, aes(x = NULL, y = y, group = NULL, shape = NULL, linetype = NULL),
+             inherit.aes = FALSE) +
+  facet_wrap(~ model, nrow = 1, scales = "fixed") +
+  scale_y_continuous(breaks = y_breaks, labels = function(x) format(x, nsmall = 1, trim = TRUE)) +
+  scale_shape_manual(values = c(21, 24, 22, 23)) +
+  scale_linetype_manual(values = c("solid", "dashed", "dotted", "dotdash")) +
+  labs(x = "Year", y = "Total-trip price elasticity",
+       shape = "Travel cost increase", linetype = "Travel cost increase") +
+  theme_bw(base_size = 16, base_family = "serif") +
+  theme(panel.grid        = element_blank(),
+        strip.background  = element_blank(),
+        strip.text        = element_text(size = 17, face = "bold"),
+        panel.border      = element_rect(colour = "black", linewidth = 0.8),
+        axis.ticks        = element_line(colour = "black", linewidth = 0.6),
+        axis.text         = element_text(colour = "black", size = 15),
+        axis.title        = element_text(size = 17),
+        legend.text       = element_text(size = 15),
+        legend.title      = element_text(size = 16),
+        legend.position   = "bottom",
+        legend.key.width  = unit(2.4, "lines"),
+        legend.box.margin = margin(-6, 0, 0, 0))
+
+print(p)
+ggsave("figure/figureb2_elasticities_gamma.png", p, width = 15, height = 6, dpi = 600)
+```
+
+## Figure 4
+
+### Distributional Analysis
 
 Here we are breaking up the income assumption by zip code and showing how individuals by income braket are valued in the WTP estimates of MDCEV and RUM
 
 ```{r}
 
 ## One row per camper and model: average loss over single-site closures 
-## Losses as positive values; system-closure rows left out. Income deciles within each year.
+
 person <- final_comparison_master %>%
   filter(year %in% c(2018, 2023),
          !parkname %in% c("All sites closed", "System closure", "Close_All", "Stay_Home"),
@@ -754,19 +1537,95 @@ p <- ggplot(d, aes(dec, est, colour = model, shape = model, linetype = model, gr
         panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.7))
 
 print(p)
-
+ggsave("figure/figure4_distributional.png",plot=p, width=12, height=10, dpi=300)
 
 ```
 
-### All Years
+## Figure B.3
+
+### Distribution Years
+
+Mean welfare loss per person from closing a single campsite across income deciles, 2019--2022. Panel A. Mean loss as % of income. Panel B. Mean loss per person (USD). Panel C. % above (+) or below (−) the model's average loss across campers
 
 ```{r}
 
+## One row per camper and model: average loss over single-site closures 
+
+person <- final_comparison_master %>%
+  filter(year %in% c(2019:2022),
+         !parkname %in% c("All sites closed", "System closure", "Close_All", "Stay_Home"),
+         !is.na(income), income > 0) %>%
+  group_by(year, id, zip, income) %>%
+  summarise(`RUM` = -mean(annual_rum_loss, na.rm = TRUE),
+            `MDCEV` = -mean(loss_mdcev,      na.rm = TRUE), .groups = "drop") %>%
+  group_by(year) %>% mutate(dec = ntile(income, 10)) %>% ungroup() %>%
+  pivot_longer(c(`RUM`, `MDCEV`), names_to = "model", values_to = "loss") %>%
+  filter(!is.na(loss))
+
+## Decile statistics: $ loss, % of income, % above/below the model's average 
+dec_stats <- function(df) df %>%
+  group_by(year, model) %>% mutate(avg = mean(loss)) %>%
+  group_by(year, model, dec) %>%
+  summarise(usd = mean(loss), pct = mean(100 * loss / income),
+            rel = 100 * mean(loss) / first(avg) - 100, .groups = "drop")
+
+## 95% cluster bootstrap: resample zip codes within each year 
+set.seed(898989)
+boot <- map_df(1:500, function(b) {
+  z <- person %>% distinct(year, zip) %>% group_by(year) %>%
+    slice_sample(prop = 1, replace = TRUE) %>% ungroup()
+  dec_stats(inner_join(z, person, by = c("year", "zip"), relationship = "many-to-many"))
+})
+
+d <- dec_stats(person) %>%
+  pivot_longer(c(usd, pct, rel), names_to = "unit", values_to = "est") %>%
+  left_join(boot %>% pivot_longer(c(usd, pct, rel), names_to = "unit") %>%
+              group_by(year, model, dec, unit) %>%
+              summarise(lo = quantile(value, .025), hi = quantile(value, .975), .groups = "drop"),
+            by = c("year", "model", "dec", "unit")) %>%
+  mutate(unit  = factor(unit, c("pct", "usd", "rel"),
+                        c("Mean loss as % of income", "Mean loss per person ($)",
+                          "% above (+) or below (-)\nthe model's average loss")),
+         model = factor(model, c("RUM", "MDCEV")))
+
+## Figure 
+pd <- position_dodge(width = 0.55)
+
+p <- ggplot(d, aes(dec, est, colour = model, shape = model, linetype = model, group = model)) +
+  geom_hline(data = data.frame(unit = factor(levels(d$unit)[3], levels(d$unit))),
+             aes(yintercept = 0), colour = "grey40", linewidth = 0.4) +
+  geom_errorbar(aes(ymin = lo, ymax = hi), width = 0.25, linewidth = 0.3, position = pd, linetype = "solid") +
+  geom_line(position = pd, linewidth = 0.6) +
+  geom_point(position = pd, size = 2, fill = "white") +
+  facet_grid(unit ~ year, scales = "free_y") +
+  scale_x_continuous(breaks = 1:10) +
+  scale_colour_manual(values = c("RUM" = "grey60", "MDCEV" = "black"), name = "Model") +
+  scale_shape_manual(values = c("RUM" = 1, "MDCEV" = 17), name = "Model") +
+  scale_linetype_manual(values = c("RUM" = "dashed", "MDCEV" = "solid"), name = "Model") +
+  labs(x = "Income decile (1 = lowest income)", y = NULL,
+       title = "Distributional Analysis across Income: average single-campsite closure",
+       caption = "95% cluster-bootstrap intervals (zip codes resampled)") +
+  theme_bw(base_size = 18, base_family = "serif") +
+  theme(panel.grid.minor = element_blank(), panel.grid.major.x = element_blank(),
+        strip.background = element_rect(fill = "white", colour = "black"),
+        strip.text = element_text(face = "bold"), legend.position = "bottom",
+        panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.7))
+
+print(p)
+ggsave("figure/figureb3_distributional.png",plot=p, width=12, height=10, dpi=300)
+
+```
+
+## Figure B.4
+
+### Travel Cost by income
+
+Average distance to all sites based on income deciles. Panel A. Shows the distance to the nearest campsite in miles. Panel B. Is the median distance to campsite in miles. Panel C. shows the median price per campsite. Panel D. is the value of time as a share of price using a wage rate of ¾.
+
+```{r}
 KM_TO_MILES <- 0.621371
 
-
-## Step 1. The inputs your travel-cost code used 
-# vehicle cost per km (AAA brochure, 25 mpg, 15,000 miles a year), shared by 3 people, exactly as in your code
+## Inputs from your travel-cost code (vehicle cost per km, flight hours)
 aaa <- tribble(~year, ~gas, ~maintenance, ~inflation, ~ownership,
                2018, 4.68, 0.0858, 1.2816,  6202,
                2019, 4.49, 0.0960, 1.262,   6845,
@@ -774,10 +1633,8 @@ aaa <- tribble(~year, ~gas, ~maintenance, ~inflation, ~ownership,
                2021, 4.75, 0.1043, 1.12144, 6633,
                2022, 5.81, 0.1064, 1.113,   6599,
                2023, 5.09, 0.1085, 1.0618,  7542) %>%
-  mutate(cost_per_mile  = (gas / 25 * 15000 + maintenance * inflation * 15000 + ownership * inflation) / 15000,
-         vehicle_per_km = cost_per_mile / 1.60934 / 3)
+  mutate(vehicle_per_km = (gas / 25 * 15000 + maintenance * inflation * 15000 + ownership * inflation) / 15000 / 1.60934 / 3)
 
-# hours of travel time for the flight, one way (the same numbers as in your code; the trip is counted twice)
 air_hours <- tribble(~island_park, ~island_live, ~air_hours,
   "Hawaii", "Oahu", 2.33,  "Hawaii", "Kauai", 2.42,  "Hawaii", "Molokai", 3.5,  "Hawaii", "Maui", 2.17,  "Hawaii", "Lanai", 4.34,
   "Oahu",   "Hawaii", 2.33, "Oahu",  "Kauai", 2.17,  "Oahu",   "Molokai", 2.17, "Oahu",   "Maui", 2.17,  "Oahu",   "Lanai", 2.17,
@@ -785,51 +1642,26 @@ air_hours <- tribble(~island_park, ~island_live, ~air_hours,
   "Molokai","Hawaii", 3.5,  "Molokai","Oahu", 2.17,  "Molokai","Kauai",  3.5,  "Molokai","Maui", 2,     "Molokai","Lanai", 2)
 
 
-##Put the six years in one table and split the price into its pieces ------------------------------
+## Six years in one table, campsites only, with the price split into value of time and the rest
 final_data <- bind_rows(
   mutate(final_data_2018, year = 2018), mutate(final_data_2019, year = 2019),
   mutate(final_data_2020, year = 2020), mutate(final_data_2021, year = 2021),
   mutate(final_data_2022, year = 2022), mutate(final_data_2023, year = 2023))
 
 camp <- final_data %>%
+  filter(parkname != "Stay_Home") %>%                                  # Stay_Home has no distance or price
   left_join(select(aaa, year, vehicle_per_km), by = "year") %>%
   left_join(air_hours, by = c("island_park", "island_live")) %>%
-  transmute(id = as.character(id), year, parkname, island_park, island_live,
+  transmute(id = as.character(id), year, parkname,
             trips  = VisitCount,
-            price  = price,
-            km     = travel_distance_km,
-            miles  = travel_distance_km * KM_TO_MILES,
+            price  = price,                                            # travel cost of this campsite for this camper ($)
+            miles  = travel_distance_km * KM_TO_MILES,                 # distance to this campsite (miles)
             income = income,
-            vehicle_per_km,
-            air_hours = coalesce(air_hours, 0)) %>%                  # 0 hours when the camper lives on the campsite's island
-  mutate(wage_hr    = income * 0.75 / 2080,                          # hourly value of time
-         vehicle    = km * vehicle_per_km,
-         drive_time = wage_hr * km / 50,
-         air_time   = wage_hr * air_hours * 2,
-         other      = price - vehicle - drive_time - air_time)       # entry fees, flights, rental car, parking
+            drive_time = (income * 0.75 / 2080) * travel_distance_km / 50,                  # wage x driving hours
+            air_time   = (income * 0.75 / 2080) * coalesce(air_hours, 0) * 2)               # wage x flight hours (0 if same island)
 
 
-cat("Smallest 'everything else' value:", round(min(camp$other, na.rm = TRUE), 4), "(should be >= 0)\n")
-cat("Rows that are on another island than the camper:", sum(camp$air_hours > 0), "of", nrow(camp), "\n")
-cat("Distance (km), campsite on the camper's island vs another island:\n")
-print(tapply(camp$km, camp$air_hours > 0, summary))
-
-# Constants for the counterfactuals (all within the year)
-avg_wage <- camp %>% distinct(id, year, wage_hr) %>% group_by(year) %>% summarise(avg_wage = mean(wage_hr), .groups = "drop")
-avg_km   <- camp %>% group_by(year, parkname) %>% summarise(avg_km = mean(km), .groups = "drop")
-
-camp <- camp %>%
-  left_join(avg_wage, by = "year") %>%
-  left_join(avg_km,   by = c("year", "parkname")) %>%
-  mutate(# value of time OFF: the average wage in both time terms; own distance, own fees and flights
-         equal_vot      = vehicle + avg_wage * (km / 50 + air_hours * 2) + other,
-         # distance OFF: the average distance to the campsite; own wage, own fees and flights
-         equal_distance = avg_km * vehicle_per_km + wage_hr * (avg_km / 50 + air_hours * 2) + other,
-         # both OFF
-         both_equal     = avg_km * vehicle_per_km + avg_wage * (avg_km / 50 + air_hours * 2) + other)
-
-
-## One row per camper, with an income decile (1 = lowest income, within each year) 
+## One row per camper, with an income decile (1 = lowest income, within each year)
 campers <- camp %>%
   group_by(id, year) %>%
   summarise(income        = first(income),
@@ -844,7 +1676,7 @@ campers <- camp %>%
   ungroup()
 
 
-## ---- Figure A: what differs across income deciles? ------------------------------------------------------
+## Differences across income deciles
 what_varies <- campers %>%
   group_by(decile) %>%
   summarise(campers                   = n(),
@@ -854,7 +1686,6 @@ what_varies <- campers %>%
             median_price_per_campsite = mean(median_price),
             time_cost_share_of_price  = mean(time_share))
 
-write.csv(what_varies, "data/rum_what_varies_with_income.csv", row.names = FALSE)
 
 fig_a <- what_varies %>%
   select(decile,
@@ -876,132 +1707,18 @@ fig_a <- what_varies %>%
         strip.text = element_text(face = "bold"),
         panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.7))
 
-ggsave("figure/rum_what_varies_with_income.png", fig_a, width = 9, height = 6.5, dpi = 300, bg = "white")
-
-
-# average price per camper-campsite, split into its pieces (all six years, deciles are within each year)
-components <- camp %>%
-  inner_join(select(campers, id, year, decile), by = c("id", "year")) %>%
-  group_by(decile) %>%
-  summarise(`vehicle cost`          = mean(vehicle),
-            `driving time`          = mean(drive_time),
-            `flight time`           = mean(air_time),
-            `fees, flights, rental` = mean(other),
-            .groups = "drop")
-
-write.csv(components, "data/price_components_by_decile.csv", row.names = FALSE)
-
-fig_a2 <- components %>%
-  pivot_longer(-decile, names_to = "piece", values_to = "dollars") %>%
-  mutate(piece = factor(piece, levels = c("fees, flights, rental", "vehicle cost", "driving time", "flight time"))) %>%
-  ggplot(aes(factor(decile), dollars, fill = piece)) +
-  geom_col(colour = "black", linewidth = 0.3) +
-  scale_fill_manual(values = c("grey90", "grey70", "grey40", "black"), name = NULL) +
-  labs(x = "Income decile (1 = lowest income)", y = "Average price per campsite ($)",
-       title = "What the travel cost is made of") +
-  theme_bw(base_size = 12, base_family = "serif") +
-  theme(panel.grid.minor = element_blank(), panel.grid.major.x = element_blank(), legend.position = "bottom",
-        panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.7))
-
-ggsave("figure/price_components_by_decile.png", fig_a2, width = 8, height = 5.5, dpi = 300, bg = "white")
-
-
-## Re-estimate the RUM (one year at a time) and recompute the losses under four price scenarios
-# RUM:  utility of campsite j = kappa_j - lambda * price_j,  staying home = 0,  52 weekly choices.
-# The loss from closing campsite j is  52 * ( -log(1 - P_j) ) / lambda,  where P_j is the weekly choice probability.
-
-rum_losses <- function(d) {
-
-  ids   <- sort(unique(d$id))
-  sites <- sort(unique(d$parkname))
-  put   <- function(v) { m <- matrix(NA_real_, length(ids), length(sites))     # camper x campsite table
-                         m[cbind(match(d$id, ids), match(d$parkname, sites))] <- v; m }
-  price <- put(d$price)
-  trips <- put(d$trips)
-
-  # --- estimate kappa (one per campsite) and lambda by maximum likelihood ---
-  log_lik <- function(theta) {
-    kappa <- theta[seq_along(sites)];  beta <- theta[length(sites) + 1]
-    V     <- sweep(beta * price, 2, kappa, "+")                                  # utility of each campsite
-    denom <- 1 + rowSums(exp(V))                                                 # 1 = stay home
-    sum(trips * V) - 52 * sum(log(denom))
-  }
-  start <- c(log((colSums(trips) + 0.5) / (52 * length(ids))), -0.01)
-  fit   <- optim(start, function(th) -log_lik(th), method = "BFGS", control = list(maxit = 2000, reltol = 1e-12))
-  kappa <- fit$par[seq_along(sites)]
-  beta  <- fit$par[length(sites) + 1]
-  lambda <- -beta                                                               # marginal utility of income
-
-  #  loss per campsite closure, averaged over the campsites, for a given price table ---
-  average_loss <- function(price_table) {
-    V     <- sweep(beta * price_table, 2, kappa, "+")
-    P     <- exp(V) / (1 + rowSums(exp(V)))                                      # weekly probability of each campsite
-    rowMeans(-52 * log(1 - P) / lambda)
-  }
-
-  # 4 price scenarios (built in Step 2) ---
-  tibble(id = ids,
-         baseline       = average_loss(price),
-         equal_vot      = average_loss(pmax(put(d$equal_vot), 0)),
-         equal_distance = average_loss(pmax(put(d$equal_distance), 0)),
-         both_equal     = average_loss(pmax(put(d$both_equal), 0)))
-}
-
-losses <- camp %>%
-  group_by(year) %>%
-  group_modify(~ rum_losses(.x)) %>%                                            # runs rum_losses once per year
-  ungroup()
-
-
-## ---- Figure B: the counterfactual gradients ---------------------------------------------------------------
-by_decile <- campers %>%
-  inner_join(losses, by = c("id", "year")) %>%
-  group_by(year, decile) %>%                                        # deciles are within each year, so one panel per year
-  summarise(campers = n(),
-            baseline                                  = mean(baseline),
-            `equal value of time (value of time off)` = mean(equal_vot),
-            `equal distance (distance off)`           = mean(equal_distance),
-            `both off`                                = mean(both_equal),
-            .groups = "drop")
-
-write.csv(by_decile, "data/rum_counterfactual_gradient.csv", row.names = FALSE)
-
-fig_b <- by_decile %>%
-  select(-campers) %>%
-  pivot_longer(-c(year, decile), names_to = "scenario", values_to = "loss") %>%
-  mutate(scenario = factor(scenario, levels = c("baseline", "equal value of time (value of time off)",
-                                                "equal distance (distance off)", "both off"))) %>%
-  ggplot(aes(decile, loss, colour = scenario, linetype = scenario, shape = scenario)) +
-  geom_line(linewidth = 0.7) +
-  geom_point(size = 2, fill = "white") +
-  scale_colour_manual(values = c("black", "grey30", "grey55", "grey75"), name = NULL) +
-  scale_linetype_manual(values = c("solid", "dashed", "dotdash", "dotted"), name = NULL) +
-  scale_shape_manual(values = c(16, 1, 2, 4), name = NULL) +
-  facet_wrap(~ year, ncol = 3) +
-  scale_x_continuous(breaks = 1:10) +
-  labs(x = "Income decile (1 = lowest income)",
-       y = "Mean repeated RUM loss per single-campsite closure ($)",
-       title = "Repeated RUM Welfare under constant distance and/or value of time") +
-  theme_bw(base_size = 16, base_family = "serif") +
-  theme(panel.grid.minor = element_blank(), panel.grid.major.x = element_blank(), legend.position = "bottom",
-        strip.background = element_rect(fill = "white", colour = "black"), strip.text = element_text(face = "bold"),
-        panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.7))
-
-ggsave("figure/rum_counterfactual_gradient.png", fig_b, width = 12, height = 7.5, dpi = 300, bg = "white")
+ggsave("figure/figureb4income.png", fig_a, width = 9, height = 6.5, dpi = 300, bg = "white")
 
 ```
 
-## RUM - Travel Cost
+## Figure B.5
+
+### RUM Constant VTT or DT
 
 ```{r}
 
-dir.create("figure", showWarnings = FALSE)
-dir.create("data",   showWarnings = FALSE)
  
-KM_TO_MILES <- 0.621371
- 
- 
-## ---- Step 1. Put the six years in one table, distances in miles -----------------------------------------
+## Put the six years in one table, distances in miles 
 final_data <- bind_rows(
   mutate(final_data_2018, year = 2018), mutate(final_data_2019, year = 2019),
   mutate(final_data_2020, year = 2020), mutate(final_data_2021, year = 2021),
@@ -1038,42 +1755,6 @@ campers <- camp %>%
   mutate(decile = ntile(income, 10)) %>%
   ungroup()
  
- 
-##Figure: what differs across income deciles? 
-what_varies <- campers %>%
-  group_by(decile) %>%
-  summarise(campers                    = n(),
-            mean_income                = mean(income),
-            nearest_campsite_miles     = mean(nearest_miles),
-            median_distance_miles      = mean(median_miles),
-            price_per_mile             = mean(rate_per_mile),
-            median_price_per_campsite  = mean(median_price))
- 
-write.csv(what_varies, "data/rum_what_varies_with_income.csv", row.names = FALSE)
- 
-fig_a <- what_varies %>%
-  select(decile,
-         `A. Distance to nearest campsite (miles)`   = nearest_campsite_miles,
-         `B. Median distance to campsites (miles)`   = median_distance_miles,
-         `C. Price per mile ($)`                     = price_per_mile,
-         `D. Median price per campsite ($)`          = median_price_per_campsite) %>%
-  pivot_longer(-decile) %>%
-  ggplot(aes(decile, value)) +
-  geom_line(linewidth = 0.7) +
-  geom_point(size = 2) +
-  facet_wrap(~ name, scales = "free_y") +
-  scale_x_continuous(breaks = 1:10) +
-  labs(x = "Income decile (1 = lowest income)", y = NULL,
-       title = "Differences in distance or price per mile across income deciles across all years") +
-  theme_bw(base_size = 12, base_family = "serif") +
-  theme(panel.grid.minor = element_blank(), panel.grid.major.x = element_blank(),
-        strip.background = element_rect(fill = "white", colour = "black"),
-        strip.text = element_text(face = "bold"),
-        panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.7))
- 
-ggsave("figure/rum_what_varies_with_income.png", fig_a, width = 9, height = 6.5, dpi = 300, bg = "white")
-
-
 # Across years
 rum_losses <- function(d) {
  
@@ -1087,7 +1768,7 @@ rum_losses <- function(d) {
   extra <- put(d$leftover)
   rate  <- put(d$rate_per_mile)[, 1]                                            # one rate per camper
  
-  # --- estimate kappa (one per campsite) and lambda by maximum likelihood ---
+  # estimate kappa and lambda by maximum likelihood 
   log_lik <- function(theta) {
     kappa <- theta[seq_along(sites)];  beta <- theta[length(sites) + 1]
     V     <- sweep(beta * price, 2, kappa, "+")                                  # utility of each campsite
@@ -1100,7 +1781,7 @@ rum_losses <- function(d) {
   beta  <- fit$par[length(sites) + 1]
   lambda <- -beta                                                               # marginal utility of income
  
-  # --- loss per campsite closure, averaged over the campsites, for a given price table ---
+  # loss per campsite closure, averaged over the campsites
   average_loss <- function(price_table) {
     V     <- sweep(beta * price_table, 2, kappa, "+")
     P     <- exp(V) / (1 + rowSums(exp(V)))                                      # weekly probability of each campsite
@@ -1129,7 +1810,7 @@ losses <- camp %>%
   ungroup()
  
  
-## ---- Figure B: the counterfactual gradients ---------------------------------------------------------------
+## : the counterfactual  
 by_decile <- campers %>%
   inner_join(losses, by = c("id", "year")) %>%
   group_by(year, decile) %>%                                        # deciles are within each year, so one panel per year
@@ -1140,7 +1821,6 @@ by_decile <- campers %>%
             `both off`                                = mean(both_equal),
             .groups = "drop")
  
-write.csv(by_decile, "data/rum_counterfactual_gradient.csv", row.names = FALSE)
  
 fig_b <- by_decile %>%
   select(-campers) %>%
@@ -1163,368 +1843,77 @@ fig_b <- by_decile %>%
         strip.background = element_rect(fill = "white", colour = "black"), strip.text = element_text(face = "bold"),
         panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.7))
  
-ggsave("figure/rum_counterfactual_gradient.png", fig_b, width = 12, height = 7.5, dpi = 300, bg = "white")
- 
+ggsave("figure/figureb5rum_counterfactual.png", fig_b, width = 12, height = 7.5, dpi = 300, bg = "white")
+ print(fig_b)
 ```
 
-## MDCEV
+## Figure B.6
 
-### Welfare re-estimate
+### MDCEV Constant VTT or DT
 
-Run once this will take a long time to complete.
+We pull the welfare estimates from constant VVT and constant distance or both. We have them for every year.
+
+Mean MDCEV welfare loss per person from closing a single campsite, by income decile, 2018--2023. Baseline compared with losses recomputed with the same value of travel time for all campers, the same distance to each campsite, or both, each set to the sample average for that year.
 
 ```{r}
-#| eval: false    
-#| echo: true 
+## Baseline: per-camper rmdcev loss (100 draws), averaged over the 
+YEARS <- 2018:2023
 
-library(dplyr)
-library(tidyr)
-library(ggplot2)
-library(rmdcev)
- 
-dir.create("figure", showWarnings = FALSE)
-dir.create("data",   showWarnings = FALSE)
- 
-YEARS       <- 2018:2023
-NERRS       <- 100       # conditional error draws per camper, as in your code
-N_DRAWS     <- 100       # parameter draws, as in your code
-KM_TO_MILES <- 0.621371
- 
-welfare_ind_list <- readRDS("data/welfare_ind_list.rds")
- 
- 
-## The inputs your travel-cost code used 
-# vehicle cost per km (AAA brochure, 25 mpg, 15,000 miles a year), shared by 3 people, exactly as in your code
-aaa <- tribble(~year, ~gas, ~maintenance, ~inflation, ~ownership,
-               2018, 4.68, 0.0858, 1.2816,  6202,
-               2019, 4.49, 0.0960, 1.262,   6845,
-               2020, 4.09, 0.1011, 1.2314,  6831,
-               2021, 4.75, 0.1043, 1.12144, 6633,
-               2022, 5.81, 0.1064, 1.113,   6599,
-               2023, 5.09, 0.1085, 1.0618,  7542) %>%
-  mutate(cost_per_mile  = (gas / 25 * 15000 + maintenance * inflation * 15000 + ownership * inflation) / 15000,
-         vehicle_per_km = cost_per_mile / 1.60934 / 3)
- 
-# hours of travel time for the flight, one way (the same numbers as in your code; the trip is counted twice)
-air_hours <- tribble(~island_park, ~island_live, ~air_hours,
-  "Hawaii", "Oahu", 2.33,  "Hawaii", "Kauai", 2.42,  "Hawaii", "Molokai", 3.5,  "Hawaii", "Maui", 2.17,  "Hawaii", "Lanai", 4.34,
-  "Oahu",   "Hawaii", 2.33, "Oahu",  "Kauai", 2.17,  "Oahu",   "Molokai", 2.17, "Oahu",   "Maui", 2.17,  "Oahu",   "Lanai", 2.17,
-  "Kauai",  "Hawaii", 2.42, "Kauai", "Oahu",  2.17,  "Kauai",  "Molokai", 3.5,  "Kauai",  "Maui", 2.33,  "Kauai",  "Lanai", 4.34,
-  "Molokai","Hawaii", 3.5,  "Molokai","Oahu", 2.17,  "Molokai","Kauai",  3.5,  "Molokai","Maui", 2,     "Molokai","Lanai", 2)
- 
- 
-## Put the six years in one table and split the price into its pieces 
-final_data <- bind_rows(
-  mutate(final_data_2018, year = 2018), mutate(final_data_2019, year = 2019),
-  mutate(final_data_2020, year = 2020), mutate(final_data_2021, year = 2021),
-  mutate(final_data_2022, year = 2022), mutate(final_data_2023, year = 2023))
- 
-camp <- final_data %>%
-  filter(parkname != "Stay_Home") %>%
-  left_join(select(aaa, year, vehicle_per_km), by = "year") %>%
-  left_join(air_hours, by = c("island_park", "island_live")) %>%
-  transmute(id = as.character(id), year, parkname, island_park, island_live,
-            trips  = VisitCount,
-            price  = price,
-            km     = travel_distance_km,
-            miles  = travel_distance_km * KM_TO_MILES,
-            income = income,
-            vehicle_per_km,
-            air_hours = coalesce(air_hours, 0)) %>%                  # 0 hours when the camper lives on the campsite's island
-  mutate(wage_hr    = income * 0.75 / 2080,                          # hourly value of time
-         vehicle    = km * vehicle_per_km,
-         drive_time = wage_hr * km / 50,
-         air_time   = wage_hr * air_hours * 2,
-         other      = price - vehicle - drive_time - air_time)       # entry fees, flights, rental car, parking
- 
-# Check: what is left over must be positive dollars that do not depend on income. If this fails, tell me.
-cat("Smallest 'everything else' value:", round(min(camp$other, na.rm = TRUE), 4), "(should be >= 0)\n")
-cat("Rows that are on another island than the camper:", sum(camp$air_hours > 0), "of", nrow(camp), "\n")
-cat("Distance (km), campsite on the camper's island vs another island:\n")
-print(tapply(camp$km, camp$air_hours > 0, summary))
- 
-# Constants for the counterfactuals (all within the year)
-avg_wage <- camp %>% distinct(id, year, wage_hr) %>% group_by(year) %>% summarise(avg_wage = mean(wage_hr), .groups = "drop")
-avg_km   <- camp %>% group_by(year, parkname) %>% summarise(avg_km = mean(km), .groups = "drop")
- 
-camp <- camp %>%
-  left_join(avg_wage, by = "year") %>%
-  left_join(avg_km,   by = c("year", "parkname")) %>%
-  mutate(# value of time OFF: the average wage in both time terms; own distance, own fees and flights
-         equal_vot      = vehicle + avg_wage * (km / 50 + air_hours * 2) + other,
-         # distance OFF: the average distance to the campsite; own wage, own fees and flights
-         equal_distance = avg_km * vehicle_per_km + wage_hr * (avg_km / 50 + air_hours * 2) + other,
-         # both OFF
-         both_equal     = avg_km * vehicle_per_km + avg_wage * (avg_km / 50 + air_hours * 2) + other)
- 
- 
-# Campers who could not afford their trips at some counterfactual price (more than 95% of income) are left out of every line
-affordable <- camp %>%
+## Counterfactual losses per camper (objects already loaded), one column per scenario 
+read_cf <- function(name, scenario) bind_rows(lapply(YEARS, function(y)
+  get(sprintf(name, y)) %>%
+    transmute(id = as.character(id), year = as.integer(y), !!scenario := loss)))
+
+cf <- read_cf("mdcev_cf_v2_%d_equal_vot", "equal_vot") %>%
+  inner_join(read_cf("mdcev_cf_v2_%d_equal_distance", "equal_distance"), by = c("id", "year"))  %>% inner_join(read_cf("mdcev_cf_%d_both_equal", "both_equal"), by = c("id", "year"))
+
+## reloadBaseline: rmdcev per-camper loss (100 draws), averaged over single-campsite closures 
+baseline <- bind_rows(welfare_ind_list) %>%
+  filter(parkname != "All sites closed") %>%
+  mutate(id = as.character(id), year = as.integer(year)) %>%
   group_by(id, year) %>%
-  summarise(income = first(income),
-            ok = all(c(sum(price * trips), sum(equal_vot * trips), sum(equal_distance * trips), sum(both_equal * trips)) < 0.95 * income),
-            .groups = "drop")
-cat("Campers left out because trips would cost more than 95% of income:", sum(!affordable$ok), "of", nrow(affordable), "\n")
-camp <- camp %>% semi_join(filter(affordable, ok), by = c("id", "year"))
- 
- 
-## One row per camper, with an income decile (1 = lowest income, within each year)
-campers <- camp %>%
-  group_by(id, year) %>%
-  summarise(income = first(income), .groups = "drop") %>%
-  filter(income > 0) %>%
-  group_by(year) %>%
-  mutate(decile = ntile(income, 10)) %>%
-  ungroup()
- 
- 
-## Your rmdcev pipeline, run on one counterfactual price table 
-rmdcev_losses <- function(yr, scenario) {
- 
-  file <- paste0("data/mdcev_cf_v2_", yr, "_", scenario, ".rds")
-  if (file.exists(file)) return(readRDS(file))                          # already done: reuse
- 
-  # this year's data with the counterfactual price (campers who cannot afford it are dropped)
-  dat   <- get(paste0("final_data_", yr))
-  keep  <- paste(dat$id, dat$parkname) %in% paste(camp$id[camp$year == yr], camp$parkname[camp$year == yr])
-  dat   <- dat[keep, ]
-  cf    <- camp[camp$year == yr, ]
-  dat$price <- cf[[scenario]][match(paste(dat$id, dat$parkname), paste(cf$id, cf$parkname))]
- 
-  # estimate
-  data_model <- mdcev.data(dat, id.var = "id", alt.var = "parkname", choice = "VisitCount")
-  fit <- mdcev(~ 1, data = data_model, model = "gamma", algorithm = "MLE", std_errors = "mvn",
-               n_draws = N_DRAWS, trunc_data = 1, print_iterations = FALSE)
- 
-  # policies: close campsite k (its price is set very high), then close all campsites
-  J <- fit$stan_data[["J"]]
-  policies <- CreateBlankPolicies(npols = J + 1, model = fit, price_change_only = TRUE)
-  policies$price_p[seq_len(J)] <- lapply(seq_len(J), function(k) { v <- policies$price_p[[k]]; v[k + 1] <- 999999; v })
-  policies$price_p[[J + 1]]    <- c(0, rep(999999, J))
- 
-  # conditional welfare
-  df_sim <- PrepareSimulationData(fit, policies)
-  set.seed(2000 + yr)
-  w <- mdcev.sim(df_sim$df_indiv, df_common = df_sim$df_common, sim_options = df_sim$sim_options,
-                 cond_err = 1, nerrs = NERRS, draw_mlhs = 1, sim_type = "welfare")
- 
-  # mean over draws for each camper and policy; average loss over the single-campsite policies (the last policy closes everything)
-  per_camper <- t(sapply(w, colMeans, na.rm = TRUE))                    # campers x policies
-  out <- tibble(id = as.character(unique(dat$id)),
-                loss = -rowMeans(per_camper[, seq_len(J), drop = FALSE]))
-  saveRDS(out, file)
-  out
-}
- 
-cf_losses <- crossing(year = YEARS, scenario = c("equal_vot", "equal_distance", "both_equal")) %>%
-  group_by(year, scenario) %>%
-  group_modify(~ rmdcev_losses(.y$year, .y$scenario)) %>%               # one rmdcev run per year and scenario (slow)
-  ungroup() %>%
-  pivot_wider(names_from = scenario, values_from = loss)
- 
- 
-## Baseline: your existing rmdcev results ------------------------------------------------------------
-# welfare_ind_list has one row per camper x policy: site = 1..J closes each campsite, site = J + 1 closes all; mean_value is negative
-baseline <- bind_rows(welfare_ind_list, .id = "year") %>%
-  mutate(year = as.integer(year), id = as.character(id)) %>%
-  group_by(year) %>%
-  filter(site < max(site)) %>%
-  group_by(id, year) %>%
-  summarise(baseline = -mean(mean_value), .groups = "drop")
- 
- 
-## Figure: the counterfactual gradients
+  summarise(baseline = -mean(loss_mdcev), .groups = "drop")
+
+## ---- Check: same campers should have similar losses in the baseline and the scenarios ----------
+baseline %>% inner_join(cf, by = c("id", "year")) %>% group_by(year) %>%
+  summarise(campers = n(), cor_vot = cor(baseline, equal_vot), cor_distance = cor(baseline, equal_distance),
+            .groups = "drop") %>% print()
+
+##  Mean loss by income decile (only campers in every line) 
 by_decile <- campers %>%
-  inner_join(baseline,  by = c("id", "year")) %>%
-  inner_join(cf_losses, by = c("id", "year")) %>%
+  mutate(id = as.character(id), year = as.integer(year)) %>%
+  inner_join(baseline, by = c("id", "year")) %>%
+  inner_join(cf,       by = c("id", "year")) %>%
   group_by(year, decile) %>%
   summarise(campers = n(),
-            baseline                                  = mean(baseline),
-            `equal value of time (value of time off)` = mean(equal_vot),
-            `equal distance (distance off)`           = mean(equal_distance),
-            `both off`                                = mean(both_equal),
+            baseline                                     = mean(baseline),
+            `constant value of time (value of time off)` = mean(equal_vot),
+            `constant distance (distance off)`           = mean(equal_distance),
             .groups = "drop")
- 
-write.csv(by_decile, "data/mdcev_counterfactual_gradient.csv", row.names = FALSE)
- 
+print(by_decile, n = Inf)
+
 fig <- by_decile %>%
-  select(-campers) %>%
+  dplyr::select(-campers) %>%
   pivot_longer(-c(year, decile), names_to = "scenario", values_to = "loss") %>%
-  mutate(scenario = factor(scenario, levels = c("baseline", "equal value of time (value of time off)",
-                                                "equal distance (distance off)", "both off"))) %>%
+  mutate(scenario = factor(scenario, levels = c("baseline", "constant value of time (value of time off)",
+                                                "constant distance (distance off)"))) %>%
   ggplot(aes(decile, loss, colour = scenario, linetype = scenario, shape = scenario)) +
   geom_line(linewidth = 0.7) +
   geom_point(size = 2, fill = "white") +
   facet_wrap(~ year, ncol = 3) +
-  scale_colour_manual(values = c("black", "grey30", "grey55", "grey75"), name = NULL) +
-  scale_linetype_manual(values = c("solid", "dashed", "dotdash", "dotted"), name = NULL) +
-  scale_shape_manual(values = c(16, 1, 2, 4), name = NULL) +
+  scale_colour_manual(values = c("black", "grey35", "grey60"), name = NULL) +
+  scale_linetype_manual(values = c("solid", "dashed", "dotdash"), name = NULL) +
+  scale_shape_manual(values = c(16, 1, 2), name = NULL) +
   scale_x_continuous(breaks = 1:10) +
   labs(x = "Income decile (1 = lowest income)",
        y = "Mean MDCEV loss per single-campsite closure ($)",
-       title = "Welfare under constant distance and/or value of time",
-       caption = "Conditional MDCEV loss from a re-estimated model with constant distance and/or value of time (driving and flight time)") +
+       title = "Welfare under constant distance or value of time",
+       caption = "Conditional MDCEV loss from a model re-estimated with constant distance or value of time (driving and flight time).") +
   theme_bw(base_size = 12, base_family = "serif") +
   theme(panel.grid.minor = element_blank(), panel.grid.major.x = element_blank(), legend.position = "bottom",
         strip.background = element_rect(fill = "white", colour = "black"), strip.text = element_text(face = "bold"),
         panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.7))
- 
-ggsave("figure/mdcev_counterfactual_gradient.png", fig, width = 12, height = 7.5, dpi = 300, bg = "white")
- 
 
-```
-
-### Plots
-
-```{r}
-#| eval: false    
-#| echo: true 
-## Baseline: your existing rmdcev results 
-# welfare_ind_list has one row per camper x policy: site = 1..J closes each campsite, site = J + 1 closes all; mean_value is negative
-baseline <- bind_rows(welfare_ind_list, .id = "year") %>%
-  mutate(year = as.integer(year), id = as.character(id)) %>%
-  group_by(year) %>%
-  filter(site < max(site)) %>%
-  group_by(id, year) %>%
-  summarise(baseline = -mean(mean_value), .groups = "drop")
- 
- 
-## Figure: the counterfactual gradients
-by_decile <- campers %>%
-  inner_join(baseline,  by = c("id", "year")) %>%
-  inner_join(cf_losses, by = c("id", "year")) %>%
-  group_by(year, decile) %>%
-  summarise(campers = n(),
-            baseline                                  = mean(baseline),
-            `equal value of time (value of time off)` = mean(equal_vot),
-            `equal distance (distance off)`           = mean(equal_distance),
-            `both off`                                = mean(both_equal),
-            .groups = "drop")
- 
-write.csv(by_decile, "data/mdcev_counterfactual_gradient.csv", row.names = FALSE)
- 
-fig <- by_decile %>%
-  select(-campers) %>%
-  pivot_longer(-c(year, decile), names_to = "scenario", values_to = "loss") %>%
-  mutate(scenario = factor(scenario, levels = c("baseline", "equal value of time (value of time off)",
-                                                "equal distance (distance off)", "both off"))) %>%
-  ggplot(aes(decile, loss, colour = scenario, linetype = scenario, shape = scenario)) +
-  geom_line(linewidth = 0.7) +
-  geom_point(size = 2, fill = "white") +
-  facet_wrap(~ year, ncol = 3) +
-  scale_colour_manual(values = c("black", "grey30", "grey55", "grey75"), name = NULL) +
-  scale_linetype_manual(values = c("solid", "dashed", "dotdash", "dotted"), name = NULL) +
-  scale_shape_manual(values = c(16, 1, 2, 4), name = NULL) +
-  scale_x_continuous(breaks = 1:10) +
-  labs(x = "Income decile (1 = lowest income)",
-       y = "Mean MDCEV loss per single-campsite closure ($)",
-       title = "Welfare under constant distance and/or value of time",
-       caption = "Conditional MDCEV loss from a re-estimated model with constant distance and/or value of time (driving and flight time)") +
-  theme_bw(base_size = 12, base_family = "serif") +
-  theme(panel.grid.minor = element_blank(), panel.grid.major.x = element_blank(), legend.position = "bottom",
-        strip.background = element_rect(fill = "white", colour = "black"), strip.text = element_text(face = "bold"),
-        panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.7))
- 
-ggsave("figure/mdcev_counterfactual_gradient.png", fig, width = 12, height = 7.5, dpi = 300, bg = "white")
- 
-```
-
-### Significantly different?
-
-Are these statistically different? This simple test is just if the welfare loss is statistically different
-
-Is the welfare loss of the high-income campers different from the low-income campers?
-
-```{r}
-
-
-library(dplyr)
-library(tidyr)
-library(sandwich)
-
-dir.create("data", showWarnings = FALSE)
-set.seed(898989)
-N_BOOT <- 2000
-
-
-## One row per camper and model (the same construction as your distributional code), all year
-person <- final_comparison_master %>%
-    filter(year %in% 2018:2023,
-           !parkname %in% c("All sites closed", "System closure", "Close_All", "Stay_Home"),
-           !is.na(income), income > 0) %>%
-    group_by(year, id, zip, income) %>%
-    summarise(RUM   = -mean(annual_rum_loss, na.rm = TRUE),
-              MDCEV = -mean(loss_mdcev,      na.rm = TRUE), .groups = "drop") %>%
-    group_by(year) %>% mutate(dec = ntile(income, 10)) %>% ungroup() %>%      # income deciles within each year, as in the figure
-    pivot_longer(c(RUM, MDCEV), names_to = "model", values_to = "usd") %>%
-    filter(!is.na(usd)) %>%
-    mutate(pct = 100 * usd / income)                                  # loss as % of the camper's own income
-
-
-##  The test for one year, model, measure and comparison 
-gap_test <- function(d, v, low_max) {
-    
-    low  <- d[d$dec <= low_max, ]                      # decile 1 (low_max = 1) or deciles 1-2 (low_max = 2)
-    high <- d[d$dec >= 11 - low_max, ]                 # decile 10 (low_max = 1) or deciles 9-10 (low_max = 2)
-    both <- rbind(transform(low, top = 0), transform(high, top = 1))
-    y    <- both[[v]]
-    
-    # difference in means with zip-clustered standard errors
-    fit  <- lm(y ~ top, data = both)
-    se   <- sqrt(vcovCL(fit, cluster = both$zip, type = "HC1")["top", "top"])
-    gap  <- unname(coef(fit)["top"])
-    G    <- length(unique(both$zip))
-    p_cl <- 2 * pt(-abs(gap / se), df = G - 1)
-    
-    # zip-cluster bootstrap: resample zips within each group
-    zl <- low  %>% group_by(zip) %>% summarise(s = sum(.data[[v]]), n = n(), .groups = "drop")
-    zh <- high %>% group_by(zip) %>% summarise(s = sum(.data[[v]]), n = n(), .groups = "drop")
-    draws <- replicate(N_BOOT, {
-        il <- sample.int(nrow(zl), replace = TRUE)
-        ih <- sample.int(nrow(zh), replace = TRUE)
-        sum(zh$s[ih]) / sum(zh$n[ih]) - sum(zl$s[il]) / sum(zl$n[il])
-    })
-    p_boot <- min(1, 2 * min((1 + sum(draws <= 0)) / (N_BOOT + 1), (1 + sum(draws >= 0)) / (N_BOOT + 1)))
-    
-    tibble(campers_low = nrow(low), campers_high = nrow(high), zips_low = nrow(zl), zips_high = nrow(zh),
-           mean_low = mean(low[[v]]), mean_high = mean(high[[v]]),
-           gap = gap, se = se, ci_lo = unname(quantile(draws, 0.025)), ci_hi = unname(quantile(draws, 0.975)),
-           p_cluster = p_cl, p_boot = p_boot)
-}
-
-
-## Run it for every year, model, measure and comparison 
-settings <- expand_grid(year = 2018:2023, model = c("RUM", "MDCEV"),
-                        measure = c("usd", "pct"), low_max = c(1, 2))
-
-results <- settings %>%
-    mutate(out = purrr::pmap(list(year, model, measure, low_max), function(yr, md, ms, lm)
-        gap_test(person[person$year == yr & person$model == md, ], ms, lm))) %>%
-    tidyr::unnest(out) %>%
-    mutate(comparison = ifelse(low_max == 1, "decile 10 vs decile 1", "deciles 9-10 vs deciles 1-2")) %>%
-    group_by(model, measure) %>%
-    mutate(p_boot_holm = p.adjust(p_boot, method = "holm")) %>%      # optional: 12 tests per model and measure
-    ungroup() %>%
-    select(year, model, measure, comparison, everything(), -low_max)
-
-write.csv(results, "data/within_model_gap_tests.csv", row.names = FALSE)
-
-
-## Appendix tables: difference (p-value), RUM and MDCEV side by side 
-stars <- function(p) ifelse(p < 0.01, "***", ifelse(p < 0.05, "**", ifelse(p < 0.10, "*", "")))
-fmt   <- function(gap, p, digits) paste0(formatC(gap, format = "f", digits = digits), stars(p), " (", formatC(p, format = "f", digits = 3), ")")
-
-for (ms in c("usd", "pct")) {
-    tab <- results %>%
-        filter(measure == ms) %>%
-        mutate(cell = fmt(gap, p_boot, ifelse(ms == "usd", 2, 4))) %>%
-        select(year, comparison, model, cell) %>%
-        pivot_wider(names_from = model, values_from = cell) %>%
-        arrange(comparison, year)
-    cat("\n", ifelse(ms == "usd", "Difference in mean loss per person ($)", "Difference in mean loss as % of income"),
-        ", high income minus low income, bootstrap p-value in parentheses\n", sep = "")
-    print(as.data.frame(tab), row.names = FALSE)
-    write.csv(tab, paste0("data/within_model_gap_table_", ms, ".csv"), row.names = FALSE)
-}
-cat("\n* p<0.10  ** p<0.05  *** p<0.01. Zip codes in each group are in data/within_model_gap_tests.csv (zips_low, zips_high).\n")
+print(fig)
+ggsave("figure/figureb6_mdcevcounterfactual.png", fig, width = 12, height = 7.5, dpi = 300, bg = "white")
 ```

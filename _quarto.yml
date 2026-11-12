@@ -9,8 +9,6 @@ website:
         text: Home
       - href: model.qmd
         text: Models
-      - href: combined.html
-        text: Combined
     tools:
       - icon: youtube
         href: https://www.youtube.com/@Prof.Iguana
