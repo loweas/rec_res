@@ -804,6 +804,8 @@ final_data_2023 <- final_data_2023 %>%
          price = price + ifelse(island_park == "Kauai" & island_live == "Maui", (((income * 0.75) / 2080) * 2.33) * 2, 0),
          price = price + ifelse(island_park == "Hawaii" & island_live == "Maui", (((income * 0.75) / 2080) * 2.17) * 2, 0))
 
+
+
 ### LANAI ###
 final_data_2023 <- final_data_2023 %>%
   mutate(price = price + ifelse(island_park == "Molokai" & island_live == "Lanai", (((income * 0.75) / 2080) * 2) * 2, 0),
@@ -2627,7 +2629,7 @@ mdcev_x4_all <- mdcev_long(welfare_x4_list, "loss_4x")
 
 mdcev_baseline_all <- mdcev_long(welfare_list_100, "loss_mdcev")
 
-final_comparison_master <- final_comparison_52_person %>%
+final_comparison_master <- final_comparison_52_person_inc %>%
     mutate(id = as.character(id), year = as.integer(year)) %>%
     left_join(mdcev_baseline_all, by = c("id", "parkname", "year")) %>%
     left_join(mdcev_x2_all,       by = c("id", "parkname", "year")) %>%
@@ -2646,3 +2648,5 @@ final_comparison_master %>%
 #write_csv(final_comparison_master, "data/final_comparison_master.csv")
 
 ```
+
+

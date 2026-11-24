@@ -1,5 +1,5 @@
 ---
-title: "Repeated Random Utility versus Kuhn-Tucker Models over Time: Evidence from Hawaiʻi Campsites"
+title: "Repeated Random Utility versus Multiple Discrete-Continuous Models: Welfare Estimates from Six Years of Campsite Reservations in Hawaiʻi"
 format:
   html:
     code-fold: true        # Enables dropdown for code
@@ -11,7 +11,7 @@ format:
 editor: visual
 ---
 
-This site provides a walk through on the results from "Repeated Random Utility versus Kuhn-Tucker Models over Time: Evidence from Hawaiʻi Campsites". This tab covers the comparison by loading the data from the models. Tabs MDCEV and RUM are the codes that will run each model.
+This site provides a walk through on the results from "Repeated Random Utility versus Multiple Discrete-Continuous Models: Welfare Estimates from Six Years of Campsite Reservations in Hawaiʻi". This tab covers the comparison by loading the data from the models. Tabs MDCEV and RUM are the codes that will run each model.
 
 # Libraries
 
@@ -47,7 +47,7 @@ library(ggpattern)
 This code loads the dataframe need to recreate all tables from the paper.
 
 ```{r}
-
+reservation_data <- read_dta("data/reservation_data_merged_id_complete.dta")
 final_comparison_master=read_csv("data/final_comparison_master.csv")
 
 # Raw
@@ -98,6 +98,189 @@ mdcev_cf_v2_2022_equal_vot<- readRDS("data/tc_constant/mdcev_cf_v2_2022_equal_vo
 mdcev_cf_2023_both_equal <- readRDS("data/tc_constant/mdcev_cf_v2_2023_both_equal.rds")
 mdcev_cf_v2_2023_equal_distance <- readRDS("data/tc_constant/mdcev_cf_v2_2023_equal_distance.rds")
 mdcev_cf_v2_2023_equal_vot<- readRDS("data/tc_constant/mdcev_cf_v2_2023_equal_vot.rds")
+
+```
+
+# Descriptive tables
+
+## Table A.2
+
+Distribution of Individuals by Number of Camping Trips Taken
+
+```{r}
+
+trip_dist <- reservation_data %>%
+  filter(!is.na(CheckinDate)) %>%
+  distinct(id, parkname, CheckinDate) %>%             # one row per trip
+  count(id, name = "trips") %>%                       # trips per person
+  count(trips, name = "persons") %>%                  # persons per number of trips
+  mutate(share = persons / sum(persons))
+
+trip_dist %>%
+  transmute(Trips = trips,
+            `Share of persons`  = sprintf("%.2f%%", 100 * share),
+            `Number of persons` = format(persons, big.mark = ",")) %>%
+  print(row.names = FALSE)
+
+```
+
+## Table A.3
+
+Distribution of Individuals by Number of Campsites Visited
+
+```{r}
+library(dplyr)
+
+site_dist <- reservation_data %>%
+  filter(!is.na(CheckinDate)) %>%
+  distinct(id, parkname) %>%                          # one row per person and campsite visited
+  count(id, name = "sites") %>%                       # campsites per person
+  count(sites, name = "persons") %>%                  # persons per number of campsites
+  mutate(share = persons / sum(persons))
+
+site_dist %>%
+  transmute(`Number of campsites visited` = sites,
+            `Share of persons`  = sprintf("%.2f%%", 100 * share),
+            `Number of persons` = format(persons, big.mark = ",")) %>%
+  print(row.names = FALSE)
+
+```
+
+## Table A.4.
+
+Number of Visits per Campsite from 2018 to 2023
+
+```{r}
+reservation_data$year <- as.numeric(format(as.Date(reservation_data$CheckinDate, "%Y-%m-%d"), "%Y"))
+## campsite names as they should appear in the table
+SITE_NAMES <- c(
+  ainapo = "\u02BB\u0100inap\u014D", hipalau = "Hipalau", kaluahaulu = "Kaluahaulu",
+  kamananui = "Kamananui", kaunala = "Kaunala", kawaikoi = "Kawaikoi", keanakolu = "Keanakolu",
+  kuaokala = "Kuaokal\u0101", kulanaahane = "Kulana\u02BBahane", kuliouou = "Kuli\u02BBou\u02BBou",
+  lonomea = "Lonomea", maakua = "Ma\u02BBakua", manana = "M\u0101nana", peacock = "Peacock Flats",
+  sugi = "Sugi Grove", waialae = "Wai\u02BBalae", waikoali = "Waikoali", waikolu = "Waikolu",
+  waimano = "Waimano", waimanu = "Waimanu", wiliwili = "Wiliwili", wiliwilinui = "Wiliwilinui")
+site_key <- function(x) tolower(gsub("[^A-Za-z]", "", iconv(sub(" .*", "", x), "UTF-8", "ASCII//TRANSLIT")))
+
+visits <- reservation_data %>%
+  filter(!is.na(CheckinDate), year %in% 2018:2023) %>%
+  distinct(id, parkname, CheckinDate) %>%              # one row per trip, as in final_data
+  count(parkname, name = "visits") %>%
+  mutate(key = site_key(parkname)) %>%
+  arrange(match(key, names(SITE_NAMES))) %>%           # alphabetical (ʻĀinapō first)
+  transmute(MasterList         = LETTERS[row_number()],
+            Campsite           = ifelse(key %in% names(SITE_NAMES), SITE_NAMES[key], parkname),
+            `Number of visits` = format(visits, big.mark = ","))
+
+print(visits, row.names = FALSE)
+
+```
+
+## Table A.5
+
+Number of Visits by Year 2018 to 2023
+
+```{r}
+## one row per trip, with the group size of that trip
+trips <- reservation_data %>%
+  filter(!is.na(CheckinDate), year %in% 2018:2023) %>%
+  group_by(year, id, parkname, CheckinDate) %>%
+  summarise(guests = first(NoOfGuests), .groups = "drop")
+
+## per camper and year: number of trips and number of different campsites
+per_camper <- trips %>%
+  group_by(year, id) %>%
+  summarise(trips = n(), sites = n_distinct(parkname), .groups = "drop")
+
+visits_by_year <- per_camper %>%
+  group_by(year) %>%
+  summarise(Campers      = n(),
+            `Min Trips`  = min(trips),
+            `Mean Trips` = round(mean(trips), 2),
+            `Max Trips`  = max(trips),
+            `Total trips` = sum(trips),
+            `Share with more than one trip`     = sprintf("%.1f%%", 100 * mean(trips > 1)),
+            `Share visiting more than one site` = sprintf("%.1f%%", 100 * mean(sites > 1)),
+            .groups = "drop") %>%
+  left_join(trips %>% group_by(year) %>% summarise(Num.Guest = round(mean(guests, na.rm = TRUE), 1)),
+            by = "year") %>%
+  transmute(Year = year, Campers, `Min Trips`, `Mean Trips`, `Max Trips`, Num.Guest,
+            `Total trips` = format(`Total trips`, big.mark = ","),
+            `Share with more than one trip`, `Share visiting more than one site`)
+
+print(visits_by_year, row.names = FALSE)
+
+
+```
+
+## Table A.6
+
+Number of Visits by Income Distribution Campers by income decile, average across 2018-2023
+
+```{r}
+per_camper <- bind_rows(lapply(2018:2023, function(y) get(paste0("final_data_", y)) %>% mutate(year = y))) %>%
+  group_by(year, id) %>%
+  summarise(income       = first(income),
+            trips        = sum(VisitCount),
+            dist_all     = mean(travel_distance_km, na.rm = TRUE),                        # all campsites
+            dist_visited = sum(travel_distance_km * VisitCount) / sum(VisitCount),        # per trip, visited campsites
+            other_island = any(VisitCount > 0 & island_park != island_live, na.rm = TRUE),
+            .groups = "drop") %>%
+  filter(!is.na(income), income > 0) %>%
+  group_by(year) %>% mutate(decile = ntile(income, 10)) %>% ungroup()
+
+tab_income <- per_camper %>%
+  group_by(year, decile) %>%                                          # each year first
+  summarise(income = mean(income), campers = n(), trips = mean(trips),
+            dist_all = mean(dist_all), dist_visited = mean(dist_visited),
+            other = 100 * mean(other_island), .groups = "drop") %>%
+  group_by(decile) %>%                                                # then the average over 2018-2023
+  summarise(`Income decile`                    = first(decile),
+            `Mean household income ($)`        = format(round(mean(income)), big.mark = ","),
+            `Mean trips per camper`            = round(mean(trips), 2),
+            `Mean distance all campsites (km)` = round(mean(dist_all)),
+            `Mean distance to visited (km)`    = round(mean(dist_visited)),
+            `Percent visit other island`       = sprintf("%.1f%%", mean(other)),
+            .groups = "drop") %>%
+  dplyr::select(-decile)
+
+print(tab_income, row.names = FALSE)
+
+```
+
+## Table A.7
+
+Distribution of Individuals by Visitation Pattern and Island Visited
+
+```{r}
+
+## one row per camper and campsite-year with trips, all years together
+visited <- bind_rows(lapply(2018:2023, function(y) get(paste0("final_data_", y)) %>% mutate(year = y))) %>%
+  filter(VisitCount > 0, !is.na(island_park), !is.na(island_live)) %>%
+  mutate(id = as.character(id), home = island_park == island_live)
+
+## per person: visitation pattern and island pattern
+persons <- visited %>%
+  group_by(id) %>%
+  summarise(trips = sum(VisitCount), sites = n_distinct(parkname),
+            any_home = any(home), any_other = any(!home), .groups = "drop") %>%
+  mutate(`Visitation pattern` = case_when(trips == 1 ~ "Single trip visitor",
+                                          sites == 1 ~ "Repeat visitor, same site only",
+                                          TRUE       ~ "Repeat visitor, multiple sites"),
+         `Island visitation pattern` = case_when(any_home & any_other ~ "Home and other island(s)",
+                                                 any_home             ~ "Only home island",
+                                                 TRUE                 ~ "Only other island(s)"))
+
+tab_pattern <- persons %>%
+  count(`Visitation pattern`, `Island visitation pattern`, name = "n") %>%
+  group_by(`Visitation pattern`) %>%
+  mutate(`Share of persons` = sprintf("%.0f%%", 100 * n / sum(n))) %>%   # share within each visitation pattern
+  ungroup() %>%
+  transmute(`Visitation pattern`, `Island visitation pattern`,
+            `Number of persons` = format(n, big.mark = ","), `Share of persons`)
+
+print(tab_pattern, row.names = FALSE)
+
 
 ```
 
@@ -1496,7 +1679,7 @@ dec_stats <- function(df) df %>%
 
 ## 95% cluster bootstrap: resample zip codes within each year 
 set.seed(898989)
-boot <- map_df(1:500, function(b) {
+boot <- map_df(1:1000, function(b) {
   z <- person %>% distinct(year, zip) %>% group_by(year) %>%
     slice_sample(prop = 1, replace = TRUE) %>% ungroup()
   dec_stats(inner_join(z, person, by = c("year", "zip"), relationship = "many-to-many"))

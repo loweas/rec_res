@@ -1,7 +1,7 @@
 project:
   type: website
 website:
-  title: "Unequal Recreational Losses?"
+  title: "Campsite Reservations in Hawaiʻi"
   search: true
   navbar:
     left:
